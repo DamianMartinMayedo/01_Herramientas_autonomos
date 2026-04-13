@@ -1,4 +1,4 @@
-// ─── Tipos base compartidos por todos los documentos ───────────────────────
+// ─── Tipos base compartidos por todos los documentos ─────────────────────────
 
 export interface EmisorInfo {
   nombre: string
@@ -9,7 +9,7 @@ export interface EmisorInfo {
   provincia: string
   email: string
   telefono?: string
-  logo?: string // base64 o URL
+  logo?: string
 }
 
 export interface ClienteInfo {
@@ -27,8 +27,8 @@ export interface LineaDocumento {
   descripcion: string
   cantidad: number
   precioUnitario: number
-  iva: number      // porcentaje, ej: 21
-  irpf: number     // porcentaje, ej: 15
+  iva: number
+  irpf: number
 }
 
 export interface TotalesDocumento {
@@ -40,16 +40,44 @@ export interface TotalesDocumento {
 
 export type TipoDocumento = 'factura' | 'presupuesto' | 'albaran'
 
+// ─── Forma de pago ────────────────────────────────────────────────────────────
+export type MetodoPago =
+  | 'transferencia'
+  | 'bizum'
+  | 'paypal'
+  | 'efectivo'
+  | 'cheque'
+  | 'otro'
+
+export interface FormaPago {
+  metodo: MetodoPago
+  cuenta?: string    // IBAN — transferencia bancaria
+  telefono?: string  // Bizum / PayPal teléfono
+  email?: string     // PayPal email
+  detalle?: string   // Otro
+}
+
+export const ETIQUETAS_METODO_PAGO: Record<MetodoPago, string> = {
+  transferencia: 'Transferencia bancaria',
+  bizum: 'Bizum',
+  paypal: 'PayPal',
+  efectivo: 'Efectivo',
+  cheque: 'Cheque',
+  otro: 'Otro',
+}
+
+// ─── Documento base ───────────────────────────────────────────────────────────
 export interface DocumentoBase {
   tipo: TipoDocumento
   numero: string
   fecha: string
-  fechaVencimiento?: string  // solo facturas/presupuestos
+  fechaVencimiento?: string
   emisor: EmisorInfo
   cliente: ClienteInfo
   lineas: LineaDocumento[]
   notas?: string
   mostrarIrpf: boolean
+  formaPago?: FormaPago
 }
 
 // Valores por defecto para líneas nuevas
@@ -61,8 +89,5 @@ export const DEFAULT_LINEA: Omit<LineaDocumento, 'id'> = {
   irpf: 15,
 }
 
-// Tipos de IVA habituales en España
 export const TIPOS_IVA = [0, 4, 10, 21] as const
-
-// Tipos de IRPF habituales
 export const TIPOS_IRPF = [0, 7, 15, 19] as const

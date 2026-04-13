@@ -1,14 +1,14 @@
 import { useCallback } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { nanoid } from 'nanoid'
-import type { DocumentoBase, LineaDocumento } from '../types/document.types'
+import type { DocumentoBase, LineaDocumento, MetodoPago } from '../types/document.types'
 import { DEFAULT_LINEA } from '../types/document.types'
 import { calcularTotales } from '../utils/calculos'
 import { fechaHoy, formatEuro } from '../utils/formatters'
 import { useDocumentStore } from '../store/documentStore'
 import { generarNumeroDocumento } from '../utils/calculos'
 
-const PREFIJOS: Record<string, string> = {
+const PREFIJOS: Record<DocumentoBase['tipo'], string> = {
   factura: 'FAC',
   presupuesto: 'PRE',
   albaran: 'ALB',
@@ -18,7 +18,7 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
   const { emisorGuardado, setEmisorGuardado } = useDocumentStore()
 
   const form = useForm<DocumentoBase>({
-    mode: 'onBlur', // valida al salir del campo, no en cada tecla
+    mode: 'onBlur',
     defaultValues: {
       tipo,
       numero: generarNumeroDocumento(PREFIJOS[tipo], 1),
@@ -45,6 +45,13 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
       lineas: [{ id: nanoid(), ...DEFAULT_LINEA }],
       notas: '',
       mostrarIrpf: true,
+      formaPago: {
+        metodo: 'transferencia' as MetodoPago,
+        cuenta: '',
+        telefono: '',
+        email: '',
+        detalle: '',
+      },
     },
   })
 
@@ -64,12 +71,10 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
     [fields.length, remove]
   )
 
-  // Totales calculados en tiempo real observando el formulario
   const lineas = form.watch('lineas') as LineaDocumento[]
   const mostrarIrpf = form.watch('mostrarIrpf')
   const totales = calcularTotales(lineas ?? [], mostrarIrpf)
 
-  // Guarda los datos del emisor en localStorage para reutilizarlos
   const guardarEmisor = useCallback(() => {
     const emisor = form.getValues('emisor')
     setEmisorGuardado(emisor)
