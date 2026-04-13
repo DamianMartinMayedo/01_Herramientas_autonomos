@@ -83,7 +83,7 @@ export function HomePage() {
       <main className="max-w-5xl mx-auto px-5">
 
         {/* ── Hero banner ──────────────────────────────────────────────── */}
-        <section className="py-16 md:py-20">
+        <section className="py-16  md:py-5 md:pb-10">
           <div
             className="rounded-2xl px-8 py-12 md:px-14 md:py-16 relative overflow-hidden"
             style={{
@@ -103,18 +103,18 @@ export function HomePage() {
             <div className="relative z-10 max-w-2xl">
               <div className="inline-flex items-center gap-2 bg-white/10 text-white/80 text-xs font-medium px-3 py-1.5 rounded-full mb-6">
                 <Zap className="w-3.5 h-3.5" />
-                Gratuito · Sin registro · Sin base de datos
+                    Sin registro · Sin base de datos
               </div>
               <h1
                 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
                 Todo lo que necesitas<br />como autónomo,<br />
-                <span className="text-blue-300">gratis y sin complicaciones.</span>
+                <span className="text-blue-300">sin complicaciones.</span>
               </h1>
               <p className="text-white/60 text-base md:text-lg leading-relaxed">
-                Facturas, presupuestos, calculadoras de cuota e IRPF.
-                Sin suscripciones, sin datos personales, directo al grano.
+                Facturas, presupuestos, calculadoras y más.
+                
               </p>
             </div>
           </div>
@@ -144,10 +144,10 @@ export function HomePage() {
                   {/* Icono + tag */}
                   <div className="flex items-start justify-between mb-5">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      className="w-5 h-5 rounded-xl flex items-center justify-center"
                       style={{ backgroundColor: h.colorLight + (h.activa ? '40' : '20') }}
                     >
-                      <Icon className="w-5 h-5" style={{ color: h.colorMid }} />
+                      <Icon className="w-10 h-10" style={{ color: h.colorMid }} />
                     </div>
                     <span
                       className="text-xs font-medium px-2.5 py-1 rounded-full"
@@ -169,7 +169,7 @@ export function HomePage() {
                   </h3>
 
                   {/* Descripción */}
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed flex-1">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed flex-1">
                     {h.desc}
                   </p>
 
