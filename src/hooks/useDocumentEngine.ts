@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { nanoid } from 'nanoid'
 import type { DocumentoBase, LineaDocumento, MetodoPago } from '../types/document.types'
@@ -15,7 +15,12 @@ const PREFIJOS: Record<DocumentoBase['tipo'], string> = {
 }
 
 export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
-  const { emisorGuardado, setEmisorGuardado } = useDocumentStore()
+  const {
+    emisorGuardado,
+    setEmisorGuardado,
+    presupuestoPendiente,
+    limpiarPresupuestoPendiente,
+  } = useDocumentStore()
 
   const form = useForm<DocumentoBase>({
     mode: 'onBlur',
@@ -33,7 +38,7 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
         email: '',
         telefono: '',
       },
-      cliente: {
+      cliente: presupuestoPendiente?.cliente ?? {
         nombre: '',
         nif: '',
         direccion: '',
@@ -42,9 +47,9 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
         provincia: '',
         email: '',
       },
-      lineas: [{ id: nanoid(), ...DEFAULT_LINEA }],
-      notas: '',
-      mostrarIrpf: true,
+      lineas: presupuestoPendiente?.lineas ?? [{ id: nanoid(), ...DEFAULT_LINEA }],
+      notas: presupuestoPendiente?.notas ?? '',
+      mostrarIrpf: presupuestoPendiente?.mostrarIrpf ?? true,
       formaPago: {
         metodo: 'transferencia' as MetodoPago,
         cuenta: '',
@@ -54,6 +59,13 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
       },
     },
   })
+
+  // Limpiar el presupuesto pendiente tras cargarlo para no reutilizarlo
+  useEffect(() => {
+    if (tipo === 'factura' && presupuestoPendiente) {
+      limpiarPresupuestoPendiente()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
