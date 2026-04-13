@@ -16,6 +16,8 @@ import { ThemeToggle } from '../ui/ThemeToggle'
 import { calcularLinea } from '../../utils/calculos'
 import { validarNif } from '../../utils/validarNif'
 import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft } from 'lucide-react'
+import { useDocumentStore } from '../../store/documentStore'
+import { ArrowRight } from 'lucide-react'
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Encabezado de la factura',
@@ -33,6 +35,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
   const [modalAbierto, setModalAbierto] = useState(false)
   const [savedFeedback, setSavedFeedback] = useState(false)
   const navigate = useNavigate()
+    const { setPresupuestoPendiente } = useDocumentStore()
 
   const {
     form,
@@ -56,6 +59,17 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
     guardarEmisor()
     setSavedFeedback(true)
     setTimeout(() => setSavedFeedback(false), 2500)
+  }
+
+    const handleConvertirAFactura = () => {
+    const datos = form.getValues()
+    setPresupuestoPendiente({
+      cliente: datos.cliente,
+      lineas: datos.lineas,
+      notas: datos.notas,
+      mostrarIrpf: datos.mostrarIrpf,
+    })
+    navigate('/factura')
   }
 
   const card = 'bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-5 space-y-4 shadow-sm'
@@ -103,6 +117,12 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             <Save size={16} />
             Guardar mis datos
           </Button>
+                    {tipo === 'presupuesto' && (
+            <Button variant="secondary" onClick={handleConvertirAFactura} type="button">
+              <ArrowRight size={16} />
+              Convertir a factura
+            </Button>
+          )}
           <Button variant="primary" onClick={handleAbrirPrevia} type="button">
             <Eye size={16} />
             Vista previa y exportar
