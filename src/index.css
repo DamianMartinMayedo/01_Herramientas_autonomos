@@ -1,1 +1,62 @@
 @import "tailwindcss";
+
+/* ── Tipografías ─────────────────────────────────────────────────────────── */
+@theme {
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body:    'Figtree', system-ui, sans-serif;
+}
+
+/* ── Reset base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #0a0a0a;
+  color: #e4e4e7;
+}
+
+/* ── Clases de tipografía ────────────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-body    { font-family: var(--font-body); }
+
+/* ── Colores por herramienta ─────────────────────────────────────────────── */
+/*
+  Cada herramienta inyecta su color mediante la clase .tool-[nombre]
+  en el div raíz del DocumentEngine. Los componentes hijos usan
+  var(--tool-dark) y var(--tool-light) para botones, bordes, acentos.
+*/
+
+.tool-factura {
+  --tool-dark:  #1e3a5f;   /* Azul noche profundo */
+  --tool-light: #dbeafe;   /* Azul cielo muy suave */
+  --tool-mid:   #3b82f6;   /* Azul medio para iconos/texto */
+}
+
+.tool-presupuesto {
+  --tool-dark:  #14532d;   /* Verde pizarra */
+  --tool-light: #dcfce7;   /* Verde menta suave */
+  --tool-mid:   #22c55e;   /* Verde medio */
+}
+
+.tool-cuota {
+  --tool-dark:  #78350f;   /* Ámbar oscuro */
+  --tool-light: #fef3c7;   /* Ámbar muy suave */
+  --tool-mid:   #f59e0b;   /* Ámbar medio */
+}
+
+.tool-precio-hora {
+  --tool-dark:  #4c1d95;   /* Violeta profundo */
+  --tool-light: #ede9fe;   /* Lavanda suave */
+  --tool-mid:   #8b5cf6;   /* Violeta medio */
+}
+
+.tool-iva {
+  --tool-dark:  #881337;   /* Carmín oscuro */
+  --tool-light: #ffe4e6;   /* Rosa suave */
+  --tool-mid:   #f43f5e;   /* Carmín medio */
+}

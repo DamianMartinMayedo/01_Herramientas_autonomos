@@ -16,7 +16,6 @@ import { calcularLinea } from '../../utils/calculos'
 import { validarNif } from '../../utils/validarNif'
 import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft } from 'lucide-react'
 
-// Título de la sección de encabezado según el tipo de documento
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Encabezado de la factura',
   presupuesto: 'Encabezado del presupuesto',
@@ -26,9 +25,10 @@ const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
 interface DocumentEngineProps {
   tipo: DocumentoBase['tipo']
   titulo: string
+  toolClass?: string
 }
 
-export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
+export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [savedFeedback, setSavedFeedback] = useState(false)
   const navigate = useNavigate()
@@ -49,46 +49,51 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
   const esFinanciero = tipo !== 'albaran'
   const metodoPago = watch('formaPago.metodo') as MetodoPago
 
-  // Valida el form antes de abrir el modal
   const handleAbrirPrevia = form.handleSubmit(() => setModalAbierto(true))
 
-  // Guarda datos del emisor y muestra feedback temporal
   const handleGuardarEmisor = () => {
     guardarEmisor()
     setSavedFeedback(true)
     setTimeout(() => setSavedFeedback(false), 2500)
   }
 
-  // Clases reutilizables para secciones tipo card
-  const card = 'bg-white rounded-xl border border-stone-200 p-5 space-y-4 shadow-sm'
-  const cardTitle = 'text-xs font-semibold uppercase tracking-widest text-stone-400'
+  const card = 'bg-white rounded-xl border border-zinc-200 p-5 space-y-4 shadow-sm'
+  const cardTitle = 'text-xs font-semibold uppercase tracking-widest text-zinc-400'
   const selectCls =
-    'w-full rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white ' +
-    'focus:outline-none focus:ring-2 focus:ring-teal-600'
+    'w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white ' +
+    'focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)]'
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className={`min-h-screen bg-zinc-50 ${toolClass}`}>
 
-      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between gap-4">
+      {/* ── Top bar ───────────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 px-6 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-teal-700 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
             aria-label="Volver al inicio"
           >
             <ChevronLeft size={16} />
             <span className="hidden sm:inline">Todas las herramientas</span>
           </button>
-          <span className="text-stone-300 select-none">|</span>
-          <h1 className="text-xl font-semibold text-stone-900">{titulo}</h1>
+          <span className="text-zinc-300 select-none">|</span>
+          <h1
+            className="text-xl font-bold text-zinc-900"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            {titulo}
+          </h1>
         </div>
+
         <div className="flex items-center gap-2">
-          {/* Feedback toast inline */}
           {savedFeedback && (
-            <span className="flex items-center gap-1.5 text-sm text-teal-700 font-medium animate-fade-in">
-              <CheckCircle2 size={16} className="text-teal-600" />
+            <span
+              className="flex items-center gap-1.5 text-sm font-medium"
+              style={{ color: 'var(--tool-mid, #3b82f6)' }}
+            >
+              <CheckCircle2 size={16} />
               Datos guardados
             </span>
           )}
@@ -105,7 +110,7 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
 
       <div className="grid xl:grid-cols-2 gap-6 p-6 max-w-[1400px] mx-auto">
 
-        {/* ── COLUMNA IZQUIERDA — Formulario ────────────────────────────────── */}
+        {/* ── COLUMNA IZQUIERDA — Formulario ───────────────────────────────── */}
         <div className="space-y-5">
 
           {/* ENCABEZADO */}
@@ -263,18 +268,17 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
             <div className="flex items-center justify-between">
               <h2 className={cardTitle}>Conceptos</h2>
               {esFinanciero && (
-                <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer select-none">
+                <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     {...register('mostrarIrpf')}
-                    className="rounded border-stone-300 text-teal-700 focus:ring-teal-600"
+                    className="rounded border-zinc-300"
                   />
                   Incluir IRPF
                 </label>
               )}
             </div>
 
-            {/* Lista de líneas */}
             <div className="space-y-3">
               {fields.map((field, index) => {
                 const linea = documento.lineas?.[index]
@@ -283,9 +287,8 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
                 return (
                   <div
                     key={field.id}
-                    className="bg-stone-50 border border-stone-200 rounded-lg p-4 space-y-3"
+                    className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3"
                   >
-                    {/* Fila 1 — Descripción ocupa todo el ancho */}
                     <FormField
                       label="Descripción"
                       {...register(`lineas.${index}.descripcion`, {
@@ -294,7 +297,6 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
                       error={errors.lineas?.[index]?.descripcion}
                     />
 
-                    {/* Fila 2 — Campos numéricos en una sola línea */}
                     <div className="flex flex-wrap items-end gap-3">
                       <FormField
                         label="Cantidad"
@@ -324,10 +326,10 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
                       {esFinanciero && (
                         <>
                           <div className="flex flex-col gap-1">
-                            <label className="text-xs font-medium text-stone-600">IVA</label>
+                            <label className="text-xs font-medium text-zinc-600">IVA</label>
                             <select
                               {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
-                              className="rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 w-[4.5rem]"
+                              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
                             >
                               {TIPOS_IVA.map((t) => (
                                 <option key={t} value={t}>{t}%</option>
@@ -337,10 +339,10 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
 
                           {mostrarIrpf && (
                             <div className="flex flex-col gap-1">
-                              <label className="text-xs font-medium text-stone-600">IRPF</label>
+                              <label className="text-xs font-medium text-zinc-600">IRPF</label>
                               <select
                                 {...register(`lineas.${index}.irpf`, { valueAsNumber: true })}
-                                className="rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 w-[4.5rem]"
+                                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
                               >
                                 {TIPOS_IRPF.map((t) => (
                                   <option key={t} value={t}>{t}%</option>
@@ -351,16 +353,15 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
                         </>
                       )}
 
-                      {/* Importe + botón eliminar alineados a la derecha */}
                       <div className="flex items-end gap-2 ml-auto">
-                        <span className="text-sm font-semibold text-stone-700 pb-2 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-zinc-700 pb-2 whitespace-nowrap">
                           {fmt(base)}
                         </span>
                         <button
                           type="button"
                           onClick={() => eliminarLinea(index)}
                           disabled={fields.length === 1}
-                          className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                           aria-label="Eliminar línea"
                         >
                           <Trash2 size={16} />
@@ -377,24 +378,23 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
               Añadir concepto
             </Button>
 
-            {/* Totales */}
             {esFinanciero && (
-              <div className="border-t border-stone-200 pt-4 space-y-1.5">
-                <div className="flex justify-between text-sm text-stone-600">
+              <div className="border-t border-zinc-200 pt-4 space-y-1.5">
+                <div className="flex justify-between text-sm text-zinc-600">
                   <span>Base imponible</span>
                   <span>{fmt(totales.baseImponible)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-stone-600">
+                <div className="flex justify-between text-sm text-zinc-600">
                   <span>IVA</span>
                   <span>+ {fmt(totales.totalIva)}</span>
                 </div>
                 {mostrarIrpf && totales.totalIrpf > 0 && (
-                  <div className="flex justify-between text-sm text-stone-600">
+                  <div className="flex justify-between text-sm text-zinc-600">
                     <span>IRPF</span>
                     <span>− {fmt(totales.totalIrpf)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-base font-semibold text-stone-900 pt-1.5 border-t border-stone-200">
+                <div className="flex justify-between text-base font-semibold text-zinc-900 pt-1.5 border-t border-zinc-200">
                   <span>TOTAL</span>
                   <span>{fmt(totales.total)}</span>
                 </div>
@@ -408,7 +408,7 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
               <h2 className={cardTitle}>Forma de pago</h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-stone-600">Método de pago</label>
+                  <label className="text-xs font-medium text-zinc-600">Método de pago</label>
                   <select {...register('formaPago.metodo')} className={selectCls}>
                     <option value="transferencia">Transferencia bancaria</option>
                     <option value="bizum">Bizum</option>
@@ -426,7 +426,6 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
                     {...register('formaPago.cuenta')}
                   />
                 )}
-
                 {metodoPago === 'bizum' && (
                   <FormField
                     label="Teléfono Bizum"
@@ -435,7 +434,6 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
                     {...register('formaPago.telefono')}
                   />
                 )}
-
                 {metodoPago === 'paypal' && (
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -454,7 +452,6 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
                     />
                   </div>
                 )}
-
                 {metodoPago === 'otro' && (
                   <TextAreaField
                     label="Detalle"
@@ -480,18 +477,12 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
 
         </div>
 
-        {/* ── COLUMNA DERECHA — Preview estática ────────────────────────────── */}
+        {/* ── COLUMNA DERECHA — Preview estática ───────────────────────────── */}
         <div className="hidden xl:flex flex-col sticky top-24 h-fit">
-          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400 mb-3">
             Vista previa en tiempo real
           </p>
-          {/*
-            DocumentPreview tiene width: 210mm (~794px).
-            La columna tiene ~640-700px disponibles según el viewport.
-            Usamos zoom CSS para escalar → reduce tanto el rendering como el
-            espacio en layout, y centrar con margin:auto.
-          */}
-          <div className="overflow-hidden rounded-xl shadow-lg border border-stone-200 bg-white flex justify-center">
+          <div className="overflow-hidden rounded-xl shadow-lg border border-zinc-200 bg-white flex justify-center">
             <div style={{ zoom: 0.82 }}>
               <DocumentPreview documento={documento} totales={totales} />
             </div>
@@ -500,7 +491,7 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
 
       </div>
 
-      {/* ── Modal de vista previa ──────────────────────────────────────────── */}
+      {/* ── Modal ────────────────────────────────────────────────────────── */}
       {modalAbierto && (
         <PreviewModal
           documento={documento}

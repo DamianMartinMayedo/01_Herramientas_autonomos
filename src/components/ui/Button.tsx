@@ -8,11 +8,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
 }
 
-const variants = {
-  primary: 'bg-teal-700 text-white hover:bg-teal-800 active:bg-teal-900',
-  secondary: 'bg-white border border-stone-300 text-stone-800 hover:bg-stone-50',
-  ghost: 'text-stone-600 hover:bg-stone-100 hover:text-stone-900',
-  danger: 'text-red-600 hover:bg-red-50 border border-red-200',
+const variantBase = {
+  primary:   'text-white',
+  secondary: 'bg-white border border-zinc-300 text-zinc-800 hover:bg-zinc-50',
+  ghost:     'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900',
+  danger:    'text-red-600 hover:bg-red-50 border border-red-200',
 }
 
 const sizes = {
@@ -28,18 +28,25 @@ export function Button({
   children,
   className,
   disabled,
+  style,
   ...props
 }: ButtonProps) {
+  const primaryStyle =
+    variant === 'primary'
+      ? { backgroundColor: 'var(--tool-dark, #18181b)', ...style }
+      : style
+
   return (
     <button
       className={cn(
         'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 focus-visible:outline-offset-2',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        variants[variant],
+        variantBase[variant],
         sizes[size],
         className
       )}
+      style={primaryStyle}
       disabled={disabled || loading}
       {...props}
     >
