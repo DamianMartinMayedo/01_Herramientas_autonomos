@@ -80,7 +80,7 @@ export function HomePage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-5">
+      <main className="max-w-5xl mx-auto px-4 pt-0 pb-14">
 
         {/* ── Hero banner ──────────────────────────────────────────────── */}
         <section className="py-16  md:py-5 md:pb-10">
@@ -201,7 +201,7 @@ export function HomePage() {
       <footer className="border-t border-zinc-100 dark:border-zinc-900">
         <div className="max-w-5xl mx-auto px-5 py-6 text-center">
           <p className="text-xs text-zinc-400 dark:text-zinc-600">
-            © {new Date().getFullYear()} HerramientasAutonomos.es — Herramientas gratuitas para autónomos en España
+           © {new Date().getFullYear()} HerramientasAutonomos.es — Herramientas para autónomos en España
           </p>
         </div>
       </footer>
