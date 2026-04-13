@@ -59,7 +59,7 @@ export function HomePage() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-200">
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
+      {/* Header */}
       <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
@@ -75,17 +75,17 @@ export function HomePage() {
         </div>
       </header>
 
-      {/* ── Main ─────────────────────────────────────────────────────────── */}
+      {/* Main */}
       <main className="max-w-4xl mx-auto px-4 py-14">
 
         <div className="mb-12">
           <h1
-            className="text-5xl font-bold text-zinc-900 dark:text-zinc-50 mb-3 leading-tight"
+            className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mb-3 leading-tight"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Herramientas para autónomos
           </h1>
-          <p className="text-zinc-00 dark:text-zinc-400 text-xl">
+          <p className="text-zinc-500 dark:text-zinc-400 text-base">
             Todo lo que necesitas a tu alcance
           </p>
         </div>
@@ -146,7 +146,7 @@ export function HomePage() {
         </div>
       </main>
 
-      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      {/* Footer */}
       <footer className="border-t border-zinc-100 dark:border-zinc-900 mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6 text-center">
           <p className="text-xs text-zinc-400 dark:text-zinc-600">
