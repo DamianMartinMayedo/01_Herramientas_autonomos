@@ -4,7 +4,7 @@ export function FacturaPage() {
   return (
     <DocumentEngine
       tipo="factura"
-      titulo="Generador de facturas"
+      titulo="Facturas"
       toolClass="tool-factura"
     />
   )

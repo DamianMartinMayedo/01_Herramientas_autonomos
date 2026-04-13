@@ -6,7 +6,7 @@ const HERRAMIENTAS = [
   {
     href: '/factura',
     icon: FileText,
-    titulo: 'Generador de facturas',
+    titulo: 'Facturas',
     desc: 'Crea facturas con IVA e IRPF y descárgalas en PDF al instante.',
     activa: true,
     colorDark: '#1e3a5f',
@@ -17,7 +17,7 @@ const HERRAMIENTAS = [
   {
     href: '/presupuesto',
     icon: FileText,
-    titulo: 'Generador de presupuestos',
+    titulo: 'Presupuestos',
     desc: 'Envía presupuestos profesionales a tus clientes en minutos.',
     activa: true,
     colorDark: '#14532d',

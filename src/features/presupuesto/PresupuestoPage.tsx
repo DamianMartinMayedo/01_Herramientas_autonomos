@@ -4,7 +4,7 @@ export function PresupuestoPage() {
   return (
     <DocumentEngine
       tipo="presupuesto"
-      titulo="Generador de presupuestos"
+      titulo="Presupuestos"
       toolClass="tool-presupuesto"
     />
   )
