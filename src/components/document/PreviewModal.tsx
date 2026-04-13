@@ -23,8 +23,8 @@ export function PreviewModal({ documento, totales, onClose }: PreviewModalProps)
     setGenerando(true)
     setError(null)
     try {
-      const nombre = `${documento.numero} — ${documento.emisor.nombre}`
-      await descargarPdf(previewRef.current, nombre)
+      // El nombre del archivo PDF es siempre el número del documento
+      await descargarPdf(previewRef.current, documento.numero)
     } catch (e) {
       console.error(e)
       setError('No se pudo abrir el diálogo de impresión. Inténtalo de nuevo.')
