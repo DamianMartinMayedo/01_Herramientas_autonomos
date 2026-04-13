@@ -29,7 +29,15 @@ export function abrirVistaImpresion(element: HTMLElement, titulo: string): void 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    @page { size: A4; margin: 0; }
+    /*
+      A4 real: 210mm x 297mm.
+      Margin de 10mm en todos los lados al imprimir,
+      el documento ya incluye su propio padding interno (p-10).
+    */
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
 
     body {
       background: #f5f5f4;
@@ -75,11 +83,21 @@ export function abrirVistaImpresion(element: HTMLElement, titulo: string): void 
       font-size: 14px;
     }
 
-    /* Al imprimir: ocultar barra, fondo blanco */
+    /* Al imprimir: ocultar barra, fondo blanco, sin padding exterior */
     @media print {
       .barra { display: none !important; }
       body { background: white; }
       .contenedor { padding: 0 !important; }
+      /* El documento ocupa exactamente el área imprimible */
+      .doc-wrapper {
+        box-shadow: none !important;
+        width: 100% !important;
+      }
+      /* Forzar que el div raiz del documento use todo el espacio A4 */
+      .doc-wrapper > div {
+        width: 100% !important;
+        height: 100% !important;
+      }
     }
   </style>
 </head>
@@ -93,13 +111,13 @@ export function abrirVistaImpresion(element: HTMLElement, titulo: string): void 
       </p>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn-cerrar" onclick="window.close()">✕ Cerrar</button>
-      <button class="btn-pdf" onclick="window.print()">⬇ Guardar como PDF</button>
+      <button class="btn-cerrar" onclick="window.close()">&#x2715; Cerrar</button>
+      <button class="btn-pdf" onclick="window.print()">&#x2B07; Guardar como PDF</button>
     </div>
   </div>
 
   <div class="contenedor" style="padding:32px;display:flex;justify-content:center;">
-    <div style="box-shadow:0 4px 32px rgba(0,0,0,0.12);">
+    <div class="doc-wrapper" style="box-shadow:0 4px 32px rgba(0,0,0,0.12);">
       ${contenido}
     </div>
   </div>
