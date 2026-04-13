@@ -4,6 +4,7 @@
  * Lo usan: FacturaPage, PresupuestoPage, AlbaranPage
  */
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDocumentEngine } from '../../hooks/useDocumentEngine'
 import type { DocumentoBase, MetodoPago } from '../../types/document.types'
 import { TIPOS_IVA, TIPOS_IRPF } from '../../types/document.types'
@@ -13,7 +14,7 @@ import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { calcularLinea } from '../../utils/calculos'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Eye, Save } from 'lucide-react'
+import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft } from 'lucide-react'
 
 // Título de la sección de encabezado según el tipo de documento
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
@@ -29,6 +30,8 @@ interface DocumentEngineProps {
 
 export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [savedFeedback, setSavedFeedback] = useState(false)
+  const navigate = useNavigate()
 
   const {
     form,
@@ -49,6 +52,13 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
   // Valida el form antes de abrir el modal
   const handleAbrirPrevia = form.handleSubmit(() => setModalAbierto(true))
 
+  // Guarda datos del emisor y muestra feedback temporal
+  const handleGuardarEmisor = () => {
+    guardarEmisor()
+    setSavedFeedback(true)
+    setTimeout(() => setSavedFeedback(false), 2500)
+  }
+
   // Clases reutilizables para secciones tipo card
   const card = 'bg-white rounded-xl border border-stone-200 p-5 space-y-4 shadow-sm'
   const cardTitle = 'text-xs font-semibold uppercase tracking-widest text-stone-400'
@@ -61,9 +71,28 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 bg-white border-b border-stone-200 px-6 py-3 flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold text-stone-900">{titulo}</h1>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={guardarEmisor} type="button">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-teal-700 transition-colors"
+            aria-label="Volver al inicio"
+          >
+            <ChevronLeft size={16} />
+            <span className="hidden sm:inline">Todas las herramientas</span>
+          </button>
+          <span className="text-stone-300 select-none">|</span>
+          <h1 className="text-xl font-semibold text-stone-900">{titulo}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Feedback toast inline */}
+          {savedFeedback && (
+            <span className="flex items-center gap-1.5 text-sm text-teal-700 font-medium animate-fade-in">
+              <CheckCircle2 size={16} className="text-teal-600" />
+              Datos guardados
+            </span>
+          )}
+          <Button variant="secondary" onClick={handleGuardarEmisor} type="button">
             <Save size={16} />
             Guardar mis datos
           </Button>
