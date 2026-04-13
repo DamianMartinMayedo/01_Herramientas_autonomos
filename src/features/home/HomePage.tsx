@@ -1,19 +1,8 @@
 import { Link } from 'react-router-dom'
-import { FileText, Calculator, ArrowRight, Wrench, Zap } from 'lucide-react'
+import { FileText, Calculator, ArrowRight, Wrench, AlertTriangle } from 'lucide-react'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 
 const HERRAMIENTAS = [
-  {
-    href: '/factura',
-    icon: FileText,
-    titulo: 'Generador de facturas',
-    desc: 'Crea facturas con IVA e IRPF y descárgalas en PDF al instante.',
-    activa: true,
-    colorDark: '#1e3a5f',
-    colorLight: '#dbeafe',
-    colorMid: '#3b82f6',
-    tag: 'Documentos',
-  },
   {
     href: '/presupuesto',
     icon: FileText,
@@ -24,6 +13,19 @@ const HERRAMIENTAS = [
     colorLight: '#dcfce7',
     colorMid: '#22c55e',
     tag: 'Documentos',
+    disclaimer: null,
+  },
+  {
+    href: '/factura',
+    icon: FileText,
+    titulo: 'Plantilla de factura',
+    desc: 'Plantilla de referencia para uso interno (no válida fiscalmente).',
+    activa: true,
+    colorDark: '#1e3a5f',
+    colorLight: '#dbeafe',
+    colorMid: '#3b82f6',
+    tag: 'Plantilla',
+    disclaimer: 'Esta plantilla no tiene validez fiscal en España. Es solo para referencia interna. Para facturación legal, consulta con tu gestor o usa software certificado Verifactu.',
   },
   {
     href: '/cuota-autonomos',
@@ -35,6 +37,7 @@ const HERRAMIENTAS = [
     colorLight: '#fef3c7',
     colorMid: '#f59e0b',
     tag: 'Calculadoras',
+    disclaimer: null,
   },
   {
     href: '/precio-hora',
@@ -46,6 +49,7 @@ const HERRAMIENTAS = [
     colorLight: '#ede9fe',
     colorMid: '#8b5cf6',
     tag: 'Calculadoras',
+    disclaimer: null,
   },
   {
     href: '/iva-irpf',
@@ -57,17 +61,18 @@ const HERRAMIENTAS = [
     colorLight: '#ffe4e6',
     colorMid: '#f43f5e',
     tag: 'Calculadoras',
+    disclaimer: null,
   },
 ] as const
 
 export function HomePage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-zinc-950">
 
-      {/* ── Header ───────────────────────────────────────────────────── */}
-      <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
             <Wrench className="w-4 h-4 text-zinc-400" />
             <span
               className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight text-sm"
@@ -80,128 +85,123 @@ export function HomePage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 pt-0 pb-14">
+      {/* ── Hero banner ───────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+        {/* Decoración de fondo */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.08),transparent_50%)]" />
+        
+        <div className="relative max-w-4xl mx-auto px-4 py-16 text-center">
+          <div className="inline-flex items-center gap-2 bg-zinc-800/50 dark:bg-zinc-900/50 border border-zinc-700 dark:border-zinc-800 rounded-full px-4 py-1.5 mb-6">
+            <span className="text-xs text-zinc-400">Sin registro · Sin instalación</span>
+          </div>
 
-        {/* ── Hero banner ──────────────────────────────────────────────── */}
-        <section className="py-16  md:py-5 md:pb-10">
-          <div
-            className="rounded-2xl px-8 py-12 md:px-14 md:py-16 relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1d4ed8 100%)',
-            }}
+          <h1
+            className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight"
+            style={{ fontFamily: 'var(--font-display)' }}
           >
-            {/* Decoración de fondo */}
-            <div
-              className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-10"
-              style={{ background: 'radial-gradient(circle, #60a5fa, transparent)' }}
-            />
-            <div
-              className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full opacity-10"
-              style={{ background: 'radial-gradient(circle, #34d399, transparent)' }}
-            />
+            Presupuestos profesionales
+            <br />
+            <span className="text-blue-400">y herramientas de gestión</span>
+          </h1>
 
-            <div className="relative z-10 max-w-2xl">
-              <div className="inline-flex items-center gap-2 bg-white/10 text-white/80 text-xs font-medium px-3 py-1.5 rounded-full mb-6">
-                <Zap className="w-3.5 h-3.5" />
-                    Sin registro · Sin base de datos
-              </div>
-              <h1
-                className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight"
-                style={{ fontFamily: 'var(--font-display)' }}
+          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+            Crea presupuestos, calcula costes y gestiona tu negocio de forma sencilla.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Grid de herramientas ──────────────────────────────────────── */}
+      <main className="max-w-4xl mx-auto px-4 py-14">
+        <h2
+          className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          Herramientas disponibles
+        </h2>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {HERRAMIENTAS.map((h) => {
+            const Icon = h.icon
+
+            const card = (
+              <div
+                className={[
+                  'rounded-xl border p-5 group transition-all duration-200 relative',
+                  h.activa
+                    ? 'cursor-pointer bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-md hover:-translate-y-0.5'
+                    : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-900 opacity-50',
+                ].join(' ')}
               >
-                Todo lo que necesitas<br />como autónomo,<br />
-                <span className="text-blue-300">sin complicaciones.</span>
-              </h1>
-              <p className="text-white/60 text-base md:text-lg leading-relaxed">
-                Facturas, presupuestos, calculadoras y más.
-                
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Grid de herramientas ─────────────────────────────────────── */}
-        <section className="pb-20">
-          <h2
-            className="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-6"
-          >
-            Herramientas disponibles
-          </h2>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {HERRAMIENTAS.map((h) => {
-              const Icon = h.icon
-
-              const card = (
-                <div
-                  className={[
-                    'rounded-2xl border p-6 group transition-all duration-200 flex flex-col',
-                    h.activa
-                      ? 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
-                      : 'bg-zinc-50 dark:bg-zinc-900/40 border-zinc-100 dark:border-zinc-900 opacity-50 select-none',
-                  ].join(' ')}
-                >
-                  {/* Icono + tag */}
-                  <div className="flex items-start justify-between mb-5">
-                    <div
-                      className="w-5 h-5 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: h.colorLight + (h.activa ? '40' : '20') }}
-                    >
-                      <Icon className="w-10 h-10" style={{ color: h.colorMid }} />
+                {/* Disclaimer icon (solo para factura) */}
+                {h.disclaimer && (
+                  <div className="absolute top-3 right-3 group/tooltip">
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                    <div className="invisible group-hover/tooltip:visible absolute right-0 top-8 w-64 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-lg shadow-lg z-10">
+                      <p className="text-xs text-amber-900 dark:text-amber-100 leading-relaxed">
+                        {h.disclaimer}
+                      </p>
                     </div>
-                    <span
-                      className="text-xs font-medium px-2.5 py-1 rounded-full"
-                      style={{
-                        backgroundColor: h.colorLight + '40',
-                        color: h.colorDark,
-                      }}
-                    >
-                      {h.activa ? h.tag : 'Próximamente'}
-                    </span>
                   </div>
+                )}
 
-                  {/* Título */}
-                  <h3
-                    className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 leading-snug"
-                    style={{ fontFamily: 'var(--font-display)' }}
+                {/* Icono con color de herramienta */}
+                <div className="flex items-start justify-between mb-4">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: h.colorLight + '18' }}
                   >
-                    {h.titulo}
-                  </h3>
-
-                  {/* Descripción */}
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed flex-1">
-                    {h.desc}
-                  </p>
-
-                  {/* CTA */}
-                  {h.activa && (
-                    <div
-                      className="mt-5 flex items-center gap-1.5 text-sm font-semibold group-hover:gap-2.5 transition-all duration-150"
+                    <Icon
+                      className="w-5 h-5"
                       style={{ color: h.colorMid }}
-                    >
-                      Ir a la herramienta
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  )}
+                    />
+                  </div>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{
+                      backgroundColor: h.colorLight + '30',
+                      color: h.colorMid,
+                    }}
+                  >
+                    {h.activa ? h.tag : 'Próximamente'}
+                  </span>
                 </div>
-              )
 
-              return h.activa ? (
-                <Link key={h.href} to={h.href} className="block">{card}</Link>
-              ) : (
-                <div key={h.href}>{card}</div>
-              )
-            })}
-          </div>
-        </section>
+                {/* Texto */}
+                <h3
+                  className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  {h.titulo}
+                </h3>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{h.desc}</p>
 
+                {/* CTA */}
+                {h.activa && (
+                  <div
+                    className="mt-4 flex items-center gap-1.5 text-sm font-medium group-hover:gap-2.5 transition-all duration-150"
+                    style={{ color: h.colorMid }}
+                  >
+                    Ir a la herramienta
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                )}
+              </div>
+            )
+
+            return h.activa ? (
+              <Link key={h.href} to={h.href}>{card}</Link>
+            ) : (
+              <div key={h.href}>{card}</div>
+            )
+          })}
+        </div>
       </main>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <footer className="border-t border-zinc-100 dark:border-zinc-900">
-        <div className="max-w-5xl mx-auto px-5 py-6 text-center">
-          <p className="text-xs text-zinc-400 dark:text-zinc-600">
-           © {new Date().getFullYear()} HerramientasAutonomos.es — Herramientas para autónomos en España
+      <footer className="border-t border-zinc-200 dark:border-zinc-900 mt-16">
+        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
+          <p className="text-xs text-zinc-500 dark:text-zinc-600">
+            © {new Date().getFullYear()} HerramientasAutonomos.es — Herramientas para autónomos en España
           </p>
         </div>
       </footer>
