@@ -456,8 +456,16 @@ export function DocumentEngine({ tipo, titulo }: DocumentEngineProps) {
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">
             Vista previa en tiempo real
           </p>
-          <div className="overflow-auto rounded-xl shadow-lg border border-stone-200">
-            <DocumentPreview documento={documento} totales={totales} />
+          {/*
+            DocumentPreview tiene width: 210mm (~794px).
+            La columna tiene ~640-700px disponibles según el viewport.
+            Usamos zoom CSS para escalar → reduce tanto el rendering como el
+            espacio en layout, y centrar con margin:auto.
+          */}
+          <div className="overflow-hidden rounded-xl shadow-lg border border-stone-200 bg-white flex justify-center">
+            <div style={{ zoom: 0.82 }}>
+              <DocumentPreview documento={documento} totales={totales} />
+            </div>
           </div>
         </div>
 

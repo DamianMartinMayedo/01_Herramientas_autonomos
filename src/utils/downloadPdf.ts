@@ -1,111 +1,105 @@
 /**
  * downloadPdf.ts
  *
- * PROBLEMA RESUELTO: html2canvas no soporta oklch() (Tailwind v4 lo usa).
+ * html2canvas no soporta oklch() y Tailwind v4 lo usa en todo.
+ * Solución definitiva: iframe oculto → print nativo del navegador.
  *
- * SOLUCIÓN en dos pasos dentro de onclone():
- *  1. Inline de todos los colores como RGB: getComputedStyle() siempre devuelve
- *     rgb(), aunque el CSS use oklch(). Así html2canvas ve solo RGB.
- *  2. Eliminar hojas de estilo que contengan oklch para que el parser interno
- *     de html2canvas no las procese.
+ * Ventajas sobre html2canvas:
+ *  - El motor de print del navegador entiende oklch perfectamente
+ *  - Sin dependencias externas (html2canvas / jsPDF)
+ *  - El PDF generado es vectorial (texto seleccionable, sin artefactos JPEG)
+ *  - Sin popup blocker (iframe está en la misma página)
  *
- * El clone se inserta fuera de pantalla (no dentro de hidden xl:flex)
- * para que html2canvas lo vea como elemento visible.
+ * Flujo:
+ *  1. Serializar el HTML del elemento + estilos inline actuales
+ *  2. Crear un blob HTML con @media print que oculta cualquier UI extra
+ *  3. Inyectar un iframe oculto con ese blob
+ *  4. Cuando carga, llamar a contentWindow.print()
+ *  5. Limpiar el iframe tras un timeout
  */
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
 
-const COLOR_PROPS = [
-  'color',
-  'background-color',
-  'border-top-color',
-  'border-right-color',
-  'border-bottom-color',
-  'border-left-color',
-  'outline-color',
-  'text-decoration-color',
-]
+/** Construye el HTML completo de la página de impresión. */
+function buildPrintHtml(element: HTMLElement, titulo: string): string {
+  // Recoger todas las hojas de estilo del documento actual
+  const styleLinks = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+    .map((l) => `<link rel="stylesheet" href="${l.href}">`)
+    .join('\n')
 
-/** Inlinea los colores computados (RGB) de cada elemento para que
- *  el parser de html2canvas nunca encuentre oklch. */
-function inlineRgbColors(el: HTMLElement, win: Window): void {
-  const cs = win.getComputedStyle(el)
-  COLOR_PROPS.forEach(prop => {
-    const val = cs.getPropertyValue(prop)
-    if (val) el.style.setProperty(prop, val)
-  })
+  const inlineStyles = Array.from(document.querySelectorAll('style'))
+    .map((s) => `<style>${s.textContent}</style>`)
+    .join('\n')
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>${titulo}</title>
+  ${styleLinks}
+  ${inlineStyles}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    @page { size: A4; margin: 0; }
+    html, body {
+      margin: 0; padding: 0;
+      background: white;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  </style>
+</head>
+<body>
+  ${element.outerHTML}
+</body>
+</html>`
 }
 
 export async function descargarPdf(
   element: HTMLElement,
   filename: string
 ): Promise<void> {
-  // Clonar fuera del árbol visible (evita el problema de display:none en padre)
-  const clone = element.cloneNode(true) as HTMLElement
-  Object.assign(clone.style, {
-    position: 'fixed',
-    top: '0',
-    left: '-9999px',
-    width: '794px',   // 210mm a 96dpi
-    background: 'white',
-    zIndex: '-1',
-    visibility: 'visible',
-    display: 'block',
-  })
-  document.body.appendChild(clone)
+  return new Promise((resolve, reject) => {
+    const html = buildPrintHtml(element, filename)
+    const blob = new Blob([html], { type: 'text/html; charset=utf-8' })
+    const url = URL.createObjectURL(blob)
 
-  try {
-    const canvas = await html2canvas(clone, {
-      scale: 2,
-      useCORS: true,
-      letterRendering: true,
-      windowWidth: 794,
-      backgroundColor: '#ffffff',
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;'
+    document.body.appendChild(iframe)
 
-      onclone: (clonedDoc, clonedEl) => {
-        const win = clonedDoc.defaultView ?? window
+    const cleanup = () => {
+      URL.revokeObjectURL(url)
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+      resolve()
+    }
 
-        // PASO 1 — Inline todos los colores como RGB
-        const all = [clonedEl, ...Array.from(clonedEl.querySelectorAll<HTMLElement>('*'))]
-        all.forEach(el => inlineRgbColors(el, win))
+    iframe.onload = () => {
+      try {
+        const win = iframe.contentWindow
+        if (!win) { cleanup(); return }
 
-        // PASO 2 — Eliminar stylesheets con oklch (variables Tailwind v4)
-        Array.from(clonedDoc.styleSheets).forEach(sheet => {
+        // Esperar a que los estilos se apliquen antes de imprimir
+        setTimeout(() => {
           try {
-            const hasOklch = Array.from(sheet.cssRules ?? []).some(r =>
-              r.cssText.includes('oklch')
-            )
-            if (hasOklch) sheet.ownerNode?.parentNode?.removeChild(sheet.ownerNode)
-          } catch {
-            // Cross-origin — no se puede leer, se deja
+            win.focus()
+            win.print()
+            // Limpiar después de que el diálogo se cierre (estimado)
+            setTimeout(cleanup, 1000)
+          } catch (e) {
+            cleanup()
+            reject(e)
           }
-        })
-      },
-    })
-
-    const imgData = canvas.toDataURL('image/jpeg', 0.97)
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-    const pdfW = pdf.internal.pageSize.getWidth()   // 210
-    const pdfH = pdf.internal.pageSize.getHeight()  // 297
-    const imgH = (canvas.height * pdfW) / canvas.width
-
-    if (imgH <= pdfH) {
-      // Una sola página
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, imgH)
-    } else {
-      // Multipágina
-      let offset = 0
-      let page = 0
-      while (offset < imgH) {
-        if (page > 0) pdf.addPage()
-        pdf.addImage(imgData, 'JPEG', 0, -offset, pdfW, imgH)
-        offset += pdfH
-        page++
+        }, 500)
+      } catch (e) {
+        cleanup()
+        reject(e)
       }
     }
 
-    pdf.save(`${filename}.pdf`)
-  } finally {
-    document.body.removeChild(clone)
-  }
+    iframe.onerror = () => {
+      cleanup()
+      reject(new Error('No se pudo cargar el iframe de impresión'))
+    }
+
+    iframe.src = url
+  })
 }
