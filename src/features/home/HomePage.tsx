@@ -80,13 +80,13 @@ export function HomePage() {
 
         <div className="mb-12">
           <h1
-            className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mb-3 leading-tight"
+            className="text-5xl font-bold text-zinc-900 dark:text-zinc-50 mb-3 leading-tight"
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            Herramientas gratuitas<br />para autónomos
+            Herramientas para autónomos
           </h1>
-          <p className="text-zinc-500 dark:text-zinc-400 text-base">
-            Sin registro. Sin bases de datos. Directo al grano.
+          <p className="text-zinc-00 dark:text-zinc-400 text-xl">
+            Todo lo que necesitas a tu alcance
           </p>
         </div>
 
