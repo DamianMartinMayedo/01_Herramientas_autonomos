@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { FileText, Calculator, ArrowRight, Wrench } from 'lucide-react'
+import { ThemeToggle } from '../../components/ui/ThemeToggle'
 
 const HERRAMIENTAS = [
   {
@@ -56,18 +57,21 @@ const HERRAMIENTAS = [
 
 export function HomePage() {
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-200">
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2.5">
-          <Wrench className="w-4 h-4 text-zinc-400" />
-          <span
-            className="font-semibold text-zinc-100 tracking-tight text-sm"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            HerramientasAutonomos.es
-          </span>
+      <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <Wrench className="w-4 h-4 text-zinc-400" />
+            <span
+              className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight text-sm"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              HerramientasAutonomos.es
+            </span>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -76,12 +80,12 @@ export function HomePage() {
 
         <div className="mb-12">
           <h1
-            className="text-3xl font-bold text-zinc-50 mb-3 leading-tight"
+            className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mb-3 leading-tight"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Herramientas gratuitas<br />para autónomos
           </h1>
-          <p className="text-zinc-400 text-base">
+          <p className="text-zinc-500 dark:text-zinc-400 text-base">
             Sin registro. Sin bases de datos. Directo al grano.
           </p>
         </div>
@@ -95,38 +99,32 @@ export function HomePage() {
                 className={[
                   'rounded-xl border p-5 group transition-all duration-200',
                   h.activa
-                    ? 'cursor-pointer bg-zinc-900 border-zinc-800 hover:border-zinc-600'
-                    : 'bg-zinc-900/50 border-zinc-900 opacity-50',
+                    ? 'cursor-pointer bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600'
+                    : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-900 opacity-50',
                 ].join(' ')}
               >
-                {/* Icono con color de herramienta */}
                 <div className="flex items-start justify-between mb-4">
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: h.colorLight + '18' }}
+                    style={{ backgroundColor: h.colorLight + '30' }}
                   >
-                    <Icon
-                      className="w-4 h-4"
-                      style={{ color: h.colorMid }}
-                    />
+                    <Icon className="w-4 h-4" style={{ color: h.colorMid }} />
                   </div>
                   {!h.activa && (
-                    <span className="text-xs bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 px-2 py-0.5 rounded-full">
                       Próximamente
                     </span>
                   )}
                 </div>
 
-                {/* Texto */}
                 <h2
-                  className="text-sm font-semibold text-zinc-100 mb-1.5"
+                  className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1.5"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
                   {h.titulo}
                 </h2>
-                <p className="text-xs text-zinc-500 leading-relaxed">{h.desc}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">{h.desc}</p>
 
-                {/* CTA */}
                 {h.activa && (
                   <div
                     className="mt-4 flex items-center gap-1 text-xs font-medium group-hover:gap-2 transition-all duration-150"
@@ -149,9 +147,9 @@ export function HomePage() {
       </main>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <footer className="border-t border-zinc-900 mt-16">
+      <footer className="border-t border-zinc-100 dark:border-zinc-900 mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-zinc-400 dark:text-zinc-600">
             © {new Date().getFullYear()} HerramientasAutonomos.es — Herramientas gratuitas para autónomos en España
           </p>
         </div>

@@ -12,6 +12,7 @@ import { DocumentPreview } from './DocumentPreview'
 import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
+import { ThemeToggle } from '../ui/ThemeToggle'
 import { calcularLinea } from '../../utils/calculos'
 import { validarNif } from '../../utils/validarNif'
 import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft } from 'lucide-react'
@@ -57,30 +58,31 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
     setTimeout(() => setSavedFeedback(false), 2500)
   }
 
-  const card = 'bg-white rounded-xl border border-zinc-200 p-5 space-y-4 shadow-sm'
-  const cardTitle = 'text-xs font-semibold uppercase tracking-widest text-zinc-400'
+  const card = 'bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-5 space-y-4 shadow-sm'
+  const cardTitle = 'text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500'
   const selectCls =
-    'w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white ' +
+    'w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm ' +
+    'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 ' +
     'focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)]'
 
   return (
-    <div className={`min-h-screen bg-zinc-50 ${toolClass}`}>
+    <div className={`min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-200 ${toolClass}`}>
 
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 px-6 py-3 flex items-center justify-between gap-4">
+      <div className="sticky top-0 z-10 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
             aria-label="Volver al inicio"
           >
             <ChevronLeft size={16} />
             <span className="hidden sm:inline">Todas las herramientas</span>
           </button>
-          <span className="text-zinc-300 select-none">|</span>
+          <span className="text-zinc-300 dark:text-zinc-700 select-none">|</span>
           <h1
-            className="text-xl font-bold text-zinc-900"
+            className="text-xl font-bold text-zinc-900 dark:text-zinc-100"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             {titulo}
@@ -105,6 +107,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             <Eye size={16} />
             Vista previa y exportar
           </Button>
+          <ThemeToggle />
         </div>
       </div>
 
@@ -268,11 +271,11 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             <div className="flex items-center justify-between">
               <h2 className={cardTitle}>Conceptos</h2>
               {esFinanciero && (
-                <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
+                <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     {...register('mostrarIrpf')}
-                    className="rounded border-zinc-300"
+                    className="rounded border-zinc-300 dark:border-zinc-600"
                   />
                   Incluir IRPF
                 </label>
@@ -287,7 +290,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                 return (
                   <div
                     key={field.id}
-                    className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 space-y-3"
+                    className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 space-y-3"
                   >
                     <FormField
                       label="Descripción"
@@ -326,10 +329,10 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                       {esFinanciero && (
                         <>
                           <div className="flex flex-col gap-1">
-                            <label className="text-xs font-medium text-zinc-600">IVA</label>
+                            <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">IVA</label>
                             <select
                               {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
-                              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
+                              className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
                             >
                               {TIPOS_IVA.map((t) => (
                                 <option key={t} value={t}>{t}%</option>
@@ -339,10 +342,10 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
                           {mostrarIrpf && (
                             <div className="flex flex-col gap-1">
-                              <label className="text-xs font-medium text-zinc-600">IRPF</label>
+                              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">IRPF</label>
                               <select
                                 {...register(`lineas.${index}.irpf`, { valueAsNumber: true })}
-                                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
+                                className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
                               >
                                 {TIPOS_IRPF.map((t) => (
                                   <option key={t} value={t}>{t}%</option>
@@ -354,14 +357,14 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                       )}
 
                       <div className="flex items-end gap-2 ml-auto">
-                        <span className="text-sm font-semibold text-zinc-700 pb-2 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 pb-2 whitespace-nowrap">
                           {fmt(base)}
                         </span>
                         <button
                           type="button"
                           onClick={() => eliminarLinea(index)}
                           disabled={fields.length === 1}
-                          className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                           aria-label="Eliminar línea"
                         >
                           <Trash2 size={16} />
@@ -379,22 +382,22 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </Button>
 
             {esFinanciero && (
-              <div className="border-t border-zinc-200 pt-4 space-y-1.5">
-                <div className="flex justify-between text-sm text-zinc-600">
+              <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 space-y-1.5">
+                <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
                   <span>Base imponible</span>
                   <span>{fmt(totales.baseImponible)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-zinc-600">
+                <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
                   <span>IVA</span>
                   <span>+ {fmt(totales.totalIva)}</span>
                 </div>
                 {mostrarIrpf && totales.totalIrpf > 0 && (
-                  <div className="flex justify-between text-sm text-zinc-600">
+                  <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
                     <span>IRPF</span>
                     <span>− {fmt(totales.totalIrpf)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-base font-semibold text-zinc-900 pt-1.5 border-t border-zinc-200">
+                <div className="flex justify-between text-base font-semibold text-zinc-900 dark:text-zinc-100 pt-1.5 border-t border-zinc-200 dark:border-zinc-700">
                   <span>TOTAL</span>
                   <span>{fmt(totales.total)}</span>
                 </div>
@@ -408,7 +411,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               <h2 className={cardTitle}>Forma de pago</h2>
               <div className="space-y-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-zinc-600">Método de pago</label>
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Método de pago</label>
                   <select {...register('formaPago.metodo')} className={selectCls}>
                     <option value="transferencia">Transferencia bancaria</option>
                     <option value="bizum">Bizum</option>
@@ -479,10 +482,10 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
         {/* ── COLUMNA DERECHA — Preview estática ───────────────────────────── */}
         <div className="hidden xl:flex flex-col sticky top-24 h-fit">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400 mb-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">
             Vista previa en tiempo real
           </p>
-          <div className="overflow-hidden rounded-xl shadow-lg border border-zinc-200 bg-white flex justify-center">
+          <div className="overflow-hidden rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 bg-white flex justify-center">
             <div style={{ zoom: 0.82 }}>
               <DocumentPreview documento={documento} totales={totales} />
             </div>
