@@ -76,7 +76,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
   const sectionLabelStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
     fontWeight: 700,
-    letterSpacing: '0.10em',
+    // letterSpacing: '0.10em',
     textTransform: 'uppercase',
     color: 'var(--color-text-muted)',
     marginBottom: 'var(--space-4)',
@@ -120,23 +120,23 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             aria-label="Volver al inicio"
           >
             <ChevronLeft size={15} />
-            <span className="hidden sm:inline">Todas las herramientas</span>
+            <span className="hidden sm:inline">Volver</span>
           </button>
 
           <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
 
           <h1 style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 'var(--text-base)',
+            fontSize: 'var(--text-lg)',
             fontWeight: 700,
-            letterSpacing: '-0.02em',
+            // letterSpacing: '-0.02em',
             color: 'var(--color-text)',
           }}>
             {titulo}
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           {savedFeedback && (
             <span style={{
               display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
@@ -158,8 +158,8 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </Button>
           )}
           <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
-            <Eye size={14} />
-            Vista previa y exportar
+            
+            Exportar
           </Button>
           <ThemeToggle />
         </div>

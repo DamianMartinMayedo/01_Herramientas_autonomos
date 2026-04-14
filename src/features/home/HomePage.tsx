@@ -68,8 +68,7 @@ export function HomePage() {
       <header className="site-header">
         <div className="site-header-inner">
           <div className="site-logo">
-            <Wrench size={15} style={{ color: 'var(--color-text-faint)' }} />
-            HerramientasAutonomos.es
+            HerramientasAutonomos
           </div>
           <ThemeToggle />
         </div>
@@ -82,20 +81,20 @@ export function HomePage() {
           <div
             className="manifesto-item featured"
             style={
-              {padding: '80px 50px'}
+              {padding: '50px'}
             }
           >
     
 
-            <div style={{ position: 'relative', zIndex: 1, maxWidth: '600px' }}>
-              <div className="badge" style={{
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: '100%' }}>
+              {/* <div className="badge" style={{
                 background: 'rgba(255,255,255,0.12)',
                 color: 'rgba(255,255,255,0.85)',
                 marginBottom: 'var(--space-6)',
               }}>
                 <Zap size={13} />
                 Sin registro · Sin base de datos
-              </div>
+              </div> */}
               <h1 style={{
                 fontFamily: 'var(--font-display)',
                 fontSize: 'var(--text-2xl)',
@@ -103,7 +102,7 @@ export function HomePage() {
                 color: 'white',
                 marginBottom: 'var(--space-5)',
                 lineHeight: 1.15,
-                letterSpacing: '-0.02em',
+                
               }}>
                 Todo lo que necesitas<br />como autónomo,<br />
                 <span style={{ color: 'var(--color-primary-light)' }}>sin complicaciones.</span>

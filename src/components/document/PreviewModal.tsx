@@ -47,7 +47,7 @@ export function PreviewModal({ documento, totales, onClose }: PreviewModalProps)
         {/* Cabecera */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
           <div>
-            <h2 className="text-lg font-semibold text-stone-900">Vista previa</h2>
+            <h2 className="text-lg font-semibold text-stone-900">Exportar</h2>
             <p className="text-sm text-stone-500">
               Al guardar, elige <strong>Guardar como PDF</strong> en el destino de impresión
             </p>

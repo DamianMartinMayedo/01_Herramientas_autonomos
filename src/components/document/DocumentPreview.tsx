@@ -47,7 +47,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             </div>
 
             <div className="text-right space-y-1">
-              <h1 className="text-2xl font-black tracking-tight text-zinc-900">{titulo}</h1>
+              <h1 className="text-xl font-black tracking-tight text-zinc-900">{titulo}</h1>
               <div className="text-xs space-y-0.5">
                 <p>
                   <span className="text-zinc-400">{labelNumero}: </span>
@@ -209,8 +209,8 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
         <div className="absolute bottom-0 left-0 right-0 px-10 pb-6 pt-3 border-t border-zinc-100 text-center">
           <p className="text-[10px] text-zinc-300">
             Creado con{' '}
-            <span className="font-semibold" style={{ color: '#22c55e' }}>HerramientasAutonomos.es</span>
-            {' '}— Herramientas gratuitas para autónomos en España
+            <span className="font-semibold" style={{ color: 'var(--color-primary)' }}>HerramientasAutonomos</span>
+            {' '}— Herramientas para autónomos en España
           </p>
         </div>
 

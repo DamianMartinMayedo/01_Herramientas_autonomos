@@ -43,14 +43,14 @@
   --color-copper-subtle:    #F9F5F1;
 
   /* ── Éxito (verde) ── */
-  --color-success:           #48702E;
+  --color-success:           #53a61c;
   --color-success-hover:     #385921;
   --color-success-active:    #253E14;
   --color-success-highlight: #DBEDCF;
   --color-success-subtle:    #F1F6EE;
 
   /* ── Error ── */
-  --color-error:           #8C2A2A;
+  --color-error:           #9e1818;
   --color-error-highlight: #F0D0D0;
 
   /* ── Tipografías ── */
@@ -123,7 +123,7 @@
 
   --color-primary:           #1A5FC8;
   --color-primary-hover:     #3B78AB;
-  --color-primary-active:    #275F8E;
+  --color-primary-active:    #6BA3E8;
   --color-primary-mid:       #3A7ED8;
   --color-primary-light:     #6BA3E8;
   --color-primary-highlight: #1E3A5C;
@@ -317,9 +317,9 @@ body {
   background-size: 32px 32px;
 }
 
-.card-accent-primary { border-top: 3px solid var(--color-primary); }
-.card-accent-success { border-top: 3px solid var(--color-success); }
-.card-accent-copper  { border-top: 3px solid var(--color-copper);  }
+.card-accent-primary { border-top: 2px solid var(--color-primary); }
+.card-accent-success { border-top: 2px solid var(--color-success); }
+.card-accent-copper  { border-top: 2px solid var(--color-copper);  }
 
 .card-filled-primary {
   background: var(--color-primary);
