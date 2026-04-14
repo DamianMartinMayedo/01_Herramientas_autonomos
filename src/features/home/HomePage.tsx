@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FileText, Calculator, ArrowRight, Wrench, Zap } from 'lucide-react'
+import { FileText, Calculator, ArrowRight, Wrench, Zap, AlertTriangle } from 'lucide-react'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 
 const HERRAMIENTAS = [
@@ -139,7 +139,9 @@ export function HomePage() {
                   }}
                 >
                   {/* Icono + badge */}
+                  
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
+                    
                     <div style={{
                       width: '40px', height: '40px',
                       background: 'var(--color-surface-offset)',
@@ -147,36 +149,77 @@ export function HomePage() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       border: '1.5px solid var(--color-border)',
                     }}>
+                      
                       <Icon size={18} style={{ color: h.ctaColor }} />
                     </div>
+                    
                     <span className={`badge ${h.badgeClass}`}>
                       {h.activa ? h.tag : 'Próximamente'}
                     </span>
                   </div>
 
                   {/* Título */}
-                  <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>
-                    {h.titulo}
+                  
+                  <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }} >
+                    {h.titulo} 
+                    
                   </h3>
-
+                  
                   {/* Descripción */}
                   <p className="card-body" style={{ flex: 1 }}>
                     {h.desc}
                   </p>
 
-                  {/* CTA */}
                   {h.activa && (
-                    <div style={{
-                      marginTop: 'var(--space-5)',
-                      display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                      fontSize: 'var(--text-sm)', fontWeight: 600,
-                      color: h.ctaColor,
-                      transition: 'gap var(--transition)',
-                    }}>
-                      Ir a la herramienta
-                      <ArrowRight size={15} />
-                    </div>
-                  )}
+  <div
+    style={{
+      marginTop: 'var(--space-5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between', // clave
+      gap: 'var(--space-3)',
+    }}
+  >
+    {/* CTA */}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-2)',
+        fontSize: 'var(--text-sm)',
+        fontWeight: 600,
+        color: h.ctaColor,
+        transition: 'gap var(--transition)',
+      }}
+    >
+      Ir a la herramienta
+      <ArrowRight size={15} />
+    </div>
+
+    {/* Tooltip Verifactu */}
+    {h.href === '/factura' && (
+      <div className="relative flex items-center">
+        <div className="peer cursor-default">
+          <AlertTriangle className="w-5 h-5 text-amber-400" />
+        </div>
+        <div className="
+          absolute bottom-full right-0 mb-2 w-56 z-20
+          bg-zinc-900 dark:bg-zinc-800 text-white text-xs
+          rounded-lg px-3 py-2.5 leading-relaxed shadow-lg
+          opacity-0 pointer-events-none
+          peer-hover:opacity-100 peer-hover:pointer-events-auto
+          transition-opacity duration-150
+        ">
+          Esta herramienta genera facturas en formato PDF pero
+          <strong> no está conectada a Verifactu</strong>. En el futuro
+          se integrará con el sistema oficial de la AEAT.
+          <div className="absolute top-full right-3 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
+        </div>
+      </div>
+    )}
+  </div>
+)}
+          
                 </div>
               )
 

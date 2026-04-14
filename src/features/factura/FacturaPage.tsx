@@ -8,4 +8,6 @@ export function FacturaPage() {
       toolClass="tool-factura"
     />
   )
+  
 }
+

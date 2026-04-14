@@ -15,9 +15,9 @@ import { Button } from '../ui/Button'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { calcularLinea } from '../../utils/calculos'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft } from 'lucide-react'
+import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft, ArrowRight,AlertTriangle } from 'lucide-react'
 import { useDocumentStore } from '../../store/documentStore'
-import { ArrowRight } from 'lucide-react'
+
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Encabezado de la factura',
@@ -164,6 +164,23 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
           <ThemeToggle />
         </div>
       </div>
+
+       {/* ── Banner disclaimer (solo para factura) ────────────────────────── */}
+      {tipo === 'factura' && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/30 px-6 py-4">
+          <div className="max-w-[1400px] mx-auto flex gap-5">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-3" />
+            <div>
+              <p className="text-sm text-amber-900 dark:text-amber-200 font-medium">
+                Por el momento esta factura no esta conectada con el sistema Verifactu
+              </p>
+              <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+                Es solo para referencia interna. Para facturación legal, consulta con tu gestor o usa software certificado Verifactu.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Layout dos columnas ─────────────────────────────────────────────── */}
       <div style={{
