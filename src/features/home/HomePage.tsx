@@ -152,9 +152,9 @@ export function HomePage() {
                       <Icon size={18} style={{ color: h.ctaColor }} />
                     </div>
                     
-                    <span className={`badge ${h.badgeClass}`}>
+                    {/* <span className={`badge ${h.badgeClass}`}>
                       {h.activa ? h.tag : 'Próximamente'}
-                    </span>
+                    </span> */}
                   </div>
 
                   {/* Título */}
@@ -242,7 +242,7 @@ export function HomePage() {
           padding: 'var(--space-6)', textAlign: 'center',
         }}>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>
-            © {new Date().getFullYear()} HerramientasAutonomos.es — Herramientas para autónomos en España
+            © {new Date().getFullYear()} HerramientasAutonomos.es — Herramientas para autónomos
           </p>
         </div>
       </footer>
