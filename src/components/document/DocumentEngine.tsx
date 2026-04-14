@@ -573,7 +573,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
           <div style={{
             overflow: 'hidden',
             borderRadius: 'var(--radius-xl)',
-            boxShadow: 'var(--shadow-lg)',
+            // boxShadow: 'var(--shadow-lg)',
             border: '2px solid var(--color-border)',
             background: 'white',
             display: 'flex',
