@@ -15,7 +15,7 @@ import { Button } from '../ui/Button'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { calcularLinea } from '../../utils/calculos'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft, AlertTriangle } from 'lucide-react'
+import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft } from 'lucide-react'
 import { useDocumentStore } from '../../store/documentStore'
 import { ArrowRight } from 'lucide-react'
 
@@ -35,7 +35,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
   const [modalAbierto, setModalAbierto] = useState(false)
   const [savedFeedback, setSavedFeedback] = useState(false)
   const navigate = useNavigate()
-    const { setPresupuestoPendiente } = useDocumentStore()
+  const { setPresupuestoPendiente } = useDocumentStore()
 
   const {
     form,
@@ -61,7 +61,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
     setTimeout(() => setSavedFeedback(false), 2500)
   }
 
-    const handleConvertirAFactura = () => {
+  const handleConvertirAFactura = () => {
     const datos = form.getValues()
     setPresupuestoPendiente({
       cliente: datos.cliente,
@@ -72,101 +72,129 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
     navigate('/factura')
   }
 
-  const card = 'bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-5 space-y-4 shadow-sm'
-  const cardTitle = 'text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500'
-  const selectCls =
-    'w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm ' +
-    'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 ' +
-    'focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)]'
+  /* ── Estilos inline reutilizables ───────────────────────────────────── */
+  const sectionLabelStyle: React.CSSProperties = {
+    fontSize: 'var(--text-xs)',
+    fontWeight: 700,
+    letterSpacing: '0.10em',
+    textTransform: 'uppercase',
+    color: 'var(--color-text-muted)',
+    marginBottom: 'var(--space-4)',
+  }
+
+  const totalRowStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: 'var(--text-sm)',
+    color: 'var(--color-text-muted)',
+  }
 
   return (
-    <div className={`min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-200 ${toolClass}`}>
+    <div
+      className={toolClass}
+      style={{ minHeight: '100vh', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}
+    >
 
-      {/* ── Top bar ───────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: 'oklch(from var(--color-surface) l c h / 0.95)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--color-divider)',
+        padding: 'var(--space-3) var(--space-6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+              fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              transition: 'color var(--transition)',
+              fontFamily: 'var(--font-body)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
             aria-label="Volver al inicio"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} />
             <span className="hidden sm:inline">Todas las herramientas</span>
           </button>
-          <span className="text-zinc-300 dark:text-zinc-700 select-none">|</span>
-          <h1
-            className="text-xl font-bold text-zinc-900 dark:text-zinc-100"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+
+          <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
+
+          <h1 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'var(--text-base)',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: 'var(--color-text)',
+          }}>
             {titulo}
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           {savedFeedback && (
-            <span
-              className="flex items-center gap-1.5 text-sm font-medium"
-              style={{ color: 'var(--tool-mid, #3b82f6)' }}
-            >
-              <CheckCircle2 size={16} />
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+              fontSize: 'var(--text-sm)', fontWeight: 600,
+              color: 'var(--color-success)',
+            }}>
+              <CheckCircle2 size={15} />
               Datos guardados
             </span>
           )}
-          <Button variant="secondary" onClick={handleGuardarEmisor} type="button">
-            <Save size={16} />
+          <Button variant="secondary" size="sm" onClick={handleGuardarEmisor} type="button">
+            <Save size={14} />
             Guardar mis datos
           </Button>
-                    {tipo === 'presupuesto' && (
-            <Button variant="secondary" onClick={handleConvertirAFactura} type="button">
-              <ArrowRight size={16} />
+          {tipo === 'presupuesto' && (
+            <Button variant="secondary" size="sm" onClick={handleConvertirAFactura} type="button">
+              <ArrowRight size={14} />
               Convertir a factura
             </Button>
           )}
-          <Button variant="primary" onClick={handleAbrirPrevia} type="button">
-            <Eye size={16} />
+          <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
+            <Eye size={14} />
             Vista previa y exportar
           </Button>
           <ThemeToggle />
         </div>
       </div>
-          {/* ── Banner disclaimer (solo para factura) ────────────────────────── */}
-      {tipo === 'factura' && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/30 px-6 py-4">
-          <div className="max-w-[1400px] mx-auto flex gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-amber-900 dark:text-amber-200 font-medium">
-                Esta plantilla no está conectada a Verifactu de momento.
-              </p>
-              <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
-                Es solo para referencia interna. Para facturación legal, consulta con tu gestor o usa software certificado Verifactu.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="grid xl:grid-cols-2 gap-6 p-6 max-w-[1400px] mx-auto">
-        
+
+      {/* ── Layout dos columnas ─────────────────────────────────────────────── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 560px), 1fr))',
+        gap: 'var(--space-6)',
+        padding: 'var(--space-6)',
+        maxWidth: '1400px',
+        margin: '0 auto',
+      }}>
 
         {/* ── COLUMNA IZQUIERDA — Formulario ───────────────────────────────── */}
-        <div className="space-y-5">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
           {/* ENCABEZADO */}
-          <div className={card}>
-            <h2 className={cardTitle}>{TITULO_ENCABEZADO[tipo]}</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                label="Número"
-                {...register('numero', { required: 'El número es obligatorio' })}
-                error={errors.numero}
-              />
-              <FormField
-                label="Fecha"
-                type="date"
-                {...register('fecha', { required: 'La fecha es obligatoria' })}
-                error={errors.fecha}
-              />
+          <fieldset className="fieldset-v3">
+            <legend className="fieldset-legend">{TITULO_ENCABEZADO[tipo]}</legend>
+            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="form-row">
+                <FormField
+                  label="Número"
+                  {...register('numero', { required: 'El número es obligatorio' })}
+                  error={errors.numero}
+                />
+                <FormField
+                  label="Fecha"
+                  type="date"
+                  {...register('fecha', { required: 'La fecha es obligatoria' })}
+                  error={errors.fecha}
+                />
+              </div>
               {esFinanciero && (
                 <FormField
                   label="Vencimiento (opcional)"
@@ -183,151 +211,129 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                     },
                   })}
                   error={errors.fechaVencimiento}
-                  className="col-span-2"
                 />
               )}
             </div>
-          </div>
+          </fieldset>
 
           {/* TUS DATOS */}
-          <div className={card}>
-            <h2 className={cardTitle}>Tus datos</h2>
-            <div className="grid grid-cols-2 gap-4">
+          <fieldset className="fieldset-v3">
+            <legend className="fieldset-legend">Tus datos</legend>
+            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
               <FormField
                 label="Nombre / Razón social"
                 {...register('emisor.nombre', { required: 'El nombre es obligatorio' })}
                 error={errors.emisor?.nombre}
-                className="col-span-2"
               />
-              <FormField
-                label="NIF / CIF / NIE"
-                {...register('emisor.nif', {
-                  required: 'El NIF es obligatorio',
-                  validate: (v) => validarNif(v),
-                })}
-                error={errors.emisor?.nif}
-              />
-              <FormField
-                label="Email"
-                type="email"
-                {...register('emisor.email', {
-                  required: 'El email es obligatorio',
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: 'Email no válido',
-                  },
-                })}
-                error={errors.emisor?.email}
-              />
+              <div className="form-row">
+                <FormField
+                  label="NIF / CIF / NIE"
+                  {...register('emisor.nif', {
+                    required: 'El NIF es obligatorio',
+                    validate: (v) => validarNif(v),
+                  })}
+                  error={errors.emisor?.nif}
+                />
+                <FormField
+                  label="Email"
+                  type="email"
+                  {...register('emisor.email', {
+                    required: 'El email es obligatorio',
+                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email no válido' },
+                  })}
+                  error={errors.emisor?.email}
+                />
+              </div>
               <FormField
                 label="Dirección"
                 {...register('emisor.direccion', { required: 'La dirección es obligatoria' })}
                 error={errors.emisor?.direccion}
-                className="col-span-2"
               />
-              <FormField
-                label="Código postal"
-                {...register('emisor.cp', {
-                  required: 'El CP es obligatorio',
-                  pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
-                })}
-                error={errors.emisor?.cp}
-              />
-              <FormField
-                label="Ciudad"
-                {...register('emisor.ciudad', { required: 'La ciudad es obligatoria' })}
-                error={errors.emisor?.ciudad}
-              />
-              <FormField
-                label="Provincia"
-                {...register('emisor.provincia')}
-              />
-              <FormField
-                label="Teléfono (opcional)"
-                type="tel"
-                {...register('emisor.telefono')}
-              />
+              <div className="form-row">
+                <FormField
+                  label="Código postal"
+                  {...register('emisor.cp', {
+                    required: 'El CP es obligatorio',
+                    pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
+                  })}
+                  error={errors.emisor?.cp}
+                />
+                <FormField
+                  label="Ciudad"
+                  {...register('emisor.ciudad', { required: 'La ciudad es obligatoria' })}
+                  error={errors.emisor?.ciudad}
+                />
+              </div>
+              <div className="form-row">
+                <FormField label="Provincia" {...register('emisor.provincia')} />
+                <FormField label="Teléfono (opcional)" type="tel" {...register('emisor.telefono')} />
+              </div>
             </div>
-          </div>
+          </fieldset>
 
           {/* DATOS DEL CLIENTE */}
-          <div className={card}>
-            <h2 className={cardTitle}>Datos del cliente</h2>
-            <div className="grid grid-cols-2 gap-4">
+          <fieldset className="fieldset-v3">
+            <legend className="fieldset-legend">Datos del cliente</legend>
+            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
               <FormField
                 label="Nombre / Razón social"
                 {...register('cliente.nombre', { required: 'El nombre del cliente es obligatorio' })}
                 error={errors.cliente?.nombre}
-                className="col-span-2"
               />
-              <FormField
-                label="NIF / CIF / NIE"
-                {...register('cliente.nif', {
-                  required: 'El NIF del cliente es obligatorio',
-                  validate: (v) => validarNif(v),
-                })}
-                error={errors.cliente?.nif}
-              />
-              <FormField
-                label="Email (opcional)"
-                type="email"
-                {...register('cliente.email', {
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: 'Email no válido',
-                  },
-                })}
-                error={errors.cliente?.email}
-              />
-              <FormField
-                label="Dirección (opcional)"
-                {...register('cliente.direccion')}
-                className="col-span-2"
-              />
-              <FormField
-                label="Código postal"
-                {...register('cliente.cp', {
-                  pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
-                })}
-                error={errors.cliente?.cp}
-              />
-              <FormField
-                label="Ciudad"
-                {...register('cliente.ciudad')}
-              />
-              <FormField
-                label="Provincia"
-                {...register('cliente.provincia')}
-              />
+              <div className="form-row">
+                <FormField
+                  label="NIF / CIF / NIE"
+                  {...register('cliente.nif', {
+                    required: 'El NIF del cliente es obligatorio',
+                    validate: (v) => validarNif(v),
+                  })}
+                  error={errors.cliente?.nif}
+                />
+                <FormField
+                  label="Email (opcional)"
+                  type="email"
+                  {...register('cliente.email', {
+                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email no válido' },
+                  })}
+                  error={errors.cliente?.email}
+                />
+              </div>
+              <FormField label="Dirección (opcional)" {...register('cliente.direccion')} />
+              <div className="form-row">
+                <FormField
+                  label="Código postal"
+                  {...register('cliente.cp', {
+                    pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
+                  })}
+                  error={errors.cliente?.cp}
+                />
+                <FormField label="Ciudad" {...register('cliente.ciudad')} />
+              </div>
+              <FormField label="Provincia" {...register('cliente.provincia')} />
             </div>
-          </div>
+          </fieldset>
 
           {/* CONCEPTOS */}
-          <div className={card}>
-            <div className="flex items-center justify-between">
-              <h2 className={cardTitle}>Conceptos</h2>
-              {esFinanciero && (
-                <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    {...register('mostrarIrpf')}
-                    className="rounded border-zinc-300 dark:border-zinc-600"
-                  />
-                  Incluir IRPF
-                </label>
-              )}
-            </div>
+          <fieldset className="fieldset-v3">
+            <legend className="fieldset-legend">Conceptos</legend>
 
-            <div className="space-y-3">
+            {esFinanciero && (
+              <label className="input-toggle" style={{ marginTop: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+                <input
+                  type="checkbox"
+                  {...register('mostrarIrpf')}
+                />
+                <span>Incluir IRPF</span>
+              </label>
+            )}
+
+            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
               {fields.map((field, index) => {
                 const linea = documento.lineas?.[index]
                 const { base } = linea ? calcularLinea(linea) : { base: 0 }
 
                 return (
-                  <div
-                    key={field.id}
-                    className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 space-y-3"
-                  >
+                  <div key={field.id} className="linea-concepto">
                     <FormField
                       label="Descripción"
                       {...register(`lineas.${index}.descripcion`, {
@@ -336,7 +342,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                       error={errors.lineas?.[index]?.descripcion}
                     />
 
-                    <div className="flex flex-wrap items-end gap-3">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 'var(--space-3)' }}>
                       <FormField
                         label="Cantidad"
                         type="number"
@@ -348,6 +354,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                         })}
                         error={errors.lineas?.[index]?.cantidad}
                         className="w-24"
+                        style={{ width: '6rem' }}
                       />
                       <FormField
                         label="Precio/ud (€)"
@@ -359,16 +366,17 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                           min: { value: 0, message: 'No puede ser negativo' },
                         })}
                         error={errors.lineas?.[index]?.precioUnitario}
-                        className="w-32"
+                        style={{ width: '7rem' }}
                       />
 
                       {esFinanciero && (
                         <>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">IVA</label>
+                          <div className="input-group">
+                            <label className="input-label">IVA</label>
                             <select
                               {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
-                              className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
+                              className="select-v3"
+                              style={{ width: '5rem' }}
                             >
                               {TIPOS_IVA.map((t) => (
                                 <option key={t} value={t}>{t}%</option>
@@ -377,11 +385,12 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                           </div>
 
                           {mostrarIrpf && (
-                            <div className="flex flex-col gap-1">
-                              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">IRPF</label>
+                            <div className="input-group">
+                              <label className="input-label">IRPF</label>
                               <select
                                 {...register(`lineas.${index}.irpf`, { valueAsNumber: true })}
-                                className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[var(--tool-mid,#3b82f6)] w-[4.5rem]"
+                                className="select-v3"
+                                style={{ width: '5rem' }}
                               >
                                 {TIPOS_IRPF.map((t) => (
                                   <option key={t} value={t}>{t}%</option>
@@ -392,18 +401,42 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                         </>
                       )}
 
-                      <div className="flex items-end gap-2 ml-auto">
-                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 pb-2 whitespace-nowrap">
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-2)', marginLeft: 'auto' }}>
+                        <span style={{
+                          fontSize: 'var(--text-sm)', fontWeight: 600,
+                          color: 'var(--color-text)', paddingBottom: '0.5rem',
+                          whiteSpace: 'nowrap',
+                        }}>
                           {fmt(base)}
                         </span>
                         <button
                           type="button"
                           onClick={() => eliminarLinea(index)}
                           disabled={fields.length === 1}
-                          className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          style={{
+                            padding: 'var(--space-2)',
+                            color: 'var(--color-text-faint)',
+                            background: 'none',
+                            border: '1.5px solid transparent',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: fields.length === 1 ? 'not-allowed' : 'pointer',
+                            opacity: fields.length === 1 ? 0.3 : 1,
+                            transition: 'color var(--transition), background var(--transition)',
+                            fontFamily: 'var(--font-body)',
+                          }}
+                          onMouseEnter={e => {
+                            if (fields.length > 1) {
+                              e.currentTarget.style.color = 'var(--color-error)'
+                              e.currentTarget.style.background = 'var(--color-error-highlight)'
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.color = 'var(--color-text-faint)'
+                            e.currentTarget.style.background = 'none'
+                          }}
                           aria-label="Eliminar línea"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </div>
@@ -412,43 +445,61 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               })}
             </div>
 
-            <Button variant="ghost" type="button" onClick={agregarLinea} className="w-full mt-1">
-              <Plus size={16} />
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={agregarLinea}
+              style={{ width: '100%', marginTop: 'var(--space-3)', justifyContent: 'center' }}
+            >
+              <Plus size={15} />
               Añadir concepto
             </Button>
 
+            {/* Totales */}
             {esFinanciero && (
-              <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4 space-y-1.5">
-                <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
+              <div style={{
+                borderTop: '1px solid var(--color-divider)',
+                marginTop: 'var(--space-4)',
+                paddingTop: 'var(--space-4)',
+                display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+              }}>
+                <div style={totalRowStyle}>
                   <span>Base imponible</span>
                   <span>{fmt(totales.baseImponible)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
+                <div style={totalRowStyle}>
                   <span>IVA</span>
                   <span>+ {fmt(totales.totalIva)}</span>
                 </div>
                 {mostrarIrpf && totales.totalIrpf > 0 && (
-                  <div className="flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
+                  <div style={totalRowStyle}>
                     <span>IRPF</span>
                     <span>− {fmt(totales.totalIrpf)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-base font-semibold text-zinc-900 dark:text-zinc-100 pt-1.5 border-t border-zinc-200 dark:border-zinc-700">
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  fontSize: 'var(--text-base)', fontWeight: 700,
+                  color: 'var(--color-text)',
+                  paddingTop: 'var(--space-2)',
+                  borderTop: '2px solid var(--color-border)',
+                  marginTop: 'var(--space-1)',
+                }}>
                   <span>TOTAL</span>
                   <span>{fmt(totales.total)}</span>
                 </div>
               </div>
             )}
-          </div>
+          </fieldset>
 
           {/* FORMA DE PAGO */}
           {esFinanciero && (
-            <div className={card}>
-              <h2 className={cardTitle}>Forma de pago</h2>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Método de pago</label>
-                  <select {...register('formaPago.metodo')} className={selectCls}>
+            <fieldset className="fieldset-v3">
+              <legend className="fieldset-legend">Forma de pago</legend>
+              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+                <div className="input-group">
+                  <label className="input-label">Método de pago</label>
+                  <select {...register('formaPago.metodo')} className="select-v3">
                     <option value="transferencia">Transferencia bancaria</option>
                     <option value="bizum">Bizum</option>
                     <option value="paypal">PayPal</option>
@@ -474,22 +525,20 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   />
                 )}
                 {metodoPago === 'paypal' && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <>
                     <FormField
                       label="Email de PayPal"
                       type="email"
                       placeholder="correo@ejemplo.com"
                       {...register('formaPago.email')}
-                      className="col-span-2"
                     />
                     <FormField
                       label="Teléfono (opcional)"
                       type="tel"
                       placeholder="600 000 000"
                       {...register('formaPago.telefono')}
-                      className="col-span-2"
                     />
-                  </div>
+                  </>
                 )}
                 {metodoPago === 'otro' && (
                   <TextAreaField
@@ -500,28 +549,36 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   />
                 )}
               </div>
-            </div>
+            </fieldset>
           )}
 
           {/* NOTAS */}
-          <div className={card}>
-            <h2 className={cardTitle}>Notas (opcional)</h2>
-            <TextAreaField
-              label="Observaciones"
-              placeholder="Condiciones, agradecimiento, notas legales..."
-              {...register('notas')}
-              rows={3}
-            />
-          </div>
+          <fieldset className="fieldset-v3">
+            <legend className="fieldset-legend">Notas (opcional)</legend>
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <TextAreaField
+                label="Observaciones"
+                placeholder="Condiciones, agradecimiento, notas legales..."
+                {...register('notas')}
+                rows={3}
+              />
+            </div>
+          </fieldset>
 
         </div>
 
-        {/* ── COLUMNA DERECHA — Preview estática ───────────────────────────── */}
-        <div className="hidden xl:flex flex-col sticky top-24 h-fit">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">
-            Vista previa en tiempo real
-          </p>
-          <div className="overflow-hidden rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 bg-white flex justify-center">
+        {/* ── COLUMNA DERECHA — Preview estática ──────────────────────────────── */}
+        <div className="hidden xl:flex" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
+          <p style={sectionLabelStyle}>Vista previa en tiempo real</p>
+          <div style={{
+            overflow: 'hidden',
+            borderRadius: 'var(--radius-xl)',
+            boxShadow: 'var(--shadow-lg)',
+            border: '2px solid var(--color-border)',
+            background: 'white',
+            display: 'flex',
+            justifyContent: 'center',
+          }}>
             <div style={{ zoom: 0.82 }}>
               <DocumentPreview documento={documento} totales={totales} />
             </div>
@@ -530,7 +587,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
       </div>
 
-      {/* ── Modal ────────────────────────────────────────────────────────── */}
+      {/* ── Modal ────────────────────────────────────────────────────────────── */}
       {modalAbierto && (
         <PreviewModal
           documento={documento}
