@@ -20,6 +20,8 @@ export interface ClienteInfo {
   cp: string
   provincia: string
   email?: string
+  pais?: string
+  clienteExterior?: boolean
 }
 
 export interface LineaDocumento {
