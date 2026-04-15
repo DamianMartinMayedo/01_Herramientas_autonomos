@@ -3,7 +3,7 @@
  * Listado público de artículos del blog — 2 columnas.
  */
 import { Link } from 'react-router-dom'
-import { useAdminStore } from '../../store/adminStore'
+import { useBlogStore } from '../../store/blogStore'
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
@@ -13,7 +13,7 @@ function formatDate(iso: string) {
 }
 
 export function BlogPage() {
-  const posts = useAdminStore((s) => s.posts).filter((p) => p.status === 'published')
+  const posts = useBlogStore((s) => s.posts).filter((p) => p.status === 'published')
 
   return (
     <div className="page-root">

@@ -4,7 +4,7 @@
  */
 import { useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useAdminStore } from '../../store/adminStore'
+import { useBlogStore, type BlogPost } from '../../store/blogStore'
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
@@ -34,7 +34,7 @@ function formatDate(iso: string) {
 }
 
 /** Devuelve hasta 3 artículos relacionados por tags compartidos */
-function getRelated(currentId: string, allPosts: ReturnType<typeof useAdminStore.getState>['posts'], currentTags: string[]) {
+function getRelated(currentId: string, allPosts: BlogPost[], currentTags: string[]) {
   return allPosts
     .filter((p) => p.id !== currentId && p.status === 'published')
     .map((p) => ({
@@ -48,7 +48,7 @@ function getRelated(currentId: string, allPosts: ReturnType<typeof useAdminStore
 export function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const posts = useAdminStore((s) => s.posts)
+  const posts = useBlogStore((s) => s.posts)
   const post = posts.find((p) => p.slug === slug && p.status === 'published')
   const html = useMemo(() => (post?.contenido ? renderMarkdown(post.contenido) : ''), [post])
 

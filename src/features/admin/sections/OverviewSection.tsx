@@ -3,6 +3,7 @@
  * Dashboard principal: KPIs, actividad reciente, estado del sistema.
  */
 import { useAdminStore } from '../../../store/adminStore'
+import { useBlogStore } from '../../../store/blogStore'
 import { FileText, Wrench, Activity, TrendingUp, Clock, CheckCircle, Circle } from 'lucide-react'
 
 function StatCard({
@@ -61,7 +62,7 @@ function formatRelative(iso: string) {
 }
 
 export function OverviewSection() {
-  const posts        = useAdminStore((s) => s.posts)
+  const posts        = useBlogStore((s) => s.posts)
   const herramientas = useAdminStore((s) => s.herramientas)
   const events       = useAdminStore((s) => s.events)
 

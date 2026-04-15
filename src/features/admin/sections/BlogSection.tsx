@@ -4,7 +4,7 @@
  * Datos: localStorage ahora → Supabase en cloud (solo cambiar las acciones del store).
  */
 import { useState } from 'react'
-import { useAdminStore, type BlogPost, type BlogStatus } from '../../../store/adminStore'
+import { useBlogStore, type BlogPost, type BlogStatus } from '../../../store/blogStore'
 import { Plus, Pencil, Trash2, Eye, EyeOff, FileText, Tag, Calendar, X } from 'lucide-react'
 
 /* ── Utilidades ────────────────────────────────────────────────────────── */
@@ -27,8 +27,8 @@ interface EditorProps {
 }
 
 function PostEditor({ post, onClose }: EditorProps) {
-  const createPost = useAdminStore((s) => s.createPost)
-  const updatePost = useAdminStore((s) => s.updatePost)
+  const createPost = useBlogStore((s) => s.createPost)
+  const updatePost = useBlogStore((s) => s.updatePost)
 
   const [titulo,    setTitulo]    = useState(post?.titulo    ?? '')
   const [slug,      setSlug]      = useState(post?.slug      ?? '')
@@ -136,10 +136,10 @@ function PostEditor({ post, onClose }: EditorProps) {
 
 /* ── BlogSection ─────────────────────────────────────────────────────────── */
 export function BlogSection() {
-  const posts       = useAdminStore((s) => s.posts)
-  const deletePost  = useAdminStore((s) => s.deletePost)
-  const publishPost = useAdminStore((s) => s.publishPost)
-  const unpublish   = useAdminStore((s) => s.unpublishPost)
+  const posts       = useBlogStore((s) => s.posts)
+  const deletePost  = useBlogStore((s) => s.deletePost)
+  const publishPost = useBlogStore((s) => s.publishPost)
+  const unpublish   = useBlogStore((s) => s.unpublishPost)
 
   const [editing,   setEditing]   = useState<BlogPost | null | 'new'>(null)
   const [filter,    setFilter]    = useState<'all' | BlogStatus>('all')
@@ -315,6 +315,7 @@ export function BlogSection() {
       {/* Modal editor */}
       {editing && (
         <PostEditor
+          key={editing === 'new' ? 'new' : editing.id}
           post={editing === 'new' ? undefined : editing}
           onClose={() => setEditing(null)}
         />

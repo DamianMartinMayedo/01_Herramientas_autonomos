@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
-import type { BlogPost } from '../../store/adminStore'
+import type { BlogPost } from '../../store/blogStore'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 
@@ -203,11 +203,11 @@ export function HomePage() {
 
     ;(async () => {
       try {
-        const { useAdminStore } = await import('../../store/adminStore')
+        const { useBlogStore } = await import('../../store/blogStore')
         if (cancelled) return
 
-        setBlogPosts(toPublic(useAdminStore.getState().posts))
-        unsubscribe = useAdminStore.subscribe((state) => {
+        setBlogPosts(toPublic(useBlogStore.getState().posts))
+        unsubscribe = useBlogStore.subscribe((state) => {
           if (cancelled) return
           setBlogPosts(toPublic(state.posts))
         })
