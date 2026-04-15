@@ -53,6 +53,27 @@
   --color-error:           #9e1818;
   --color-error-highlight: #F0D0D0;
 
+  /* ── Purple (violeta) — NUEVO ── */
+  --color-purple:           #6D3BB8;
+  --color-purple-hover:     #5A2EA0;
+  --color-purple-active:    #3F1F78;
+  --color-purple-highlight: #E8DCFF;
+  --color-purple-subtle:    #F3EEFF;
+
+  /* ── Teal (esmeralda) — NUEVO ── */
+  --color-teal:           #0F7E72;
+  --color-teal-hover:     #0A6560;
+  --color-teal-active:    #064A44;
+  --color-teal-highlight: #C8EDEA;
+  --color-teal-subtle:    #EAF7F6;
+
+  /* ── Gold (ámbar dorado) — NUEVO ── */
+  --color-gold:           #B07B00;
+  --color-gold-hover:     #8F6200;
+  --color-gold-active:    #6A4800;
+  --color-gold-highlight: #F7E9BE;
+  --color-gold-subtle:    #FBF5E0;
+
   /* ── Tipografías ── */
   --font-display: 'Bricolage Grotesque', 'Helvetica Neue', sans-serif;
   --font-body:    'Figtree', 'Inter', sans-serif;
@@ -144,6 +165,27 @@
   --color-error:           #D46060;
   --color-error-highlight: #3A1818;
 
+  /* ── Purple dark ── */
+  --color-purple:           #9B6EE0;
+  --color-purple-hover:     #8455C8;
+  --color-purple-active:    #6B3BAF;
+  --color-purple-highlight: #2A1A4A;
+  --color-purple-subtle:    #1A1028;
+
+  /* ── Teal dark ── */
+  --color-teal:           #3AADA0;
+  --color-teal-hover:     #2B9088;
+  --color-teal-active:    #1C7068;
+  --color-teal-highlight: #0D3330;
+  --color-teal-subtle:    #081E1C;
+
+  /* ── Gold dark ── */
+  --color-gold:           #D4A020;
+  --color-gold-hover:     #BA8800;
+  --color-gold-active:    #9A6E00;
+  --color-gold-highlight: #3A2E08;
+  --color-gold-subtle:    #211A04;
+
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.2),  0 1px 2px oklch(0 0 0 / 0.16);
   --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3),  0 2px 4px oklch(0 0 0 / 0.2);
   --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.4), 0 4px 8px oklch(0 0 0 / 0.25);
@@ -172,15 +214,15 @@
 }
 
 .tool-precio-hora {
-  --tool-dark:  #4c1d95;
-  --tool-light: #ede9fe;
-  --tool-mid:   #8b5cf6;
+  --tool-dark:  var(--color-purple-active);
+  --tool-light: var(--color-purple-highlight);
+  --tool-mid:   var(--color-purple);
 }
 
 .tool-iva {
-  --tool-dark:  var(--color-error);
-  --tool-light: var(--color-error-highlight);
-  --tool-mid:   var(--color-error);
+  --tool-dark:  var(--color-teal-active);
+  --tool-light: var(--color-teal-highlight);
+  --tool-mid:   var(--color-teal);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -291,6 +333,9 @@ body {
 .badge-primary { background: var(--color-primary-highlight); color: var(--color-primary); }
 .badge-success { background: var(--color-success-highlight); color: var(--color-success); }
 .badge-copper  { background: var(--color-copper-highlight);  color: var(--color-copper);  }
+.badge-purple  { background: var(--color-purple-highlight);  color: var(--color-purple);  }
+.badge-teal    { background: var(--color-teal-highlight);    color: var(--color-teal);    }
+.badge-gold    { background: var(--color-gold-highlight);    color: var(--color-gold);    }
 .badge-error   { background: var(--color-error-highlight);   color: var(--color-error);   }
 .badge-muted   { background: var(--color-surface-offset);    color: var(--color-text-muted); }
 
@@ -310,16 +355,40 @@ body {
 
 .card-interactive:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px var(--color-border);
+  box-shadow: 6px 6px 0px 0px var(--card-accent-color, var(--color-border));
   background-image:
     linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
     linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
-.card-accent-primary { border-top: 2px solid var(--color-primary); }
-.card-accent-success { border-top: 2px solid var(--color-success); }
-.card-accent-copper  { border-top: 2px solid var(--color-copper);  }
+/* ── 6 colores de acento para cards de herramientas ── */
+/* Cada clase define el color del top-border y el offset-shadow en hover    */
+
+.card-accent-primary {
+  --card-accent-color: var(--color-primary);
+  border-top: 3px solid var(--color-primary);
+}
+.card-accent-success {
+  --card-accent-color: var(--color-success);
+  border-top: 3px solid var(--color-success);
+}
+.card-accent-copper {
+  --card-accent-color: var(--color-copper);
+  border-top: 3px solid var(--color-copper);
+}
+.card-accent-purple {
+  --card-accent-color: var(--color-purple);
+  border-top: 3px solid var(--color-purple);
+}
+.card-accent-teal {
+  --card-accent-color: var(--color-teal);
+  border-top: 3px solid var(--color-teal);
+}
+.card-accent-gold {
+  --card-accent-color: var(--color-gold);
+  border-top: 3px solid var(--color-gold);
+}
 
 .card-filled-primary {
   background: var(--color-primary);

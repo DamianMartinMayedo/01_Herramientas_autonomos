@@ -4,6 +4,19 @@ import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, Ta
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { useAdminStore } from '../../store/adminStore'
 
+/*
+  Paleta de 6 colores para cards de herramientas
+  ─────────────────────────────────────────────
+  1. card-accent-primary  → azul       (#1A5FC8)
+  2. card-accent-success  → verde      (#53a61c)
+  3. card-accent-copper   → cobre      (#A56227)
+  4. card-accent-purple   → violeta    (#6D3BB8)
+  5. card-accent-teal     → esmeralda  (#0F7E72)
+  6. card-accent-gold     → oro ámbar  (#B07B00)
+
+  A las herramientas nuevas se les asignará cualquiera de estos 6 accentClass.
+*/
+
 const HERRAMIENTAS = [
   {
     href: '/factura',
@@ -44,9 +57,9 @@ const HERRAMIENTAS = [
     titulo: 'Precio por hora',
     desc: 'Fija tu tarifa sin venderte por debajo de coste.',
     activa: false,
-    accentClass: 'card-accent-primary',
-    badgeClass: 'badge-muted',
-    ctaColor: 'var(--color-primary)',
+    accentClass: 'card-accent-purple',
+    badgeClass: 'badge-purple',
+    ctaColor: 'var(--color-purple)',
     tag: 'Calculadoras',
   },
   {
@@ -55,9 +68,9 @@ const HERRAMIENTAS = [
     titulo: 'IVA / IRPF',
     desc: 'Separa base imponible, IVA e IRPF de cualquier importe.',
     activa: false,
-    accentClass: 'card-accent-primary',
-    badgeClass: 'badge-error',
-    ctaColor: 'var(--color-error)',
+    accentClass: 'card-accent-teal',
+    badgeClass: 'badge-teal',
+    ctaColor: 'var(--color-teal)',
     tag: 'Calculadoras',
   },
 ] as const
