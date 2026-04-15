@@ -1,11 +1,10 @@
 /**
  * BlogPage.tsx
- * Listado público de artículos del blog.
- * Lee del adminStore (localStorage en local → Supabase en cloud).
+ * Listado público de artículos del blog — 2 columnas.
  */
 import { Link } from 'react-router-dom'
 import { useAdminStore } from '../../store/adminStore'
-import { ArrowRight, Calendar, Tag } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Calendar, Tag } from 'lucide-react'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 
 function formatDate(iso: string) {
@@ -28,21 +27,33 @@ export function BlogPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 'var(--content-default)', margin: '0 auto', padding: 'var(--space-12) var(--space-6) var(--space-20)' }}>
+      <main style={{ maxWidth: 'var(--content-wide)', margin: '0 auto', padding: 'var(--space-12) var(--space-6) var(--space-20)' }}>
 
-        {/* Hero del blog */}
-        <section style={{ marginBottom: 'var(--space-12)' }}>
+        {/* Volver al inicio + Hero */}
+        <section style={{ marginBottom: 'var(--space-10)' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
+              fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
+              textDecoration: 'none', fontWeight: 500,
+              marginBottom: 'var(--space-6)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+          >
+            <ArrowLeft size={14} /> Volver al inicio
+          </Link>
+
           <p className="section-label" style={{ marginBottom: 'var(--space-3)' }}>Blog</p>
-          <h1 style={
-            {
-              fontFamily: 'var(--font-display)',
-              fontSize: 'var(--text-2xl)',
-              fontWeight: 800,
-              color: 'var(--color-text)',
-              lineHeight: 1.2,
-              marginBottom: 'var(--space-4)',
-            }
-          }>
+          <h1 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'var(--text-2xl)',
+            fontWeight: 800,
+            color: 'var(--color-text)',
+            lineHeight: 1.2,
+            marginBottom: 'var(--space-4)',
+          }}>
             Guías y consejos<br />para autónomos
           </h1>
           <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-muted)', maxWidth: '56ch' }}>
@@ -50,7 +61,7 @@ export function BlogPage() {
           </p>
         </section>
 
-        {/* Lista de artículos */}
+        {/* Lista de artículos — 2 columnas */}
         {posts.length === 0 ? (
           <div style={{
             padding: 'var(--space-16)',
@@ -64,7 +75,11 @@ export function BlogPage() {
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(360px, 100%), 1fr))',
+            gap: 'var(--space-5)',
+          }}>
             {posts.map((post, i) => (
               <Link
                 key={post.id}
@@ -77,7 +92,9 @@ export function BlogPage() {
                     border: '2px solid var(--color-border)',
                     borderRadius: 'var(--radius-xl)',
                     padding: 'var(--space-6)',
-                    // boxShadow: i === 0 ? '4px 4px 0 var(--color-border)' : '3px 3px 0 var(--color-border)',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                     transition: 'transform 160ms ease, box-shadow 160ms ease',
                     cursor: 'pointer',
                   }}
@@ -87,7 +104,7 @@ export function BlogPage() {
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.transform = 'none'
-                    ;(e.currentTarget as HTMLElement).style.boxShadow = i === 0 ? '0px 0px 0 var(--color-border)' : '0px 0px 0 var(--color-border)'
+                    ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
                   }}
                 >
                   {/* Tags */}
@@ -110,11 +127,12 @@ export function BlogPage() {
                   {/* Título */}
                   <h2 style={{
                     fontFamily: 'var(--font-display)',
-                    fontSize: 'var(--text-xl)',
+                    fontSize: 'var(--text-lg)',
                     fontWeight: 800,
                     color: 'var(--color-text)',
                     lineHeight: 1.25,
                     marginBottom: 'var(--space-3)',
+                    flex: 1,
                   }}>
                     {post.titulo}
                   </h2>
@@ -122,7 +140,7 @@ export function BlogPage() {
                   {/* Extracto */}
                   {post.extracto && (
                     <p style={{
-                      fontSize: 'var(--text-base)',
+                      fontSize: 'var(--text-sm)',
                       color: 'var(--color-text-muted)',
                       lineHeight: 1.6,
                       marginBottom: 'var(--space-5)',
@@ -136,7 +154,7 @@ export function BlogPage() {
                   )}
 
                   {/* Footer del artículo */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>
                       <Calendar size={11} />
                       {formatDate(post.publishedAt ?? post.createdAt)}
