@@ -10,7 +10,7 @@
  */
 export function validarNif(valor: string): true | string {
   // Normalizar: quitar espacios, guiones y puntos que la gente suele escribir
-  const nif = valor.trim().toUpperCase().replace(/[\s\-\.]/g, '')
+  const nif = valor.trim().toUpperCase().replace(/[\s.-]/g, '')
 
   if (!nif) return 'El NIF/CIF es obligatorio'
 

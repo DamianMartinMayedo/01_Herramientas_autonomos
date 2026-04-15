@@ -565,7 +565,7 @@ const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? 'admin1234'
 /* ── Store ──────────────────────────────────────────────────────────────── */
 export const useAdminStore = create<AdminState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       /* ── Auth ─────────────────────────────────────────────────────────── */
       isAuthenticated: false,
 
@@ -689,7 +689,9 @@ export const useAdminStore = create<AdminState>()(
 
 /** Dispara un evento GA4 si el SDK está cargado */
 export function trackGA(eventName: string, params?: Record<string, unknown>) {
-  if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
-    ;(window as unknown as { gtag: Function }).gtag('event', eventName, params)
+  type GtagFn = (command: 'event', eventName: string, params?: Record<string, unknown>) => void
+  const win = window as unknown as { gtag?: GtagFn }
+  if (typeof window !== 'undefined' && typeof win.gtag === 'function') {
+    win.gtag('event', eventName, params)
   }
 }

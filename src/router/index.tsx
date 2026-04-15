@@ -1,5 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter } from 'react-router-dom'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 
 // Lazy loading para que cada herramienta cargue solo cuando se necesita
 const FacturaPage     = lazy(() => import('../features/factura/FacturaPage').then(m => ({ default: m.FacturaPage })))
@@ -8,54 +9,41 @@ const AdminPage       = lazy(() => import('../features/admin/AdminPage').then(m 
 const BlogPage        = lazy(() => import('../features/blog/BlogPage').then(m => ({ default: m.BlogPage })))
 const BlogPostPage    = lazy(() => import('../features/blog/BlogPostPage').then(m => ({ default: m.BlogPostPage })))
 
+import { RouteErrorPage } from '../components/routing/RouteErrorPage'
+import { RouteLoading } from '../components/routing/RouteLoading'
+import { NotFoundPage } from '../components/routing/NotFoundPage'
 import { HomePage } from '../features/home/HomePage'
 
-const Loading = () => (
-  <div className="flex items-center justify-center h-screen">
-    <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }} />
-  </div>
-)
+function withRouteSuspense(element: ReactNode) {
+  return <Suspense fallback={<RouteLoading />}>{element}</Suspense>
+}
 
 export const router = createBrowserRouter([
-  { path: '/', element: <HomePage /> },
+  { path: '/', element: <HomePage />, errorElement: <RouteErrorPage /> },
   {
     path: '/factura',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <FacturaPage />
-      </Suspense>
-    ),
+    element: withRouteSuspense(<FacturaPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/presupuesto',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <PresupuestoPage />
-      </Suspense>
-    ),
+    element: withRouteSuspense(<PresupuestoPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/admin',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <AdminPage />
-      </Suspense>
-    ),
+    element: withRouteSuspense(<AdminPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/blog',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <BlogPage />
-      </Suspense>
-    ),
+    element: withRouteSuspense(<BlogPage />),
+    errorElement: <RouteErrorPage />,
   },
   {
     path: '/blog/:slug',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <BlogPostPage />
-      </Suspense>
-    ),
+    element: withRouteSuspense(<BlogPostPage />),
+    errorElement: <RouteErrorPage />,
   },
+  { path: '*', element: <NotFoundPage /> },
 ])

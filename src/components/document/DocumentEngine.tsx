@@ -13,9 +13,8 @@ import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { ThemeToggle } from '../ui/ThemeToggle'
-import { calcularLinea } from '../../utils/calculos'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Eye, Save, CheckCircle2, ChevronLeft, ArrowRight,AlertTriangle } from 'lucide-react'
+import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle } from 'lucide-react'
 import { useDocumentStore } from '../../store/documentStore'
 
 
@@ -199,12 +198,12 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
               <div className="form-row">
                 <FormField
-                  label="Número"
+                  label="Número *"
                   {...register('numero', { required: 'El número es obligatorio' })}
                   error={errors.numero}
                 />
                 <FormField
-                  label="Fecha"
+                  label="Fecha *"
                   type="date"
                   {...register('fecha', { required: 'La fecha es obligatoria' })}
                   error={errors.fecha}
@@ -212,7 +211,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               </div>
               {esFinanciero && (
                 <FormField
-                  label="Vencimiento (opcional)"
+                  label="Vencimiento"
                   type="date"
                   {...register('fechaVencimiento', {
                     validate: (v) => {
@@ -236,13 +235,13 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             <legend className="fieldset-legend">Tus datos</legend>
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
               <FormField
-                label="Nombre / Razón social"
+                label="Nombre / Razón social *"
                 {...register('emisor.nombre', { required: 'El nombre es obligatorio' })}
                 error={errors.emisor?.nombre}
               />
               <div className="form-row">
                 <FormField
-                  label="NIF / CIF / NIE"
+                  label="NIF / CIF / NIE *"
                   {...register('emisor.nif', {
                     required: 'El NIF es obligatorio',
                     validate: (v) => validarNif(v),
@@ -250,7 +249,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   error={errors.emisor?.nif}
                 />
                 <FormField
-                  label="Email"
+                  label="Email *"
                   type="email"
                   {...register('emisor.email', {
                     required: 'El email es obligatorio',
@@ -260,13 +259,13 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                 />
               </div>
               <FormField
-                label="Dirección"
+                label="Dirección *"
                 {...register('emisor.direccion', { required: 'La dirección es obligatoria' })}
                 error={errors.emisor?.direccion}
               />
               <div className="form-row">
                 <FormField
-                  label="Código postal"
+                  label="Código postal *"
                   {...register('emisor.cp', {
                     required: 'El CP es obligatorio',
                     pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
@@ -274,14 +273,14 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   error={errors.emisor?.cp}
                 />
                 <FormField
-                  label="Ciudad"
+                  label="Ciudad *"
                   {...register('emisor.ciudad', { required: 'La ciudad es obligatoria' })}
                   error={errors.emisor?.ciudad}
                 />
               </div>
               <div className="form-row">
                 <FormField label="Provincia" {...register('emisor.provincia')} />
-                <FormField label="Teléfono (opcional)" type="tel" {...register('emisor.telefono')} />
+                <FormField label="Teléfono" type="tel" {...register('emisor.telefono')} />
               </div>
             </div>
           </fieldset>
@@ -301,15 +300,17 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               </label>
 
               <FormField
-                label="Nombre / Razón social"
+                label="Nombre / Razón social *"
                 {...register('cliente.nombre', { required: 'El nombre del cliente es obligatorio' })}
                 error={errors.cliente?.nombre}
               />
               <div className="form-row">
                 <FormField
-                  label={clienteExterior ? 'Número de identificación (opcional)' : 'NIF / CIF / NIE'}
+                  label={clienteExterior ? 'Número de identificación *' : 'NIF / CIF / NIE *'}
                   {...register('cliente.nif', {
-                    required: clienteExterior ? false : 'El NIF del cliente es obligatorio',
+                    required: clienteExterior
+                      ? 'El número de identificación del cliente es obligatorio'
+                      : 'El NIF del cliente es obligatorio',
                     validate: (v) => {
                       if (clienteExterior) return true
                       return validarNif(v)
@@ -318,7 +319,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   error={errors.cliente?.nif}
                 />
                 <FormField
-                  label="Email (opcional)"
+                  label="Email"
                   type="email"
                   {...register('cliente.email', {
                     pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email no válido' },
@@ -326,10 +327,14 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   error={errors.cliente?.email}
                 />
               </div>
-              <FormField label="Dirección (opcional)" {...register('cliente.direccion')} />
+              <FormField
+                label="Dirección *"
+                {...register('cliente.direccion', { required: 'La dirección del cliente es obligatoria' })}
+                error={errors.cliente?.direccion}
+              />
               <div className="form-row">
                 <FormField
-                  label={clienteExterior ? 'Código postal (opcional)' : 'Código postal'}
+                  label="Código postal"
                   {...register('cliente.cp', {
                     pattern: clienteExterior
                       ? undefined
@@ -367,13 +372,10 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
               {fields.map((field, index) => {
-                const linea = documento.lineas?.[index]
-                const { base } = linea ? calcularLinea(linea) : { base: 0 }
-
                 return (
                   <div key={field.id} className="linea-concepto">
                     <FormField
-                      label="Descripción"
+                      label="Descripción *"
                       {...register(`lineas.${index}.descripcion`, {
                         required: 'La descripción es obligatoria',
                       })}
@@ -382,7 +384,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 'var(--space-3)' }}>
                       <FormField
-                        label="Cantidad"
+                        label="Cantidad *"
                         type="number"
                         step="any"
                         {...register(`lineas.${index}.cantidad`, {
@@ -395,7 +397,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                         style={{ width: '6rem' }}
                       />
                       <FormField
-                        label="Precio/ud (€)"
+                        label="Precio/ud (€) *"
                         type="number"
                         step="0.01"
                         {...register(`lineas.${index}.precioUnitario`, {
@@ -409,18 +411,48 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
                       {esFinanciero && (
                         <>
-                          <div className="input-group">
-                            <label className="input-label">IVA</label>
-                            <select
-                              {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
-                              className="select-v3"
-                              style={{ width: '6.5rem' }}
-                            >
-                              {TIPOS_IVA.map((t) => (
-                                <option key={t} value={t}>{t}%</option>
-                              ))}
-                            </select>
-                          </div>
+                          {clienteExterior ? (
+                            <div className="input-group">
+                              <label className="input-label">IVA</label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                <input
+                                  type="number"
+                                  step="any"
+                                  {...register(`lineas.${index}.iva`, {
+                                    valueAsNumber: true,
+                                    min: { value: 0, message: 'No puede ser negativo' },
+                                  })}
+                                  className="input-v3"
+                                  style={{ width: '6.5rem' }}
+                                />
+                                <span
+                                  style={{
+                                    paddingBottom: '0.55rem',
+                                    fontSize: 'var(--text-sm)',
+                                    color: 'var(--color-text-muted)',
+                                  }}
+                                >
+                                  %
+                                </span>
+                              </div>
+                              {errors.lineas?.[index]?.iva && (
+                                <p className="input-error-msg">{errors.lineas[index]?.iva?.message}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="input-group">
+                              <label className="input-label">IVA</label>
+                              <select
+                                {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
+                                className="select-v3"
+                                style={{ width: '6.5rem' }}
+                              >
+                                {TIPOS_IVA.map((t) => (
+                                  <option key={t} value={t}>{t}%</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
 
                           {mostrarIrpf && (
                             <div className="input-group">
@@ -571,7 +603,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                       {...register('formaPago.email')}
                     />
                     <FormField
-                      label="Teléfono (opcional)"
+                      label="Teléfono"
                       type="tel"
                       placeholder="600 000 000"
                       {...register('formaPago.telefono')}
@@ -592,7 +624,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
           {/* NOTAS */}
           <fieldset className="fieldset-v3">
-            <legend className="fieldset-legend">Notas (opcional)</legend>
+            <legend className="fieldset-legend">Notas</legend>
             <div style={{ marginTop: 'var(--space-4)' }}>
               <TextAreaField
                 label="Observaciones"

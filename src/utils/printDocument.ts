@@ -25,7 +25,7 @@ export function abrirVistaImpresion(element: HTMLElement, titulo: string): void 
 <head>
   <meta charset="utf-8">
   <title>${titulo}</title>
-  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

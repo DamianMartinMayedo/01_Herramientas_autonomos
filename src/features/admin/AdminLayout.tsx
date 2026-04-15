@@ -4,6 +4,7 @@
  */
 import { useState, type ReactNode } from 'react'
 import { useAdminStore } from '../../store/adminStore'
+import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import {
   LayoutDashboard, FileText, Wrench, Users, BarChart3,
   LogOut, Menu, X, Lock, Eye, EyeOff, ChevronRight,
@@ -25,6 +26,120 @@ const NAV_ITEMS: { id: AdminSection; label: string; Icon: React.ElementType }[] 
   { id: 'blog',         label: 'Blog',          Icon: FileText },
   { id: 'usuarios',     label: 'Usuarios',      Icon: Users },
 ]
+
+function AdminSidebar({
+  section,
+  onNav,
+  onClose,
+  onLogout,
+}: {
+  section: AdminSection
+  onNav: (s: AdminSection) => void
+  onClose?: () => void
+  onLogout: () => void
+}) {
+  return (
+    <nav style={{
+      display: 'flex', flexDirection: 'column',
+      width: '220px',
+      height: '100vh',
+      maxHeight: '100vh',
+      background: 'var(--color-surface)',
+      borderRight: '2px solid var(--color-border)',
+      padding: 'var(--space-5) var(--space-4) var(--space-4)',
+      flexShrink: 0,
+      overflow: 'hidden',
+    }}>
+      {/* Logo */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 'var(--space-6)',
+      }}>
+        <div>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>
+            HA Admin
+          </p>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', marginTop: '2px' }}>
+            herramientasautonomos.es
+          </p>
+        </div>
+        {onClose && (
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
+      {/* Nav items */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        {NAV_ITEMS.map(({ id, label, Icon }) => {
+          const active = section === id
+          return (
+            <button
+              key={id}
+              onClick={() => { onNav(id); onClose?.() }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                padding: 'var(--space-2) var(--space-3)',
+                borderRadius: 'var(--radius-md)',
+                border: active ? '1.5px solid var(--color-primary)' : '1.5px solid transparent',
+                background: active ? 'var(--color-primary-highlight)' : 'transparent',
+                color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                fontSize: 'var(--text-sm)', fontWeight: active ? 600 : 400,
+                cursor: 'pointer', fontFamily: 'var(--font-body)',
+                transition: 'background 100ms, color 100ms',
+                textAlign: 'left', width: '100%',
+              }}
+              onMouseEnter={e => {
+                if (!active) {
+                  e.currentTarget.style.background = 'var(--color-surface-offset)'
+                  e.currentTarget.style.color = 'var(--color-text)'
+                }
+              }}
+              onMouseLeave={e => {
+                if (!active) {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = 'var(--color-text-muted)'
+                }
+              }}
+            >
+              <Icon size={15} />
+              {label}
+              {active && <ChevronRight size={13} style={{ marginLeft: 'auto' }} />}
+            </button>
+          )
+        })}
+      </div>
+
+      <div style={{ marginTop: 'auto', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--color-divider)', flexShrink: 0 }}>
+        <button
+          onClick={onLogout}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+            width: '100%',
+            padding: 'var(--space-2) var(--space-3)',
+            borderRadius: 'var(--radius-md)',
+            border: 'none', background: 'none',
+            color: 'var(--color-text-faint)', fontSize: 'var(--text-sm)',
+            cursor: 'pointer', fontFamily: 'var(--font-body)',
+            transition: 'color 100ms, background 100ms',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color = 'var(--color-error)'
+            e.currentTarget.style.background = 'var(--color-surface-offset)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color = 'var(--color-text-faint)'
+            e.currentTarget.style.background = 'none'
+          }}
+        >
+          <LogOut size={14} />
+          Cerrar sesión
+        </button>
+      </div>
+    </nav>
+  )
+}
 
 /* ── LoginGate ──────────────────────────────────────────────────────────── */
 function LoginGate() {
@@ -60,6 +175,10 @@ function LoginGate() {
           display: 'flex', flexDirection: 'column', gap: 'var(--space-6)',
         }}
       >
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <ThemeToggle />
+        </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <div style={{
             width: '40px', height: '40px',
@@ -125,104 +244,12 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
 
   if (!isAuthenticated) return <LoginGate />
 
-  const Sidebar = ({ onClose }: { onClose?: () => void }) => (
-    <nav style={{
-      display: 'flex', flexDirection: 'column',
-      width: '220px', minHeight: '100vh',
-      background: 'var(--color-surface)',
-      borderRight: '2px solid var(--color-border)',
-      padding: 'var(--space-6) var(--space-4)',
-      flexShrink: 0,
-    }}>
-      {/* Logo */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 'var(--space-8)',
-      }}>
-        <div>
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>
-            HA Admin
-          </p>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', marginTop: '2px' }}>
-            herramientasautonomos.es
-          </p>
-        </div>
-        {onClose && (
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
-            <X size={18} />
-          </button>
-        )}
-      </div>
-
-      {/* Nav items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', flex: 1 }}>
-        {NAV_ITEMS.map(({ id, label, Icon }) => {
-          const active = section === id
-          return (
-            <button
-              key={id}
-              onClick={() => { onNav(id); onClose?.() }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-                padding: 'var(--space-2) var(--space-3)',
-                borderRadius: 'var(--radius-md)',
-                border: active ? '1.5px solid var(--color-primary)' : '1.5px solid transparent',
-                background: active ? 'var(--color-primary-highlight)' : 'transparent',
-                color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                fontSize: 'var(--text-sm)', fontWeight: active ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-body)',
-                transition: 'background 100ms, color 100ms',
-                textAlign: 'left', width: '100%',
-              }}
-              onMouseEnter={e => {
-                if (!active) {
-                  e.currentTarget.style.background = 'var(--color-surface-offset)'
-                  e.currentTarget.style.color = 'var(--color-text)'
-                }
-              }}
-              onMouseLeave={e => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.color = 'var(--color-text-muted)'
-                }
-              }}
-            >
-              <Icon size={15} />
-              {label}
-              {active && <ChevronRight size={13} style={{ marginLeft: 'auto' }} />}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Logout */}
-      <button
-        onClick={logout}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-          padding: 'var(--space-2) var(--space-3)',
-          borderRadius: 'var(--radius-md)',
-          border: 'none', background: 'none',
-          color: 'var(--color-text-faint)', fontSize: 'var(--text-sm)',
-          cursor: 'pointer', fontFamily: 'var(--font-body)',
-          marginTop: 'var(--space-4)',
-          transition: 'color 100ms',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-error)' }}
-        onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-faint)' }}
-      >
-        <LogOut size={14} />
-        Cerrar sesión
-      </button>
-    </nav>
-  )
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'flex-start', background: 'var(--color-bg)' }}>
 
       {/* Sidebar desktop */}
-      <div className="hidden lg:flex">
-        <Sidebar />
+      <div className="hidden lg:flex" style={{ position: 'sticky', top: 0, alignSelf: 'flex-start', height: '100vh' }}>
+        <AdminSidebar section={section} onNav={onNav} onLogout={logout} />
       </div>
 
       {/* Mobile drawer */}
@@ -234,36 +261,51 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
           }}
           onClick={() => setMobileOpen(false)}
         >
-          <div onClick={e => e.stopPropagation()}>
-            <Sidebar onClose={() => setMobileOpen(false)} />
+          <div style={{ height: '100vh' }} onClick={e => e.stopPropagation()}>
+            <AdminSidebar
+              section={section}
+              onNav={onNav}
+              onClose={() => setMobileOpen(false)}
+              onLogout={logout}
+            />
           </div>
           <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)' }} />
         </div>
       )}
 
       {/* Contenido principal */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
 
-        {/* Topbar mobile */}
-        <div className="flex lg:hidden" style={{
-          alignItems: 'center', gap: 'var(--space-3)',
+        {/* Topbar */}
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 30,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--space-3)',
           padding: 'var(--space-3) var(--space-4)',
           borderBottom: '1px solid var(--color-divider)',
           background: 'var(--color-surface)',
         }}>
-          <button
-            onClick={() => setMobileOpen(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
-          >
-            <Menu size={18} />
-          </button>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>
-            {NAV_ITEMS.find(n => n.id === section)?.label ?? 'Admin'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0 }}>
+            <button
+              className="lg:hidden"
+              onClick={() => setMobileOpen(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', flexShrink: 0 }}
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Área de contenido */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-8)' }}>
+        <main style={{ flex: 1, padding: 'var(--space-8)' }}>
           {children}
         </main>
       </div>

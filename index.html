@@ -42,6 +42,26 @@
       });
     </script>
     -->
+  <script>
+    (function () {
+      var storageKey = 'ha-theme';
+      var defaultTheme = 'light';
+      var root = document.documentElement;
+
+      try {
+        var raw = window.localStorage.getItem(storageKey);
+        var parsed = raw ? JSON.parse(raw) : null;
+        var persistedTheme = parsed && parsed.state && parsed.state.theme;
+        var theme = persistedTheme === 'dark' || persistedTheme === 'light' ? persistedTheme : defaultTheme;
+
+        root.setAttribute('data-theme', theme);
+        root.classList.toggle('dark', theme === 'dark');
+      } catch (error) {
+        root.setAttribute('data-theme', defaultTheme);
+        root.classList.remove('dark');
+      }
+    })();
+  </script>
 </head>
 
 <body>

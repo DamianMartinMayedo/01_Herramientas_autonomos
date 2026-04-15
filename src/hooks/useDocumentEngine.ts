@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { nanoid } from 'nanoid'
 import type { DocumentoBase, LineaDocumento, MetodoPago } from '../types/document.types'
-import { DEFAULT_LINEA } from '../types/document.types'
+import { DEFAULT_LINEA, TIPOS_IVA } from '../types/document.types'
 import { calcularTotales } from '../utils/calculos'
 import { fechaHoy, formatEuro } from '../utils/formatters'
 import { useDocumentStore } from '../store/documentStore'
@@ -73,8 +73,13 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
   })
 
   const agregarLinea = useCallback(() => {
-    append({ id: nanoid(), ...DEFAULT_LINEA })
-  }, [append])
+    const clienteExterior = form.getValues('cliente.clienteExterior')
+    append({
+      id: nanoid(),
+      ...DEFAULT_LINEA,
+      iva: clienteExterior ? 0 : DEFAULT_LINEA.iva,
+    })
+  }, [append, form])
 
   const eliminarLinea = useCallback(
     (index: number) => {
@@ -85,7 +90,33 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
 
   const lineas = form.watch('lineas') as LineaDocumento[]
   const mostrarIrpf = form.watch('mostrarIrpf')
+  const clienteExterior = form.watch('cliente.clienteExterior')
   const totales = calcularTotales(lineas ?? [], mostrarIrpf)
+
+  useEffect(() => {
+    const lineasActuales = form.getValues('lineas')
+    if (tipo === 'albaran') return
+
+    if (clienteExterior) {
+      form.setValue('mostrarIrpf', false, { shouldDirty: true, shouldValidate: true })
+
+      lineasActuales.forEach((linea, index) => {
+        if (linea.iva !== 0) {
+          form.setValue(`lineas.${index}.iva`, 0, { shouldDirty: true, shouldValidate: true })
+        }
+      })
+
+      return
+    }
+
+    form.setValue('mostrarIrpf', true, { shouldDirty: true, shouldValidate: true })
+
+    lineasActuales.forEach((linea, index) => {
+      if (!TIPOS_IVA.includes(linea.iva as (typeof TIPOS_IVA)[number])) {
+        form.setValue(`lineas.${index}.iva`, DEFAULT_LINEA.iva, { shouldDirty: true, shouldValidate: true })
+      }
+    })
+  }, [clienteExterior, form, tipo])
 
   const guardarEmisor = useCallback(() => {
     const emisor = form.getValues('emisor')

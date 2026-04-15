@@ -2,16 +2,16 @@
  * BlogPostPage.tsx
  * Artículo individual con artículos relacionados al final.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '../../store/adminStore'
-import { ArrowLeft, ArrowRight, Calendar, Tag } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 
 /** Renderizador de Markdown ligero sin dependencia extra */
 function renderMarkdown(md: string): string {
-  let html = md
+  const html = md
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/^#{4}\s(.+)$/gm, '<h4>$1</h4>')
     .replace(/^#{3}\s(.+)$/gm, '<h3>$1</h3>')
@@ -50,10 +50,9 @@ export function BlogPostPage() {
   const navigate = useNavigate()
   const posts = useAdminStore((s) => s.posts)
   const post = posts.find((p) => p.slug === slug && p.status === 'published')
-  const [html, setHtml] = useState('')
+  const html = useMemo(() => (post?.contenido ? renderMarkdown(post.contenido) : ''), [post])
 
   useEffect(() => {
-    if (post?.contenido) setHtml(renderMarkdown(post.contenido))
     window.scrollTo({ top: 0 })
   }, [post?.id])
 

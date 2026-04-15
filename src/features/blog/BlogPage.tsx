@@ -4,7 +4,7 @@
  */
 import { Link } from 'react-router-dom'
 import { useAdminStore } from '../../store/adminStore'
-import { ArrowLeft, ArrowRight, Calendar, Tag } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 

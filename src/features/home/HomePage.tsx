@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, Tag, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
-import { useAdminStore } from '../../store/adminStore'
+import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
+import type { BlogPost } from '../../store/adminStore'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 
@@ -71,7 +71,12 @@ function formatDate(iso: string) {
 const CARDS_PER_PAGE = 3
 const AUTO_INTERVAL = 5000
 
-function BlogCarousel({ posts }: { posts: ReturnType<typeof useAdminStore.getState>['posts'] }) {
+type PublicBlogPost = Pick<
+  BlogPost,
+  'id' | 'titulo' | 'slug' | 'extracto' | 'tags' | 'status' | 'createdAt' | 'publishedAt'
+>
+
+function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
   const total = Math.min(posts.length, 9)
   const visiblePosts = posts.slice(0, total)
   const pageCount = Math.ceil(total / CARDS_PER_PAGE)
@@ -176,8 +181,47 @@ function BlogCarousel({ posts }: { posts: ReturnType<typeof useAdminStore.getSta
 
 // ── Página principal ─────────────────────────────────────────────────────
 export function HomePage() {
-  const allPosts = useAdminStore((s) => s.posts)
-  const blogPosts = allPosts.filter((p) => p.status === 'published')
+  const [blogPosts, setBlogPosts] = useState<PublicBlogPost[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let unsubscribe: undefined | (() => void)
+
+    const toPublic = (posts: BlogPost[]): PublicBlogPost[] =>
+      posts
+        .filter((p) => p.status === 'published')
+        .map((p) => ({
+          id: p.id,
+          titulo: p.titulo,
+          slug: p.slug,
+          extracto: p.extracto,
+          tags: p.tags,
+          status: p.status,
+          createdAt: p.createdAt,
+          publishedAt: p.publishedAt,
+        }))
+
+    ;(async () => {
+      try {
+        const { useAdminStore } = await import('../../store/adminStore')
+        if (cancelled) return
+
+        setBlogPosts(toPublic(useAdminStore.getState().posts))
+        unsubscribe = useAdminStore.subscribe((state) => {
+          if (cancelled) return
+          setBlogPosts(toPublic(state.posts))
+        })
+      } catch {
+        if (cancelled) return
+        setBlogPosts([])
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      unsubscribe?.()
+    }
+  }, [])
 
   return (
     <div className="page-root">
@@ -271,7 +315,12 @@ export function HomePage() {
             </Link>
           </div>
 
-          {blogPosts.length === 0 ? (
+          {blogPosts === null ? (
+            <div className="blog-empty">
+              <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent', margin: '0 auto var(--space-3)' }} />
+              <p>Cargando artículos…</p>
+            </div>
+          ) : blogPosts.length === 0 ? (
             <div className="blog-empty">
               <BookOpen size={28} style={{ color: 'var(--color-text-faint)', margin: '0 auto var(--space-3)' }} />
               <p>Próximamente publicaremos guías y consejos útiles.</p>

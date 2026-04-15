@@ -17,6 +17,14 @@ export const useThemeStore = create<ThemeState>()(
         set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
       setTheme: (theme) => set({ theme }),
     }),
-    { name: 'ha-theme' }
+    {
+      name: 'ha-theme',
+      partialize: (state) => ({ theme: state.theme }),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...(persistedState as Partial<ThemeState>),
+        theme: (persistedState as Partial<ThemeState>)?.theme ?? 'light',
+      }),
+    }
   )
 )

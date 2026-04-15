@@ -320,7 +320,7 @@ body {
 
 .card-interactive:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px var(--card-accent-color, var(--color-border));
+  box-shadow: 5px 5px 0px 0px var(--card-accent-color, var(--color-border));
   background-image:
     linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
     linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
@@ -361,7 +361,7 @@ body {
 }
 .card-filled-primary:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px var(--color-primary-active);
+  box-shadow: 5px 5px 0px 0px var(--color-primary-active);
 }
 
 .card-title {
@@ -690,7 +690,8 @@ body {
 }
 .blog-card:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--color-border);
+  box-shadow: 5px 5px 0px 0px var(--color-border);
+ 
   background-image:
     linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
     linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
