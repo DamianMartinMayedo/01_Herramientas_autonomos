@@ -2,12 +2,11 @@ import { createBrowserRouter } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 
 // Lazy loading para que cada herramienta cargue solo cuando se necesita
-const FacturaPage    = lazy(() => import('../features/factura/FacturaPage').then(m => ({ default: m.FacturaPage })))
+const FacturaPage     = lazy(() => import('../features/factura/FacturaPage').then(m => ({ default: m.FacturaPage })))
 const PresupuestoPage = lazy(() => import('../features/presupuesto/PresupuestoPage').then(m => ({ default: m.PresupuestoPage })))
-const AdminPage      = lazy(() => import('../features/admin/AdminPage').then(m => ({ default: m.AdminPage })))
-
-// Fase 2 — descomentar cuando estén listas
-// const AlbaranPage = lazy(() => import('../features/albaran/AlbaranPage').then(m => ({ default: m.AlbaranPage })))
+const AdminPage       = lazy(() => import('../features/admin/AdminPage').then(m => ({ default: m.AdminPage })))
+const BlogPage        = lazy(() => import('../features/blog/BlogPage').then(m => ({ default: m.BlogPage })))
+const BlogPostPage    = lazy(() => import('../features/blog/BlogPostPage').then(m => ({ default: m.BlogPostPage })))
 
 import { HomePage } from '../features/home/HomePage'
 
@@ -40,6 +39,22 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<Loading />}>
         <AdminPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/blog',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <BlogPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/blog/:slug',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <BlogPostPage />
       </Suspense>
     ),
   },
