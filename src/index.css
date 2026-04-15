@@ -362,6 +362,20 @@ body {
   background-size: 32px 32px;
 }
 
+/* ── Card desactivada: bloquea todo efecto hover ──────────────────────── */
+.card-disabled {
+  opacity: 0.55;
+  cursor: default !important;
+  pointer-events: none;
+}
+/* Garantiza que ninguna subclase de acento aplique hover en cards desactivadas */
+.card-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--color-border) !important;
+  background-image: none !important;
+}
+
 /* ── 6 colores de acento para cards de herramientas ── */
 /* En reposo: border-top coloreado, resto neutro.      */
 /* En hover: borde completo pasa al color de acento    */
