@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '../../store/adminStore'
 import { ArrowLeft, ArrowRight, Calendar, Tag } from 'lucide-react'
-import { ThemeToggle } from '../../components/ui/ThemeToggle'
+import { SiteHeader } from '../../components/layout/SiteHeader'
+import { SiteFooter } from '../../components/layout/SiteFooter'
 
 /** Renderizador de Markdown ligero sin dependencia extra */
 function renderMarkdown(md: string): string {
@@ -58,7 +59,7 @@ export function BlogPostPage() {
 
   if (!post) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)', background: 'var(--color-bg)' }}>
+      <div className="page-root" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)' }}>
         <p style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-text)' }}>Artículo no encontrado</p>
         <button className="btn btn-primary btn-sm" onClick={() => navigate('/blog')}>
           <ArrowLeft size={14} /> Volver al blog
@@ -70,41 +71,27 @@ export function BlogPostPage() {
   const related = getRelated(post.id, posts, post.tags)
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}>
+    <div className="page-root" style={{ display: 'flex', flexDirection: 'column' }}>
 
-      {/* Header */}
-      <header className="site-header">
-        <div className="site-header-inner">
-          <Link to="/" style={{ textDecoration: 'none' }}>
-            <div className="site-logo">HerramientasAutonomos</div>
-          </Link>
-          <ThemeToggle />
-        </div>
-      </header>
+      <SiteHeader />
 
       <main style={{ maxWidth: 'var(--content-default)', margin: '0 auto', padding: 'var(--space-10) var(--space-6) var(--space-20)' }}>
 
         {/* Breadcrumb / Volver */}
-        <nav style={{ marginBottom: 'var(--space-8)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+        <nav className="post-breadcrumb">
           <Link
             to="/"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
-              textDecoration: 'none', fontWeight: 500,
-            }}
+            className="back-link"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
           >
             <ArrowLeft size={13} /> Inicio
           </Link>
-          <span style={{ color: 'var(--color-text-faint)', fontSize: 'var(--text-sm)' }}>/</span>
+          <span className="breadcrumb-sep">/</span>
           <Link
             to="/blog"
-            style={{
-              fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
-              textDecoration: 'none', fontWeight: 500,
-            }}
+            className="back-link"
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
           >
@@ -114,15 +101,9 @@ export function BlogPostPage() {
 
         {/* Tags */}
         {post.tags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
+          <div className="blog-card-tags" style={{ marginBottom: 'var(--space-5)' }}>
             {post.tags.map((t) => (
-              <span key={t} style={{
-                display: 'inline-flex', alignItems: 'center', gap: '4px',
-                fontSize: 'var(--text-xs)', fontWeight: 600,
-                color: 'var(--color-primary)',
-                background: 'var(--color-primary-highlight)',
-                padding: '3px 10px', borderRadius: 'var(--radius-full)',
-              }}>
+              <span key={t} className="blog-tag">
                 <Tag size={9} />{t}
               </span>
             ))}
@@ -130,42 +111,19 @@ export function BlogPostPage() {
         )}
 
         {/* Título */}
-        <h1 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'var(--text-2xl)',
-          fontWeight: 800,
-          color: 'var(--color-text)',
-          lineHeight: 1.2,
-          marginBottom: 'var(--space-4)',
-        }}>
+        <h1 className="hero-heading" style={{ marginBottom: 'var(--space-4)' }}>
           {post.titulo}
         </h1>
 
         {/* Meta */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-          fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)',
-          marginBottom: 'var(--space-8)',
-          paddingBottom: 'var(--space-6)',
-          borderBottom: '1px solid var(--color-divider)',
-        }}>
+        <div className="post-meta">
           <Calendar size={11} />
           Publicado el {formatDate(post.publishedAt ?? post.createdAt)}
         </div>
 
         {/* Extracto destacado */}
         {post.extracto && (
-          <blockquote style={{
-            padding: 'var(--space-5)',
-            background: 'var(--color-primary-highlight)',
-            borderLeft: '3px solid var(--color-primary)',
-            borderRadius: '0 var(--radius-lg) var(--radius-lg) 0',
-            marginBottom: 'var(--space-8)',
-            fontSize: 'var(--text-base)',
-            color: 'var(--color-text)',
-            lineHeight: 1.65,
-            fontStyle: 'italic',
-          }}>
+          <blockquote className="post-blockquote">
             {post.extracto}
           </blockquote>
         )}
@@ -174,21 +132,9 @@ export function BlogPostPage() {
         <div className="blog-content" dangerouslySetInnerHTML={{ __html: html }} />
 
         {/* CTA herramientas */}
-        <div style={{
-          marginTop: 'var(--space-12)',
-          padding: 'var(--space-6)',
-          background: 'var(--color-surface)',
-          border: '2px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          // boxShadow: '4px 4px 0 var(--color-border)',
-          textAlign: 'center',
-        }}>
-          <p style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-text)', marginBottom: 'var(--space-3)' }}>
-            ¿Listo para aplicarlo?
-          </p>
-          <p style={{ fontSize: 'var(--text-md)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-5)' }}>
-            Prueba nuestras herramientas 
-          </p>
+        <div className="post-cta-box">
+          <p className="post-cta-title">¿Listo para aplicarlo?</p>
+          <p className="post-cta-sub">Prueba nuestras herramientas</p>
           <Link to="/" className="btn btn-primary btn-sm">
             Ver todas las herramientas
           </Link>
@@ -197,20 +143,10 @@ export function BlogPostPage() {
         {/* Artículos relacionados */}
         {related.length > 0 && (
           <section style={{ marginTop: '30px' }}>
-            <h2 style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'var(--text-lg)',
-              fontWeight: 800,
-              color: 'var(--color-text)',
-              marginBottom: 'var(--space-5)',
-            }}>
+            <h2 className="related-heading">
               Artículos que también te pueden interesar
             </h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px,100%), 1fr))',
-              gap: 'var(--space-2)',
-            }}>
+            <div className="related-grid">
               {related.map((rel) => (
                 <Link
                   key={rel.id}
@@ -218,16 +154,7 @@ export function BlogPostPage() {
                   style={{ textDecoration: 'none', display: 'block' }}
                 >
                   <article
-                    style={{
-                      background: 'var(--color-surface)',
-                      border: '2px solid var(--color-border)',
-                      borderRadius: 'var(--radius-xl)',
-                      padding: 'var(--space-5)',
-                      height: '100%',
-                      display: 'flex', flexDirection: 'column',
-                      transition: 'transform 160ms ease, box-shadow 160ms ease',
-                      cursor: 'pointer',
-                    }}
+                    className="blog-card blog-card--sm"
                     onMouseEnter={e => {
                       (e.currentTarget as HTMLElement).style.transform = 'translate(-2px,-2px)'
                       ;(e.currentTarget as HTMLElement).style.boxShadow = '5px 5px 0 var(--color-border)'
@@ -238,29 +165,14 @@ export function BlogPostPage() {
                     }}
                   >
                     {rel.tags.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-1)', marginBottom: 'var(--space-3)' }}>
+                      <div className="blog-card-tags" style={{ gap: 'var(--space-1)', marginBottom: 'var(--space-3)' }}>
                         {rel.tags.slice(0, 2).map((t) => (
-                          <span key={t} style={{
-                            fontSize: 'var(--text-xs)', fontWeight: 600,
-                            color: 'var(--color-primary)',
-                            background: 'var(--color-primary-highlight)',
-                            padding: '2px 8px', borderRadius: 'var(--radius-full)',
-                          }}>{t}</span>
+                          <span key={t} className="blog-tag">{t}</span>
                         ))}
                       </div>
                     )}
-                    <h3 style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: 'var(--text-base)',
-                      fontWeight: 700,
-                      color: 'var(--color-text)',
-                      lineHeight: 1.3,
-                      marginBottom: 'var(--space-3)',
-                      flex: 1,
-                    }}>
-                      {rel.titulo}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-primary)', marginTop: 'auto' }}>
+                    <h3 className="blog-card-title blog-card-title--sm">{rel.titulo}</h3>
+                    <div className="blog-card-read" style={{ marginTop: 'auto' }}>
                       Leer <ArrowRight size={12} />
                     </div>
                   </article>
@@ -272,13 +184,7 @@ export function BlogPostPage() {
 
       </main>
 
-      <footer style={{ borderTop: '1px solid var(--color-divider)' }}>
-        <div style={{ maxWidth: 'var(--content-wide)', margin: '0 auto', padding: 'var(--space-6)', textAlign: 'center' }}>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>
-            © {new Date().getFullYear()} HerramientasAutonomos.es
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }
