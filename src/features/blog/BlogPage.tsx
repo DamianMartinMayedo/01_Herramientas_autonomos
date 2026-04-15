@@ -77,7 +77,7 @@ export function BlogPage() {
                     border: '2px solid var(--color-border)',
                     borderRadius: 'var(--radius-xl)',
                     padding: 'var(--space-6)',
-                    boxShadow: i === 0 ? '4px 4px 0 var(--color-border)' : '3px 3px 0 var(--color-border)',
+                    // boxShadow: i === 0 ? '4px 4px 0 var(--color-border)' : '3px 3px 0 var(--color-border)',
                     transition: 'transform 160ms ease, box-shadow 160ms ease',
                     cursor: 'pointer',
                   }}
@@ -87,7 +87,7 @@ export function BlogPage() {
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.transform = 'none'
-                    ;(e.currentTarget as HTMLElement).style.boxShadow = i === 0 ? '4px 4px 0 var(--color-border)' : '3px 3px 0 var(--color-border)'
+                    ;(e.currentTarget as HTMLElement).style.boxShadow = i === 0 ? '0px 0px 0 var(--color-border)' : '0px 0px 0 var(--color-border)'
                   }}
                 >
                   {/* Tags */}

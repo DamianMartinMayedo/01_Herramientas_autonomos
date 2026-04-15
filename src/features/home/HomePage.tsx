@@ -269,7 +269,7 @@ export function HomePage() {
                       border: '2px solid var(--color-border)',
                       borderRadius: 'var(--radius-xl)',
                       padding: 'var(--space-5)',
-                      boxShadow: '3px 3px 0 var(--color-border)',
+                      // boxShadow: '3px 3px 0 var(--color-border)',
                       height: '100%',
                       display: 'flex', flexDirection: 'column',
                       transition: 'transform 160ms ease, box-shadow 160ms ease',
@@ -281,7 +281,7 @@ export function HomePage() {
                     }}
                     onMouseLeave={e => {
                       (e.currentTarget as HTMLElement).style.transform = 'none'
-                      ;(e.currentTarget as HTMLElement).style.boxShadow = '3px 3px 0 var(--color-border)'
+                      ;(e.currentTarget as HTMLElement).style.boxShadow = '0px 0px 0 var(--color-border)'
                     }}
                   >
                     {/* Tags */}
