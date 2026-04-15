@@ -110,10 +110,10 @@
   --radius-full: 9999px;
 
   /* ── Sombras ── */
-  --shadow-sm: 0 1px 3px oklch(0.18 0.01 80 / 0.08), 0 1px 2px oklch(0.18 0.01 80 / 0.06);
+  /* --shadow-sm: 0 1px 3px oklch(0.18 0.01 80 / 0.08), 0 1px 2px oklch(0.18 0.01 80 / 0.06);
   --shadow-md: 0 4px 12px oklch(0.18 0.01 80 / 0.1),  0 2px 4px oklch(0.18 0.01 80 / 0.06);
   --shadow-lg: 0 12px 32px oklch(0.18 0.01 80 / 0.14), 0 4px 8px oklch(0.18 0.01 80 / 0.08);
-  --shadow-xl: 0 24px 48px oklch(0.18 0.01 80 / 0.18), 0 8px 16px oklch(0.18 0.01 80 / 0.1);
+  --shadow-xl: 0 24px 48px oklch(0.18 0.01 80 / 0.18), 0 8px 16px oklch(0.18 0.01 80 / 0.1); */
 
   /* ── Transiciones ── */
   --transition:      150ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -182,10 +182,10 @@
   --color-gold-highlight: #3A2E08;
   --color-gold-subtle:    #211A04;
 
-  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.2),  0 1px 2px oklch(0 0 0 / 0.16);
+  /* --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.2),  0 1px 2px oklch(0 0 0 / 0.16);
   --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3),  0 2px 4px oklch(0 0 0 / 0.2);
   --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.4), 0 4px 8px oklch(0 0 0 / 0.25);
-  --shadow-xl: 0 24px 48px oklch(0 0 0 / 0.5), 0 8px 16px oklch(0 0 0 / 0.3);
+  --shadow-xl: 0 24px 48px oklch(0 0 0 / 0.5), 0 8px 16px oklch(0 0 0 / 0.3); */
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -540,7 +540,7 @@ body {
   margin: 0 auto;
   padding: 0 var(--space-6) var(--space-16);
 }
-.section-pb { padding-bottom: var(--space-20); }
+.section-pb { padding-bottom: var(--space-10); }
 .section-hero { padding: var(--space-12) 0; }
 
 /* ── Hero card ── */
@@ -557,7 +557,7 @@ body {
 }
 .hero-sub {
   color: rgba(255,255,255,0.6);
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
   line-height: 1.7;
 }
 
@@ -669,8 +669,8 @@ body {
 
 /* Cada tarjeta recibe la animación con stagger via --i */
 .carousel-grid .blog-card {
-  animation: carousel-enter 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation: carousel-enter 2000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 160ms);
 }
 
 /* La card en sí */
@@ -691,6 +691,11 @@ body {
 .blog-card:hover {
   transform: translate(-2px, -2px);
   box-shadow: 5px 5px 0 var(--color-border);
+  background-image:
+    linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+
 }
 .blog-card-tags {
   display: flex;
@@ -866,7 +871,7 @@ body {
 .manifesto-item.featured {
   background: var(--color-primary);
   border-color: var(--color-primary-active);
-  box-shadow: 0 4px 0 0 var(--color-primary-active), var(--shadow-lg);
+  box-shadow: 0 6px 0 0 var(--color-primary-active);
   background-image:
     linear-gradient(to right, oklch(1 0 0 / 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, oklch(1 0 0 / 0.05) 1px, transparent 1px);
@@ -1033,5 +1038,5 @@ body {
 .hero-sub--page {
   font-size: var(--text-base);
   color: var(--color-text-muted);
-  max-width: 56ch;
+  max-width: 100ch;
 }

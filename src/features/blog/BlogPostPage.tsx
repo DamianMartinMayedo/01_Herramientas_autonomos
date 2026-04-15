@@ -71,11 +71,21 @@ export function BlogPostPage() {
   const related = getRelated(post.id, posts, post.tags)
 
   return (
+    
+    
     <div className="page-root" style={{ display: 'flex', flexDirection: 'column' }}>
 
       <SiteHeader />
 
-      <main style={{ maxWidth: 'var(--content-default)', margin: '0 auto', padding: 'var(--space-10) var(--space-6) var(--space-20)' }}>
+      <main
+  style={{
+    maxWidth: 'var(--content-default)',
+    margin: '0 auto',
+    padding: 'var(--space-10) var(--space-6) var(--space-20)'
+  }}
+>
+  
+  
 
         {/* Breadcrumb / Volver */}
         <nav className="post-breadcrumb">
@@ -104,7 +114,7 @@ export function BlogPostPage() {
           <div className="blog-card-tags" style={{ marginBottom: 'var(--space-5)' }}>
             {post.tags.map((t) => (
               <span key={t} className="blog-tag">
-                <Tag size={9} />{t}
+                 {/* <Tag size={0} />*/}{t}
               </span>
             ))}
           </div>

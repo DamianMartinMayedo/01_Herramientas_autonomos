@@ -416,25 +416,25 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                       )}
 
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-2)', marginLeft: 'auto' }}>
-                        <span style={{
+                        {/* <span style={{
                           fontSize: 'var(--text-sm)', fontWeight: 600,
                           color: 'var(--color-text)', paddingBottom: '0.5rem',
                           whiteSpace: 'nowrap',
                         }}>
                           {fmt(base)}
-                        </span>
+                        </span> */}
                         <button
                           type="button"
                           onClick={() => eliminarLinea(index)}
                           disabled={fields.length === 1}
                           style={{
                             padding: 'var(--space-2)',
-                            color: 'var(--color-text-faint)',
+                            color: 'var(--color-error)',
                             background: 'none',
                             border: '1.5px solid transparent',
                             borderRadius: 'var(--radius-md)',
                             cursor: fields.length === 1 ? 'not-allowed' : 'pointer',
-                            opacity: fields.length === 1 ? 0.3 : 1,
+                            // opacity: fields.length === 1 ? 0.5 : 1,
                             transition: 'color var(--transition), background var(--transition)',
                             fontFamily: 'var(--font-body)',
                           }}
@@ -445,12 +445,12 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                             }
                           }}
                           onMouseLeave={e => {
-                            e.currentTarget.style.color = 'var(--color-text-faint)'
+                            e.currentTarget.style.color = 'none'
                             e.currentTarget.style.background = 'none'
                           }}
                           aria-label="Eliminar línea"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </div>

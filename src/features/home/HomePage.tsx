@@ -114,7 +114,7 @@ function BlogCarousel({ posts }: { posts: ReturnType<typeof useAdminStore.getSta
               <div className="blog-card-tags">
                 {post.tags.slice(0, 2).map((t) => (
                   <span key={t} className="blog-card-tag">
-                    <Tag size={8} />{t}
+                     {/* <Tag size={0} />*/}{t}
                   </span>
                 ))}
               </div>

@@ -36,7 +36,7 @@ export function BlogPage() {
 
           <p className="section-label" style={{ marginBottom: 'var(--space-3)' }}>Blog</p>
           <h1 className="hero-heading--page" style={{ marginBottom: 'var(--space-4)' }}>
-            Guías y consejos<br />para autónomos
+            Guías y consejos para autónomos
           </h1>
           <p className="hero-sub--page">
             Artículos prácticos sobre fiscalidad, gestión y herramientas para que tu actividad como autónomo sea más sencilla.
@@ -70,9 +70,9 @@ export function BlogPage() {
                   {/* Tags */}
                   {post.tags.length > 0 && (
                     <div className="blog-card-tags">
-                      {post.tags.slice(0, 3).map((t) => (
+                      {post.tags.slice(0, 2).map((t) => (
                         <span key={t} className="blog-tag">
-                          <Tag size={9} />{t}
+                           {/* <Tag size={0} />*/}{t}
                         </span>
                       ))}
                     </div>
