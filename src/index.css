@@ -347,9 +347,9 @@ body {
   border: 2px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: var(--space-6);
-  /* box-shadow: 4px 4px 0px 0px var(--color-border); */
   transition: transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 90ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
   transform: translate(0, 0);
 }
 
@@ -363,32 +363,45 @@ body {
 }
 
 /* ── 6 colores de acento para cards de herramientas ── */
-/* Cada clase define el color del top-border y el offset-shadow en hover    */
+/* En reposo: border-top coloreado, resto neutro.      */
+/* En hover: borde completo pasa al color de acento    */
+/* con transición suave de 200ms.                      */
 
 .card-accent-primary {
   --card-accent-color: var(--color-primary);
   border-top: 3px solid var(--color-primary);
 }
+.card-accent-primary:hover { border-color: var(--color-primary); }
+
 .card-accent-success {
   --card-accent-color: var(--color-success);
   border-top: 3px solid var(--color-success);
 }
+.card-accent-success:hover { border-color: var(--color-success); }
+
 .card-accent-copper {
   --card-accent-color: var(--color-copper);
   border-top: 3px solid var(--color-copper);
 }
+.card-accent-copper:hover { border-color: var(--color-copper); }
+
 .card-accent-purple {
   --card-accent-color: var(--color-purple);
   border-top: 3px solid var(--color-purple);
 }
+.card-accent-purple:hover { border-color: var(--color-purple); }
+
 .card-accent-teal {
   --card-accent-color: var(--color-teal);
   border-top: 3px solid var(--color-teal);
 }
+.card-accent-teal:hover { border-color: var(--color-teal); }
+
 .card-accent-gold {
   --card-accent-color: var(--color-gold);
   border-top: 3px solid var(--color-gold);
 }
+.card-accent-gold:hover { border-color: var(--color-gold); }
 
 .card-filled-primary {
   background: var(--color-primary);
