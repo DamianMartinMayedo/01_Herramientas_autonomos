@@ -10,17 +10,15 @@
  *  - El PDF generado es vectorial (texto seleccionable, sin artefactos JPEG)
  *  - Sin popup blocker (iframe está en la misma página)
  *
- * Flujo:
- *  1. Serializar el HTML del elemento + estilos inline actuales
- *  2. Crear un blob HTML con @media print que oculta cualquier UI extra
- *  3. Inyectar un iframe oculto con ese blob
- *  4. Cuando carga, llamar a contentWindow.print()
- *  5. Limpiar el iframe tras un timeout
+ * NOTA sobre el nombre del PDF:
+ *  Chrome y la mayoría de navegadores usan document.title de la página PADRE
+ *  como nombre sugerido al guardar como PDF, ignorando el <title> del iframe.
+ *  Solución: cambiar document.title temporalmente antes de llamar a print()
+ *  y restaurarlo en cuanto el diálogo se cierra.
  */
 
 /** Construye el HTML completo de la página de impresión. */
 function buildPrintHtml(element: HTMLElement, titulo: string): string {
-  // Recoger todas las hojas de estilo del documento actual
   const styleLinks = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
     .map((l) => `<link rel="stylesheet" href="${l.href}">`)
     .join('\n')
@@ -66,7 +64,12 @@ export async function descargarPdf(
     iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;'
     document.body.appendChild(iframe)
 
+    // Guardar el título original para restaurarlo después
+    const originalTitle = document.title
+
     const cleanup = () => {
+      // Restaurar el título original de la SPA
+      document.title = originalTitle
       URL.revokeObjectURL(url)
       if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
       resolve()
@@ -77,12 +80,16 @@ export async function descargarPdf(
         const win = iframe.contentWindow
         if (!win) { cleanup(); return }
 
-        // Esperar a que los estilos se apliquen antes de imprimir
         setTimeout(() => {
           try {
+            // Cambiar el título de la página padre ANTES de imprimir.
+            // Chrome usa document.title (no el <title> del iframe) como
+            // nombre sugerido al guardar como PDF.
+            document.title = filename
+
             win.focus()
             win.print()
-            // Limpiar después de que el diálogo se cierre (estimado)
+            // Restaurar después de que el diálogo se cierre (estimado)
             setTimeout(cleanup, 1000)
           } catch (e) {
             cleanup()
