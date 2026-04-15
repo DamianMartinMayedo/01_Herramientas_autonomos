@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, Tag, ChevronLeft, ChevronRight } from 'lucide-react'
+import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, Tag, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { useAdminStore } from '../../store/adminStore'
 
@@ -79,7 +79,7 @@ function formatDate(iso: string) {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(iso))
 }
 
-// ── Carrusel de blog ─────────────────────────────────────────────────────────
+// ── Carrusel de blog ─────────────────────────────────────────────────────────────────────────
 const CARDS_PER_PAGE = 3
 const AUTO_INTERVAL = 5000
 
@@ -277,7 +277,7 @@ function BlogCarousel({ posts }: { posts: ReturnType<typeof useAdminStore.getSta
   )
 }
 
-// ── Página principal ─────────────────────────────────────────────────────────
+// ── Página principal ─────────────────────────────────────────────────────────────────────────
 export function HomePage() {
   const allPosts = useAdminStore((s) => s.posts)
   const blogPosts = allPosts.filter((p) => p.status === 'published')
@@ -343,14 +343,10 @@ export function HomePage() {
               const Icon = h.icon
               const cardEl = (
                 <div
-                  className={`card ${h.accentClass} ${h.activa ? 'card-interactive' : ''}`}
-                  style={{
-                    display: 'flex', flexDirection: 'column',
-                    opacity: h.activa ? 1 : 0.52,
-                    cursor: h.activa ? 'pointer' : 'default',
-                    userSelect: h.activa ? undefined : 'none',
-                  }}
+                  className={`card ${h.accentClass} ${h.activa ? 'card-interactive' : 'card-disabled'}`}
+                  style={{ display: 'flex', flexDirection: 'column' }}
                 >
+                  {/* Fila superior: icono + badge */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
                     <div style={{
                       width: '40px', height: '40px',
@@ -361,9 +357,20 @@ export function HomePage() {
                     }}>
                       <Icon size={18} style={{ color: h.ctaColor }} />
                     </div>
+
+                    {/* Badge: Próximamente (solo en inactivas) */}
+                    {!h.activa && (
+                      <span className="badge badge-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={10} />
+                        Próximamente
+                      </span>
+                    )}
                   </div>
+
                   <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>{h.titulo}</h3>
                   <p className="card-body" style={{ flex: 1 }}>{h.desc}</p>
+
+                  {/* CTA + aviso Verifactu (solo en activas) */}
                   {h.activa && (
                     <div style={{
                       marginTop: 'var(--space-5)',
