@@ -1,20 +1,52 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HerramientasAutonomos.es</title>
-    <!-- Fuentes: Bricolage Grotesque (titulares) + Figtree (cuerpo) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Figtree:wght@300..800&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HerramientasAutonomos.es</title>
+
+  <!-- ── Fuentes: Bricolage Grotesque (titulares) + Figtree (cuerpo) ── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Figtree:wght@300..800&display=swap"
+    rel="stylesheet" />
+
+  <!--
+    ══════════════════════════════════════════════════════════════
+    GOOGLE ANALYTICS 4
+    ──────────────────────────────────────────────────────────────
+    PASOS PARA ACTIVAR:
+    1. Ve a analytics.google.com → Crear propiedad → Web
+    2. Copia tu Measurement ID (G-XXXXXXXXXX)
+    3. Reemplaza G-XXXXXXXXXX por tu ID real en las dos líneas de abajo
+    4. Descomenta el bloque (quita los comentarios 
+    5. En producción: define VITE_GA_MEASUREMENT_ID en tus variables de entorno
+
+    NOTA: El Measurement ID también sirve como identificador en adminStore.ts
+    para generar el enlace directo a GA4 desde el panel de analíticas.
+    ══════════════════════════════════════════════════════════════
+    -->
+
+  <!--
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX', {
+        page_title: document.title,
+        send_page_view: true
+      });
+    </script>
+    -->
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
