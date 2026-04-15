@@ -76,7 +76,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
   const sectionLabelStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
     fontWeight: 700,
-    // letterSpacing: '0.10em',
     textTransform: 'uppercase',
     color: 'var(--color-text-muted)',
     marginBottom: 'var(--space-4)',
@@ -129,7 +128,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             fontFamily: 'var(--font-display)',
             fontSize: 'var(--text-lg)',
             fontWeight: 700,
-            // letterSpacing: '-0.02em',
             color: 'var(--color-text)',
           }}>
             {titulo}
@@ -158,7 +156,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </Button>
           )}
           <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
-            
             Exportar
           </Button>
           <ThemeToggle />
@@ -393,7 +390,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                             <select
                               {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
                               className="select-v3"
-                              style={{ width: '5rem' }}
+                              style={{ width: '6.5rem' }}
                             >
                               {TIPOS_IVA.map((t) => (
                                 <option key={t} value={t}>{t}%</option>
@@ -407,7 +404,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                               <select
                                 {...register(`lineas.${index}.irpf`, { valueAsNumber: true })}
                                 className="select-v3"
-                                style={{ width: '5rem' }}
+                                style={{ width: '6.5rem' }}
                               >
                                 {TIPOS_IRPF.map((t) => (
                                   <option key={t} value={t}>{t}%</option>
@@ -590,7 +587,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
           <div style={{
             overflow: 'hidden',
             borderRadius: 'var(--radius-xl)',
-            // boxShadow: 'var(--shadow-lg)',
             border: '2px solid var(--color-border)',
             background: 'white',
             display: 'flex',
