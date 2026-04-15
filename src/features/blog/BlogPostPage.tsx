@@ -111,7 +111,7 @@ export function BlogPostPage() {
         )}
 
         {/* Título */}
-        <h1 className="hero-heading" style={{ marginBottom: 'var(--space-4)' }}>
+        <h1 className="hero-heading--page" style={{ marginBottom: 'var(--space-4)' }}>
           {post.titulo}
         </h1>
 

@@ -35,10 +35,10 @@ export function BlogPage() {
           </Link>
 
           <p className="section-label" style={{ marginBottom: 'var(--space-3)' }}>Blog</p>
-          <h1 className="hero-heading" style={{ marginBottom: 'var(--space-4)' }}>
+          <h1 className="hero-heading--page" style={{ marginBottom: 'var(--space-4)' }}>
             Guías y consejos<br />para autónomos
           </h1>
-          <p className="hero-sub">
+          <p className="hero-sub--page">
             Artículos prácticos sobre fiscalidad, gestión y herramientas para que tu actividad como autónomo sea más sencilla.
           </p>
         </section>

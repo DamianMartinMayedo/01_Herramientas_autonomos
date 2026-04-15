@@ -187,7 +187,7 @@ export function HomePage() {
 
         {/* Hero */}
         <section className="section-hero">
-          <div className="manifesto-item featured hero-card">
+          <div className="manifesto-item featured">
             <h1 className="hero-heading">
               Todo lo que necesitas<br />como autónomo,<br />
               <span className="hero-heading-accent">sin complicaciones.</span>
