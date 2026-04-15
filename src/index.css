@@ -712,11 +712,40 @@ body {
   padding: 2px 8px;
   border-radius: var(--radius-full);
 }
+
+/* blog-tag: alias semántico de blog-card-tag */
+.blog-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-highlight);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
 .blog-card-title {
   font-family: var(--font-display);
   font-size: var(--text-base);
   font-weight: 700;
   color: var(--color-text);
+  line-height: 1.3;
+  margin-bottom: var(--space-3);
+  flex: 1;
+}
+/* Variante de título más grande para BlogPage */
+.blog-card-title--lg {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: var(--space-3);
+}
+/* Variante pequeña para relacionados */
+.blog-card-title--sm {
+  font-size: var(--text-base);
+  font-weight: 700;
   line-height: 1.3;
   margin-bottom: var(--space-3);
   flex: 1;
@@ -730,6 +759,11 @@ body {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+/* Variante 3 líneas para BlogPage */
+.blog-card-excerpt--3 {
+  -webkit-line-clamp: 3;
+  margin-bottom: var(--space-5);
 }
 .blog-card-footer {
   display: flex;
@@ -751,6 +785,13 @@ body {
   font-size: var(--text-xs);
   font-weight: 600;
   color: var(--color-primary);
+}
+
+/* Grid de lista de blog completo (BlogPage) */
+.blog-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+  gap: var(--space-5);
 }
 
 /* Controles del carrusel */
@@ -888,4 +929,112 @@ body {
   padding: var(--space-4) var(--space-5); background: var(--color-primary-highlight);
   border-left: 3px solid var(--color-primary); border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   margin-bottom: var(--space-6); font-style: italic; color: var(--color-text-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BLOG PAGE — clases específicas de BlogPage y BlogPostPage
+══════════════════════════════════════════════════════════════════════════ */
+
+/* Enlace "Volver" con flecha */
+.back-link {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.back-link:hover { color: var(--color-text); }
+
+/* Cabecera de navegación con breadcrumb */
+.post-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-8);
+}
+.breadcrumb-sep {
+  color: var(--color-text-faint);
+  font-size: var(--text-sm);
+}
+
+/* Meta-info del artículo (fecha) */
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* Blockquote del extracto */
+.post-blockquote {
+  padding: var(--space-5);
+  background: var(--color-primary-highlight);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  margin-bottom: var(--space-8);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  line-height: 1.65;
+  font-style: italic;
+}
+
+/* CTA al final del artículo */
+.post-cta-box {
+  margin-top: var(--space-12);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  text-align: center;
+}
+.post-cta-title {
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  margin-bottom: var(--space-3);
+}
+.post-cta-sub {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-5);
+}
+
+/* Encabezado de artículos relacionados */
+.related-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: var(--space-5);
+}
+
+/* Grid de artículos relacionados */
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-2);
+}
+
+/* Variante de blog-card más compacta (relacionados) */
+.blog-card--sm {
+  padding: var(--space-5);
+}
+
+/* Hero heading adaptado para páginas de contenido (texto oscuro en bg claro) */
+.hero-heading--page {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+.hero-sub--page {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  max-width: 56ch;
 }
