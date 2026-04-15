@@ -52,6 +52,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
   const documento = watch() as DocumentoBase
   const esFinanciero = tipo !== 'albaran'
   const metodoPago = watch('formaPago.metodo') as MetodoPago
+  const clienteExterior = watch('cliente.clienteExterior') as boolean
 
   const handleAbrirPrevia = form.handleSubmit(() => setModalAbierto(true))
 
@@ -72,7 +73,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
     navigate('/factura')
   }
 
-  /* ── Estilos inline reutilizables ───────────────────────────────────── */
+  /* ── Estilos inline reutilizables ──────────────────────────────────────────── */
   const sectionLabelStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
     fontWeight: 700,
@@ -94,7 +95,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
       style={{ minHeight: '100vh', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}
     >
 
-      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
+      {/* ── Top bar ─────────────────────────────────────────────────────────────────────── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: 'oklch(from var(--color-surface) l c h / 0.95)',
@@ -162,7 +163,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         </div>
       </div>
 
-       {/* ── Banner disclaimer (solo para factura) ────────────────────────── */}
+       {/* ── Banner disclaimer (solo para factura) ──────────────────────────────────── */}
       {tipo === 'factura' && (
         <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/30 px-6 py-4">
           <div className="max-w-[1400px] mx-auto flex gap-5">
@@ -179,7 +180,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         </div>
       )}
 
-      {/* ── Layout dos columnas ─────────────────────────────────────────────── */}
+      {/* ── Layout dos columnas ────────────────────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 560px), 1fr))',
@@ -189,7 +190,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         margin: '0 auto',
       }}>
 
-        {/* ── COLUMNA IZQUIERDA — Formulario ───────────────────────────────── */}
+        {/* ── COLUMNA IZQUIERDA — Formulario ──────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
           {/* ENCABEZADO */}
@@ -289,6 +290,16 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Datos del cliente</legend>
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+
+              {/* Checkbox cliente exterior */}
+              <label className="input-toggle" style={{ marginBottom: 'var(--space-3)' }}>
+                <input
+                  type="checkbox"
+                  {...register('cliente.clienteExterior')}
+                />
+                <span>Cliente fuera de España</span>
+              </label>
+
               <FormField
                 label="Nombre / Razón social"
                 {...register('cliente.nombre', { required: 'El nombre del cliente es obligatorio' })}
@@ -296,10 +307,13 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               />
               <div className="form-row">
                 <FormField
-                  label="NIF / CIF / NIE"
+                  label={clienteExterior ? 'Número de identificación (opcional)' : 'NIF / CIF / NIE'}
                   {...register('cliente.nif', {
-                    required: 'El NIF del cliente es obligatorio',
-                    validate: (v) => validarNif(v),
+                    required: clienteExterior ? false : 'El NIF del cliente es obligatorio',
+                    validate: (v) => {
+                      if (clienteExterior) return true
+                      return validarNif(v)
+                    },
                   })}
                   error={errors.cliente?.nif}
                 />
@@ -315,15 +329,25 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               <FormField label="Dirección (opcional)" {...register('cliente.direccion')} />
               <div className="form-row">
                 <FormField
-                  label="Código postal"
+                  label={clienteExterior ? 'Código postal (opcional)' : 'Código postal'}
                   {...register('cliente.cp', {
-                    pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
+                    pattern: clienteExterior
+                      ? undefined
+                      : { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
                   })}
                   error={errors.cliente?.cp}
                 />
                 <FormField label="Ciudad" {...register('cliente.ciudad')} />
               </div>
-              <FormField label="Provincia" {...register('cliente.provincia')} />
+              <div className="form-row">
+                <FormField label="Provincia" {...register('cliente.provincia')} />
+                {clienteExterior && (
+                  <FormField
+                    label="País"
+                    {...register('cliente.pais')}
+                  />
+                )}
+              </div>
             </div>
           </fieldset>
 
@@ -581,7 +605,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
         </div>
 
-        {/* ── COLUMNA DERECHA — Preview estática ──────────────────────────────── */}
+        {/* ── COLUMNA DERECHA — Preview estática ────────────────────────────────────────────── */}
         <div className="hidden xl:flex" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
           <p style={sectionLabelStyle}>Vista previa en tiempo real</p>
           <div style={{
@@ -600,7 +624,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
 
       </div>
 
-      {/* ── Modal ────────────────────────────────────────────────────────────── */}
+      {/* ── Modal ────────────────────────────────────────────────────────────────────────── */}
       {modalAbierto && (
         <PreviewModal
           documento={documento}
