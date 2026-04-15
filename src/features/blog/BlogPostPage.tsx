@@ -70,7 +70,7 @@ export function BlogPostPage() {
   const related = getRelated(post.id, posts, post.tags)
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}>
 
       {/* Header */}
       <header className="site-header">
@@ -82,7 +82,7 @@ export function BlogPostPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 'var(--content-narrow)', margin: '0 auto', padding: 'var(--space-10) var(--space-6) var(--space-20)' }}>
+      <main style={{ maxWidth: 'var(--content-default)', margin: '0 auto', padding: 'var(--space-10) var(--space-6) var(--space-20)' }}>
 
         {/* Breadcrumb / Volver */}
         <nav style={{ marginBottom: 'var(--space-8)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -180,14 +180,14 @@ export function BlogPostPage() {
           background: 'var(--color-surface)',
           border: '2px solid var(--color-border)',
           borderRadius: 'var(--radius-xl)',
-          boxShadow: '4px 4px 0 var(--color-border)',
+          // boxShadow: '4px 4px 0 var(--color-border)',
           textAlign: 'center',
         }}>
-          <p style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', marginBottom: 'var(--space-3)' }}>
+          <p style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-text)', marginBottom: 'var(--space-3)' }}>
             ¿Listo para aplicarlo?
           </p>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-5)' }}>
-            Prueba nuestras herramientas gratuitas para autónomos — sin registro, sin complicaciones.
+          <p style={{ fontSize: 'var(--text-md)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-5)' }}>
+            Prueba nuestras herramientas 
           </p>
           <Link to="/" className="btn btn-primary btn-sm">
             Ver todas las herramientas
@@ -196,7 +196,7 @@ export function BlogPostPage() {
 
         {/* Artículos relacionados */}
         {related.length > 0 && (
-          <section style={{ marginTop: 'var(--space-14)' }}>
+          <section style={{ marginTop: '30px' }}>
             <h2 style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'var(--text-lg)',
@@ -209,7 +209,7 @@ export function BlogPostPage() {
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px,100%), 1fr))',
-              gap: 'var(--space-4)',
+              gap: 'var(--space-2)',
             }}>
               {related.map((rel) => (
                 <Link

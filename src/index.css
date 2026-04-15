@@ -707,7 +707,7 @@ body {
     .manifesto-item.featured {
       background: var(--color-primary);
       border-color: var(--color-primary-active);
-      box-shadow: 0 4px 0 0 var(--color-primary-active), var(--shadow-lg);
+      box-shadow: 0 4px 0 0 var(--color-primary-active);
       background-image:
         linear-gradient(to right, oklch(1 0 0 / 0.05) 1px, transparent 1px),
         linear-gradient(to bottom, oklch(1 0 0 / 0.05) 1px, transparent 1px);

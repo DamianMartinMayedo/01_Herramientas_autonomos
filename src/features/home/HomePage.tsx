@@ -461,7 +461,8 @@ export function HomePage() {
             </div>
           ) : (
             <BlogCarousel posts={blogPosts} />
-          )}
+          )
+          }
         </section>
 
       </main>
