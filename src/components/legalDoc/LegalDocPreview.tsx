@@ -265,12 +265,12 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
   const parrafoIntro: Record<string, React.ReactNode> = {
     amistoso: (
       <>
-        Me pongo en contacto contigo para recordarte, de forma amistosa, que la factura n.º{' '}
+        Me pongo en contacto con usted para recordarle que la factura n.º{' '}
         <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
         <strong>{formatFecha(doc.fechaFactura)}</strong> por un importe de{' '}
         <strong>{formatEuro(doc.importeDeuda)}</strong>, venció el{' '}
         <strong>{formatFecha(doc.fechaVencimiento)}</strong> y aún no hemos recibido el pago.
-        Entiendo que puede ser un simple olvido o un cruce de fechas, así que te lo comento
+        Entiendo que puede ser un simple olvido o un cruce de fechas, así que se lo comento
         antes de que vaya a más.
       </>
     ),
