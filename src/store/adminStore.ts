@@ -20,7 +20,7 @@ export interface Herramienta {
   activa: boolean
   proximamente: boolean
   descripcion: string
-  categoria: 'documentos' | 'calculadoras'
+  categoria: 'documentos' | 'calculadoras' | 'contratos'
   usosRegistrados: number
 }
 
@@ -50,11 +50,18 @@ interface AdminState {
 
 /* ── Herramientas por defecto ───────────────────────────────────────────── */
 const HERRAMIENTAS_DEFAULT: Herramienta[] = [
-  { id: 'factura', nombre: 'Generador de facturas', ruta: '/factura', activa: true, proximamente: false, descripcion: 'Crea facturas con IVA e IRPF y descárgalas en PDF al instante.', categoria: 'documentos', usosRegistrados: 0 },
-  { id: 'presupuesto', nombre: 'Generador de presupuestos', ruta: '/presupuesto', activa: true, proximamente: false, descripcion: 'Envía presupuestos profesionales a tus clientes en minutos.', categoria: 'documentos', usosRegistrados: 0 },
-  { id: 'cuota-autonomos', nombre: 'Cuota de autónomos', ruta: '/cuota-autonomos', activa: false, proximamente: true, descripcion: 'Calcula tu cuota mensual según tus ingresos netos reales.', categoria: 'calculadoras', usosRegistrados: 0 },
-  { id: 'precio-hora', nombre: 'Precio por hora', ruta: '/precio-hora', activa: false, proximamente: true, descripcion: 'Fija tu tarifa sin venderte por debajo de coste.', categoria: 'calculadoras', usosRegistrados: 0 },
-  { id: 'iva-irpf', nombre: 'IVA / IRPF', ruta: '/iva-irpf', activa: false, proximamente: true, descripcion: 'Separa base imponible, IVA e IRPF de cualquier importe.', categoria: 'calculadoras', usosRegistrados: 0 },
+  // ── Documentos ──
+  { id: 'factura',      nombre: 'Generador de facturas',      ruta: '/factura',      activa: true,  proximamente: false, descripcion: 'Crea facturas con IVA e IRPF y descárgalas en PDF al instante.',            categoria: 'documentos',   usosRegistrados: 0 },
+  { id: 'presupuesto',  nombre: 'Generador de presupuestos',  ruta: '/presupuesto',  activa: true,  proximamente: false, descripcion: 'Envía presupuestos profesionales a tus clientes en minutos.',            categoria: 'documentos',   usosRegistrados: 0 },
+  { id: 'albaran',      nombre: 'Generador de albarán',       ruta: '/albaran',      activa: false, proximamente: true,  descripcion: 'Genera albaranes de entrega vinculados a tus presupuestos y facturas.', categoria: 'documentos',   usosRegistrados: 0 },
+  // ── Contratos y acuerdos ──
+  { id: 'contrato',     nombre: 'Generador de contratos',     ruta: '/contrato',     activa: false, proximamente: true,  descripcion: 'Crea contratos de servicios personalizados listos para firmar.',           categoria: 'contratos',    usosRegistrados: 0 },
+  { id: 'nda',          nombre: 'Generador de NDA',           ruta: '/nda',          activa: false, proximamente: true,  descripcion: 'Acuerdos de confidencialidad (NDA) profesionales en minutos.',            categoria: 'contratos',    usosRegistrados: 0 },
+  { id: 'reclamacion',  nombre: 'Reclamación de pago',        ruta: '/reclamacion',  activa: false, proximamente: true,  descripcion: 'Carta formal para reclamar facturas impagadas a tus clientes.',           categoria: 'contratos',    usosRegistrados: 0 },
+  // ── Calculadoras ──
+  { id: 'cuota-autonomos', nombre: 'Cuota de autónomos', ruta: '/cuota-autonomos', activa: false, proximamente: true,  descripcion: 'Calcula tu cuota mensual según tus ingresos netos reales.',              categoria: 'calculadoras', usosRegistrados: 0 },
+  { id: 'precio-hora',     nombre: 'Precio por hora',    ruta: '/precio-hora',     activa: false, proximamente: true,  descripcion: 'Fija tu tarifa sin venderte por debajo de coste.',                       categoria: 'calculadoras', usosRegistrados: 0 },
+  { id: 'iva-irpf',        nombre: 'IVA / IRPF',         ruta: '/iva-irpf',        activa: false, proximamente: true,  descripcion: 'Separa base imponible, IVA e IRPF de cualquier importe.',                categoria: 'calculadoras', usosRegistrados: 0 },
 ]
 
 /* ── Contraseña por defecto ─────────────────────────────────────────────── */
@@ -126,10 +133,19 @@ export const useAdminStore = create<AdminState>()(
     }),
     {
       name: 'ha-admin',
-      merge: (persistedState: unknown, currentState: AdminState): AdminState => ({
-        ...currentState,
-        ...(persistedState as Partial<AdminState>),
-      }),
+      merge: (persistedState: unknown, currentState: AdminState): AdminState => {
+        const persisted = persistedState as Partial<AdminState>
+        const mergedHerramientas = HERRAMIENTAS_DEFAULT.map((defaultH) => {
+          const saved = (persisted.herramientas ?? []).find((h) => h.id === defaultH.id)
+          // Mantiene activa/proximamente del store guardado, pero añade campos nuevos del default
+          return saved ? { ...defaultH, ...saved } : defaultH
+        })
+        return {
+          ...currentState,
+          ...persisted,
+          herramientas: mergedHerramientas,
+        }
+      },
     }
   )
 )
