@@ -124,7 +124,7 @@ export function HerramientasSection() {
     return {
       title:         h.activa ? `Desactivar "${h.nombre}"` : `Activar "${h.nombre}"`,
       description:   h.activa
-        ? 'La herramienta quedará inaccesible para los usuarios y se mostrará como "Próximamente" en el Home.'
+        ? 'La herramienta quedará inaccesible para los usuarios y se mostrará como "Mejorando".'
         : 'La herramienta pasará a estar disponible para todos los usuarios.',
       confirmLabel:  h.activa ? 'Sí, desactivar' : 'Sí, activar',
       confirmVariant: h.activa ? 'danger' as const : 'success' as const,

@@ -33,7 +33,7 @@ const VARIANTS: Record<
   },
   success: {
     background:  'var(--color-success)',
-    hoverBg:     'var(--color-success-hover)',
+    hoverBg:     'var(--color-success)',
     borderColor: 'var(--color-success-active)',
     shadowColor: 'var(--color-success-active)',
     color:       'white',
