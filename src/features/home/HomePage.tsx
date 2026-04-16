@@ -7,32 +7,31 @@ import { SiteFooter } from '../../components/layout/SiteFooter'
 import { useAdminStore, type Herramienta } from '../../store/adminStore'
 
 /*
-  Paleta de 6 colores para cards de herramientas
-  1. card-accent-primary  → azul       (#1A5FC8)
-  2. card-accent-success  → verde      (#53a61c)
-  3. card-accent-copper   → cobre      (#A56227)
-  4. card-accent-purple   → violeta    (#6D3BB8)
-  5. card-accent-teal     → esmeralda  (#0F7E72)
-  6. card-accent-gold     → oro ámbar  (#B07B00)
+  Paleta de acentos de card — SOLO usar variables que existen en index.css
+  → --color-primary  (azul)
+  → --color-success  (verde)
+  → --color-copper   (cobre)
+  → --color-purple   (violeta)
+  → --color-teal     (esmeralda)
+  → --color-gold     (oro ámbar)
 */
-
-// Metadatos visuales por herramienta (icon, accentClass, ctaColor)
-// Regla: ctaColor SIEMPRE debe coincidir con el color del acento de la card
 const HERRAMIENTA_META: Record<string, {
   icon: React.ElementType
   accentClass: string
-  ctaColor: string
+  ctaColor: string   // debe coincidir 1:1 con el color del acento
 }> = {
-  factura:         { icon: FileText,    accentClass: 'card-accent-primary', ctaColor: 'var(--color-blue)'    },
-  presupuesto:     { icon: FileText,    accentClass: 'card-accent-success', ctaColor: 'var(--color-success)' },
-  albaran:         { icon: Truck,       accentClass: 'card-accent-copper',  ctaColor: 'var(--color-warning)'  },
-  contrato:        { icon: Scroll,      accentClass: 'card-accent-purple',  ctaColor: 'var(--color-purple)'  },
-  nda:             { icon: ShieldCheck, accentClass: 'card-accent-teal',    ctaColor: 'var(--color-primary)' },
-  reclamacion:     { icon: BadgeAlert,  accentClass: 'card-accent-gold',    ctaColor: 'var(--color-gold)'    },
-  'cuota-autonomos': { icon: Calculator,  accentClass: 'card-accent-copper',  ctaColor: 'var(--color-warning)' },
-  'precio-hora':   { icon: Calculator,  accentClass: 'card-accent-purple',  ctaColor: 'var(--color-purple)'  },
-  'iva-irpf':      { icon: Calculator,  accentClass: 'card-accent-teal',    ctaColor: 'var(--color-primary)' },
+  factura:           { icon: FileText,    accentClass: 'card-accent-primary', ctaColor: 'var(--color-primary)' },
+  presupuesto:       { icon: FileText,    accentClass: 'card-accent-success', ctaColor: 'var(--color-success)' },
+  albaran:           { icon: Truck,       accentClass: 'card-accent-copper',  ctaColor: 'var(--color-copper)'  },
+  contrato:          { icon: Scroll,      accentClass: 'card-accent-purple',  ctaColor: 'var(--color-purple)'  },
+  nda:               { icon: ShieldCheck, accentClass: 'card-accent-teal',    ctaColor: 'var(--color-teal)'    },
+  reclamacion:       { icon: BadgeAlert,  accentClass: 'card-accent-gold',    ctaColor: 'var(--color-gold)'    },
+  'cuota-autonomos': { icon: Calculator,  accentClass: 'card-accent-copper',  ctaColor: 'var(--color-copper)'  },
+  'precio-hora':     { icon: Calculator,  accentClass: 'card-accent-purple',  ctaColor: 'var(--color-purple)'  },
+  'iva-irpf':        { icon: Calculator,  accentClass: 'card-accent-teal',    ctaColor: 'var(--color-teal)'    },
 }
+
+const FALLBACK_META = { icon: FileText, accentClass: 'card-accent-primary', ctaColor: 'var(--color-primary)' }
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(iso))
@@ -40,18 +39,15 @@ function formatDate(iso: string) {
 
 // ── Blog Carousel ──────────────────────────────────────────────────────────────────
 const CARDS_PER_PAGE = 3
-const AUTO_INTERVAL = 5000
+const AUTO_INTERVAL  = 5000
 
-type PublicBlogPost = Pick<
-  BlogPost,
-  'id' | 'titulo' | 'slug' | 'extracto' | 'tags' | 'status' | 'createdAt' | 'publishedAt'
->
+type PublicBlogPost = Pick<BlogPost, 'id' | 'titulo' | 'slug' | 'extracto' | 'tags' | 'status' | 'createdAt' | 'publishedAt'>
 
 function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
-  const total = Math.min(posts.length, 9)
+  const total        = Math.min(posts.length, 9)
   const visiblePosts = posts.slice(0, total)
-  const pageCount = Math.ceil(total / CARDS_PER_PAGE)
-  const [page, setPage] = useState(0)
+  const pageCount    = Math.ceil(total / CARDS_PER_PAGE)
+  const [page, setPage]     = useState(0)
   const [animKey, setAnimKey] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -86,27 +82,24 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
           >
             {post.tags.length > 0 && (
               <div className="blog-card-tags">
-                {post.tags.slice(0, 2).map((t) => (
+                {post.tags.slice(0, 2).map(t => (
                   <span key={t} className="blog-card-tag">{t}</span>
                 ))}
               </div>
             )}
             <h3 className="blog-card-title">{post.titulo}</h3>
-            {post.extracto && (
-              <p className="blog-card-excerpt">{post.extracto}</p>
-            )}
+            {post.extracto && <p className="blog-card-excerpt">{post.extracto}</p>}
             <div className="blog-card-footer">
               <div className="blog-card-date">
                 <Calendar size={10} />
                 {formatDate(post.publishedAt ?? post.createdAt)}
               </div>
-              <div className="blog-card-read">
-                Leer <ArrowRight size={12} />
-              </div>
+              <div className="blog-card-read">Leer <ArrowRight size={12} /></div>
             </div>
           </Link>
         ))}
       </div>
+
       {pageCount > 1 && (
         <div className="carousel-controls">
           <button aria-label="Anterior" className="carousel-arrow" onClick={() => { resetTimer(); go(page - 1) }}>
@@ -133,11 +126,12 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
 
 // ── ToolCard ───────────────────────────────────────────────────────────────────────
 function ToolCard({ h }: { h: Herramienta }) {
-  const meta = HERRAMIENTA_META[h.id] ?? { icon: FileText, accentClass: 'card-accent-primary', ctaColor: 'var(--color-blue)' }
+  const meta = HERRAMIENTA_META[h.id] ?? FALLBACK_META
   const Icon = meta.icon
+  const isActive = h.activa && !h.proximamente && !h.mantenimiento
 
   const cardEl = (
-    <div className={`card tool-card-inner ${meta.accentClass} ${h.activa ? 'card-interactive' : 'card-disabled'}`}>
+    <div className={`card tool-card-inner ${meta.accentClass} ${isActive ? 'card-interactive' : 'card-disabled'}`}>
       <div className="tool-card-top">
         <div className="tool-icon-box">
           <Icon size={18} style={{ color: meta.ctaColor }} />
@@ -153,9 +147,9 @@ function ToolCard({ h }: { h: Herramienta }) {
       <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>{h.nombre}</h3>
       <p className="card-body" style={{ flex: 1 }}>{h.descripcion}</p>
 
-      {h.activa && (!h.proximamente && !h.mantenimiento) && (
+      {isActive && (
         <div className="tool-cta">
-          <div className="tool-cta-link" style={{ color: meta.ctaColor, fontWeight: 700 }}>
+          <div className="tool-cta-link" style={{ color: meta.ctaColor }}>
             Ir a la herramienta <ArrowRight size={15} />
           </div>
           {h.id === 'factura' && (
@@ -183,7 +177,7 @@ function ToolCard({ h }: { h: Herramienta }) {
     </div>
   )
 
-  return h.activa && !h.proximamente && !h.mantenimiento ? (
+  return isActive ? (
     <Link to={h.ruta} style={{ display: 'block', textDecoration: 'none' }}>
       {cardEl}
     </Link>
@@ -197,11 +191,8 @@ export function HomePage() {
   const herramientas = useAdminStore((s) => s.herramientas)
   const [blogPosts, setBlogPosts] = useState<PublicBlogPost[] | null>(null)
 
-  // 1. Filtrar visibles
   const visibles = herramientas.filter(h => h.visible !== false)
 
-  // 2. Ordenar herramientas dentro de cada categoría
-  // Orden: factura/presupuesto > activa > resto
   const sortTools = (a: Herramienta, b: Herramienta) => {
     const priorityIds = ['factura', 'presupuesto']
     const aPrio = priorityIds.includes(a.id)
@@ -213,77 +204,47 @@ export function HomePage() {
     return 0
   }
 
-  // 3. Agrupar y detectar actividad por categoría
   const byCategoria: Record<string, { items: Herramienta[], hasActive: boolean }> = {}
   for (const h of visibles) {
-    if (!byCategoria[h.categoria]) {
-      byCategoria[h.categoria] = { items: [], hasActive: false }
-    }
+    if (!byCategoria[h.categoria]) byCategoria[h.categoria] = { items: [], hasActive: false }
     byCategoria[h.categoria].items.push(h)
-    if (h.activa && !h.proximamente && !h.mantenimiento) {
-      byCategoria[h.categoria].hasActive = true
-    }
+    if (h.activa && !h.proximamente && !h.mantenimiento) byCategoria[h.categoria].hasActive = true
   }
 
-  // 4. Ordenar herramientas dentro de grupos y preparar array de categorías
   const categoriasOrdenadas = Object.entries(byCategoria)
     .map(([cat, info]) => ({
       id: cat,
-      label: {
-        documentos: 'Documentos',
-        contratos: 'Contratos y acuerdos',
-        calculadoras: 'Calculadoras',
-      }[cat] ?? cat,
+      label: ({ documentos: 'Documentos', contratos: 'Contratos y acuerdos', calculadoras: 'Calculadoras' } as Record<string,string>)[cat] ?? cat,
       items: info.items.sort(sortTools),
-      hasActive: info.hasActive
+      hasActive: info.hasActive,
     }))
-    // 5. Ordenar categorías: primero las que tienen herramientas activas
     .sort((a, b) => (a.hasActive === b.hasActive ? 0 : a.hasActive ? -1 : 1))
-
 
   useEffect(() => {
     let cancelled = false
     let unsubscribe: undefined | (() => void)
-
     const toPublic = (posts: BlogPost[]): PublicBlogPost[] =>
       posts
-        .filter((p) => p.status === 'published')
-        .map((p) => ({
-          id: p.id,
-          titulo: p.titulo,
-          slug: p.slug,
-          extracto: p.extracto,
-          tags: p.tags,
-          status: p.status,
-          createdAt: p.createdAt,
-          publishedAt: p.publishedAt,
-        }))
-
+        .filter(p => p.status === 'published')
+        .map(p => ({ id: p.id, titulo: p.titulo, slug: p.slug, extracto: p.extracto, tags: p.tags, status: p.status, createdAt: p.createdAt, publishedAt: p.publishedAt }))
     ;(async () => {
       try {
         const { useBlogStore } = await import('../../store/blogStore')
         if (cancelled) return
         setBlogPosts(toPublic(useBlogStore.getState().posts))
-        unsubscribe = useBlogStore.subscribe((state) => {
-          if (cancelled) return
-          setBlogPosts(toPublic(state.posts))
+        unsubscribe = useBlogStore.subscribe(state => {
+          if (!cancelled) setBlogPosts(toPublic(state.posts))
         })
       } catch {
-        if (cancelled) return
-        setBlogPosts([])
+        if (!cancelled) setBlogPosts([])
       }
     })()
-
-    return () => {
-      cancelled = true
-      unsubscribe?.()
-    }
+    return () => { cancelled = true; unsubscribe?.() }
   }, [])
 
   return (
     <div className="page-root">
       <SiteHeader />
-
       <main className="page-main">
 
         {/* Hero */}
@@ -300,29 +261,22 @@ export function HomePage() {
         {/* Grid herramientas por categoría */}
         <section className="section-pb">
           <p className="section-label">Herramientas disponibles</p>
-
-          {categoriasOrdenadas.map((cat) => (
+          {categoriasOrdenadas.map(cat => (
             <div key={cat.id} style={{ marginBottom: 'var(--space-10)' }}>
               <p style={{
-                fontSize: 'var(--text-xs)',
-                fontWeight: 700,
-                letterSpacing: '0.10em',
-                textTransform: 'uppercase',
-                color: 'var(--color-text-faint)',
-                marginBottom: 'var(--space-4)',
+                fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.10em',
+                textTransform: 'uppercase', color: 'var(--color-text-faint)', marginBottom: 'var(--space-4)',
               }}>
                 {cat.label}
               </p>
               <div className="tools-grid">
-                {cat.items.map((h) => (
-                  <ToolCard key={h.id} h={h} />
-                ))}
+                {cat.items.map(h => <ToolCard key={h.id} h={h} />)}
               </div>
             </div>
           ))}
         </section>
 
-        {/* Sección Blog */}
+        {/* Blog */}
         <section className="section-pb">
           <div className="blog-section-header">
             <div>
@@ -350,7 +304,6 @@ export function HomePage() {
         </section>
 
       </main>
-
       <SiteFooter />
     </div>
   )

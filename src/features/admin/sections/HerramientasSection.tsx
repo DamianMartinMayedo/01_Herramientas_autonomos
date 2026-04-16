@@ -1,33 +1,104 @@
 /**
  * HerramientasSection.tsx
- * Gestión de herramientas: activar/desactivar, editar descripción,
- * mostrar/ocultar con botón ojo + confirmación directa en fila.
+ * Gestión de herramientas: activar/desactivar con modal de confirmación,
+ * editar descripción, mostrar/ocultar con botón ojo + confirmación en fila.
  */
 import { useState } from 'react'
 import { useAdminStore, type Herramienta } from '../../../store/adminStore'
-import { ToggleLeft, ToggleRight, Pencil, X, CheckCircle, Clock, Eye, EyeOff } from 'lucide-react'
+import { ToggleLeft, ToggleRight, Pencil, X, CheckCircle, Clock, Eye, EyeOff, AlertTriangle } from 'lucide-react'
 
+// ── Modal de confirmación genérico ────────────────────────────────────────
+interface ConfirmModalProps {
+  title: string
+  description: string
+  confirmLabel: string
+  confirmVariant?: 'danger' | 'success'
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function ConfirmModal({ title, description, confirmLabel, confirmVariant = 'danger', onConfirm, onCancel }: ConfirmModalProps) {
+  const confirmStyle: React.CSSProperties = confirmVariant === 'danger'
+    ? { background: 'var(--color-error)', borderColor: 'var(--color-error)', color: 'white', boxShadow: '3px 3px 0 var(--color-error-highlight)' }
+    : { background: 'var(--color-success)', borderColor: 'var(--color-success-active)', color: 'white', boxShadow: '3px 3px 0 var(--color-success-active)' }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 'var(--space-4)',
+    }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          background: 'var(--color-bg)',
+          border: '2px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: '6px 6px 0 var(--color-border)',
+          width: '100%', maxWidth: '400px',
+          overflow: 'hidden',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+          padding: 'var(--space-5) var(--space-6)',
+          borderBottom: '1px solid var(--color-divider)',
+        }}>
+          <AlertTriangle size={18} style={{ color: 'var(--color-gold)', flexShrink: 0 }} />
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', flex: 1 }}>
+            {title}
+          </h2>
+          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: 'var(--space-6)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+            {description}
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)',
+          padding: 'var(--space-4) var(--space-6)',
+          borderTop: '1px solid var(--color-divider)',
+        }}>
+          <button className="btn btn-secondary btn-sm" onClick={onCancel}>Cancelar</button>
+          <button
+            className="btn btn-sm"
+            style={confirmStyle}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Editor de herramienta ────────────────────────────────────────────────
 interface EditorProps {
   herramienta: Herramienta
   onClose: () => void
 }
 
 function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
-  const updateHerramienta = useAdminStore((s) => s.updateHerramienta)
+  const updateHerramienta = useAdminStore(s => s.updateHerramienta)
   const [nombre, setNombre] = useState(h.nombre)
   const [desc,   setDesc]   = useState(h.descripcion)
   const [prox,   setProx]   = useState(h.proximamente)
   const [mant,   setMant]   = useState(h.mantenimiento || false)
 
-  const handleProxChange = (val: boolean) => {
-    setProx(val)
-    if (val) setMant(false)
-  }
-
-  const handleMantChange = (val: boolean) => {
-    setMant(val)
-    if (val) setProx(false)
-  }
+  const handleProxChange = (val: boolean) => { setProx(val); if (val) setMant(false) }
+  const handleMantChange = (val: boolean) => { setMant(val); if (val) setProx(false) }
 
   const save = () => {
     updateHerramienta(h.id, { nombre, descripcion: desc, proximamente: prox, mantenimiento: mant })
@@ -35,19 +106,15 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
       <div style={{
         background: 'var(--color-bg)', border: '2px solid var(--color-border)',
         borderRadius: 'var(--radius-xl)', boxShadow: '5px 5px 0 var(--color-border)',
         width: '100%', maxWidth: '480px', overflow: 'hidden',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-divider)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)' }}>
-            Editar herramienta
-          </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
-            <X size={18} />
-          </button>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)' }}>Editar herramienta</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={18} /></button>
         </div>
         <div style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div className="input-group">
@@ -76,12 +143,15 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   )
 }
 
+// ── HerramientasSection ────────────────────────────────────────────────
 export function HerramientasSection() {
-  const herramientas      = useAdminStore((s) => s.herramientas)
-  const toggleHerramienta = useAdminStore((s) => s.toggleHerramienta)
-  const updateHerramienta = useAdminStore((s) => s.updateHerramienta)
-  const [editing,     setEditing]     = useState<Herramienta | null>(null)
-  const [confirmVis,  setConfirmVis]  = useState<string | null>(null)
+  const herramientas      = useAdminStore(s => s.herramientas)
+  const toggleHerramienta = useAdminStore(s => s.toggleHerramienta)
+  const updateHerramienta = useAdminStore(s => s.updateHerramienta)
+
+  const [editing,    setEditing]    = useState<Herramienta | null>(null)
+  const [confirmVis, setConfirmVis] = useState<string | null>(null)   // ojo: ocultar del home
+  const [confirmAct, setConfirmAct] = useState<Herramienta | null>(null) // toggle activa/inactiva
 
   const byCategoria = herramientas.reduce<Record<string, Herramienta[]>>((acc, h) => {
     if (!acc[h.categoria]) acc[h.categoria] = []
@@ -100,27 +170,25 @@ export function HerramientasSection() {
     setConfirmVis(null)
   }
 
+  const handleToggleActiva = (h: Herramienta) => {
+    toggleHerramienta(h.id)
+    setConfirmAct(null)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
 
       <div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--color-text)', marginBottom: 'var(--space-1)' }}>
-          Herramientas
-        </h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-          Activa o desactiva herramientas. Los cambios se reflejan en el Home instantáneamente.
-        </p>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--color-text)', marginBottom: 'var(--space-1)' }}>Herramientas</h1>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>Activa o desactiva herramientas. Los cambios se reflejan en el Home instantáneamente.</p>
       </div>
 
-      {/* Nota sobre sincronización */}
       <div style={{
         padding: 'var(--space-4)',
-        background: 'var(--color-primary-subtle)',
-        border: '1.5px solid var(--color-primary-highlight)',
-        borderRadius: 'var(--radius-md)',
-        fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', lineHeight: 1.6,
+        background: 'var(--color-primary-subtle)', border: '1.5px solid var(--color-primary-highlight)',
+        borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', lineHeight: 1.6,
       }}>
-        <strong style={{ color: 'var(--color-primary)' }}>Nota local→cloud:</strong> Los cambios se guardan en localStorage y se reflejan en el Home en tiempo real en este navegador. Al migrar a Supabase, esta sección leerá y escribirá en la base de datos remota haciendo los cambios globales.
+        <strong style={{ color: 'var(--color-primary)' }}>Nota local→cloud:</strong> Los cambios se guardan en localStorage. Al migrar a Supabase serán globales automáticamente.
       </div>
 
       {Object.entries(byCategoria).map(([cat, items]) => (
@@ -141,6 +209,7 @@ export function HerramientasSection() {
                 opacity: h.activa ? 1 : 0.65,
                 transition: 'opacity 200ms, box-shadow 200ms',
               }}>
+
                 {/* Status icon */}
                 <div>
                   {h.activa
@@ -152,23 +221,16 @@ export function HerramientasSection() {
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '4px' }}>
-                    <span style={{ 
-                      fontWeight: 600, 
-                      fontSize: 'var(--text-sm)', 
+                    <span style={{
+                      fontWeight: 600, fontSize: 'var(--text-sm)',
                       color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text)',
-                      textDecoration: h.visible === false ? 'line-through' : 'none'
+                      textDecoration: h.visible === false ? 'line-through' : 'none',
                     }}>
                       {h.nombre}
                     </span>
-                    {h.visible === false && (
-                      <span className="badge badge-muted" style={{ fontSize: '10px', padding: '1px 7px' }}>Oculta</span>
-                    )}
-                    {h.proximamente && (
-                      <span className="badge badge-copper" style={{ fontSize: '10px', padding: '1px 7px' }}>Próximamente</span>
-                    )}
-                    {h.mantenimiento && (
-                      <span className="badge badge-gold" style={{ fontSize: '10px', padding: '1px 7px' }}>Mejorando</span>
-                    )}
+                    {h.visible === false && <span className="badge badge-muted" style={{ fontSize: '10px', padding: '1px 7px' }}>Oculta</span>}
+                    {h.proximamente   && <span className="badge badge-copper" style={{ fontSize: '10px', padding: '1px 7px' }}>Próximamente</span>}
+                    {h.mantenimiento  && <span className="badge badge-gold"   style={{ fontSize: '10px', padding: '1px 7px' }}>Mejorando</span>}
                   </div>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                     {h.descripcion}
@@ -181,7 +243,8 @@ export function HerramientasSection() {
 
                 {/* Acciones */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
-                  {/* Botón ojo: primer clic pide confirmación, segundo ejecuta */}
+
+                  {/* Ojo: ocultar/mostrar en Home — clic pide confirmación en fila */}
                   {confirmVis === h.id ? (
                     <button
                       title={h.visible === false ? 'Confirmar: mostrar' : 'Confirmar: ocultar'}
@@ -206,6 +269,7 @@ export function HerramientasSection() {
                         background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
                         borderRadius: 'var(--radius-md)', cursor: 'pointer',
                         color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)',
+                        transition: 'color 150ms, border-color 150ms',
                       }}
                       onMouseEnter={e => {
                         e.currentTarget.style.color = h.visible === false ? 'var(--color-success)' : 'var(--color-error)'
@@ -220,6 +284,7 @@ export function HerramientasSection() {
                     </button>
                   )}
 
+                  {/* Editar */}
                   <button
                     onClick={() => setEditing(h)}
                     style={{
@@ -232,9 +297,10 @@ export function HerramientasSection() {
                     <Pencil size={13} />
                   </button>
 
+                  {/* Toggle activa — abre modal de confirmación */}
                   <button
-                    onClick={() => toggleHerramienta(h.id)}
-                    title={h.activa ? 'Desactivar' : 'Activar'}
+                    onClick={() => setConfirmAct(h)}
+                    title={h.activa ? 'Desactivar herramienta' : 'Activar herramienta'}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
                       padding: 'var(--space-2) var(--space-3)',
@@ -248,9 +314,10 @@ export function HerramientasSection() {
                   >
                     {h.activa
                       ? <><ToggleRight size={15} /> Activa</>
-                      : <><ToggleLeft size={15} /> Inactiva</>
+                      : <><ToggleLeft  size={15} /> Inactiva</>
                     }
                   </button>
+
                 </div>
               </div>
             ))}
@@ -258,7 +325,24 @@ export function HerramientasSection() {
         </div>
       ))}
 
+      {/* Modal editar */}
       {editing && <HerramientaEditor herramienta={editing} onClose={() => setEditing(null)} />}
+
+      {/* Modal confirmar activar/desactivar */}
+      {confirmAct && (
+        <ConfirmModal
+          title={confirmAct.activa ? `Desactivar "${confirmAct.nombre}"` : `Activar "${confirmAct.nombre}"`}
+          description={
+            confirmAct.activa
+              ? `La herramienta quedará inaccesible para los usuarios y se mostrará como “Próximamente” en el Home. ¿Deseas desactivarla?`
+              : `La herramienta pasará a estar disponible para todos los usuarios. ¿Deseas activarla?`
+          }
+          confirmLabel={confirmAct.activa ? 'Sí, desactivar' : 'Sí, activar'}
+          confirmVariant={confirmAct.activa ? 'danger' : 'success'}
+          onConfirm={() => handleToggleActiva(confirmAct)}
+          onCancel={() => setConfirmAct(null)}
+        />
+      )}
     </div>
   )
 }
