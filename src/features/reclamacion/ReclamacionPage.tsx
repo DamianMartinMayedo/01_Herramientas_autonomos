@@ -2,6 +2,7 @@
  * ReclamacionPage.tsx
  * Generador de carta de reclamación de pago.
  */
+import { useEffect } from 'react'
 import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ReclamacionPagoDoc, ParteLegal } from '../../types/legalDoc.types'
@@ -24,7 +25,7 @@ const DEFAULT_RECLAMACION: ReclamacionPagoDoc = {
   notas: '',
 }
 
-// ─── Sub-formulario de parte ────────────────────────────────────────────────────
+// ─── Sub-formulario de parte ─────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RegisterFn = (name: any, opts?: any) => any
 type ErrorsObj = Record<string, { message?: string } | undefined>
@@ -82,11 +83,19 @@ export function ReclamacionPage() {
       toolClass="tool-reclamacion"
       defaultValues={DEFAULT_RECLAMACION}
       buildDoc={(v) => ({ ...v, tipo: 'reclamacion' as const })}
-      renderForm={({ register, watch, errors }) => {
+      renderForm={({ register, watch, errors, setValue }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
         const tono = watch('tono' as never) as string
+
+        // Cuando se selecciona «urgente» se activa el checkbox automáticamente;
+        // al salir de «urgente» se desactiva para no dejar ruido en otros tonos.
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useEffect(() => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(setValue as any)('mencionAccionLegal', tono === 'urgente')
+        }, [tono, setValue])
 
         return (
           <>
@@ -184,6 +193,8 @@ export function ReclamacionPage() {
                   })}
                   error={err['plazoRespuesta'] as never}
                 />
+                {/* El checkbox se muestra siempre en urgente (ya viene marcado automáticamente).
+                    En amistoso/formal queda oculto para no confundir. */}
                 {tono === 'urgente' && (
                   <label className="input-toggle">
                     <input type="checkbox" {...reg('mencionAccionLegal')} />

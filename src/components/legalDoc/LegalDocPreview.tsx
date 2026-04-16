@@ -21,7 +21,7 @@ function formatEuro(n: number): string {
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
 }
 
-// ─── Bloque de parte (emisor / receptor / acreedor…) ─────────────────────────
+// ─── Bloque de parte ─────────────────────────────────────────────────────────
 
 function BlockParte({ label, parte }: { label: string; parte: ParteLegal }) {
   return (
@@ -259,12 +259,76 @@ function PreviewNda({ doc }: { doc: NdaDoc }) {
 }
 
 function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
-  const TONO_SALUDO: Record<string, string> = {
-    amistoso: 'Estimado/a',
-    formal: 'De mi consideración:',
-    urgente: 'Por la presente y de forma urgente,',
-  }
   const diasLabel = doc.plazoRespuesta === 1 ? '1 día hábil' : `${doc.plazoRespuesta} días hábiles`
+
+  // ── Párrafo introductorio: varía según el tono ───────────────────────────
+  const parrafoIntro: Record<string, React.ReactNode> = {
+    amistoso: (
+      <>
+        Me pongo en contacto contigo para recordarte, de forma amistosa, que la factura n.º{' '}
+        <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
+        <strong>{formatFecha(doc.fechaFactura)}</strong> por un importe de{' '}
+        <strong>{formatEuro(doc.importeDeuda)}</strong>, venció el{' '}
+        <strong>{formatFecha(doc.fechaVencimiento)}</strong> y aún no hemos recibido el pago.
+        Entiendo que puede ser un simple olvido o un cruce de fechas, así que te lo comento
+        antes de que vaya a más.
+      </>
+    ),
+    formal: (
+      <>
+        Por medio de la presente, <strong>{doc.acreedor.nombre}</strong>{doc.acreedor.nif ? `, con NIF ${doc.acreedor.nif},` : ','}{' '}
+        le comunica formalmente que la factura n.º <strong>{doc.referenciaFactura}</strong>,
+        emitida el <strong>{formatFecha(doc.fechaFactura)}</strong> por un importe de{' '}
+        <strong>{formatEuro(doc.importeDeuda)}</strong>, venció el{' '}
+        <strong>{formatFecha(doc.fechaVencimiento)}</strong> sin que se haya hecho
+        efectivo el pago correspondiente, a pesar de las gestiones previas realizadas.
+      </>
+    ),
+    urgente: (
+      <>
+        Mediante la presente comunicación, y con carácter urgente,{' '}
+        <strong>{doc.acreedor.nombre}</strong>{doc.acreedor.nif ? `, con NIF ${doc.acreedor.nif},` : ''}{' '}
+        le requiere el abono inmediato de la factura n.º{' '}
+        <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
+        <strong>{formatFecha(doc.fechaFactura)}</strong> y vencida el{' '}
+        <strong>{formatFecha(doc.fechaVencimiento)}</strong>, por un importe de{' '}
+        <strong>{formatEuro(doc.importeDeuda)}</strong>, importe que continúa impagado.
+      </>
+    ),
+  }
+
+  // ── Párrafo de cierre: también varía según el tono ───────────────────────
+  const parrafroCierre: Record<string, React.ReactNode> = {
+    amistoso: (
+      <>
+        Te agradeceré que efectúes el pago en los próximos{' '}
+        <strong>{diasLabel}</strong>. Si ya lo has realizado o tienes alguna duda,
+        no dudes en contactarme y lo aclaramos enseguida.
+      </>
+    ),
+    formal: (
+      <>
+        Le rogamos proceda a la liquidación del importe pendiente en un plazo máximo de{' '}
+        <strong>{diasLabel}</strong> desde la recepción de esta comunicación. De no recibir
+        el pago en dicho plazo, nos veremos en la obligación de adoptar las medidas
+        que correspondan para la reclamación de la deuda.
+      </>
+    ),
+    urgente: (
+      <>
+        Le concedemos un plazo improrrogable de <strong>{diasLabel}</strong> para regularizar
+        la situación. Transcurrido dicho plazo sin que se haya recibido el pago,
+        procederemos sin demora adicional a ejercitar las acciones que correspondan.
+      </>
+    ),
+  }
+
+  // ── Saludo ────────────────────────────────────────────────────────────────
+  const saludo: Record<string, React.ReactNode> = {
+    amistoso: <>{`Hola${doc.deudor.nombre ? `, ${doc.deudor.nombre.split(' ')[0]}` : ''}:`}</>,
+    formal:   <>Estimado/a Sr./Sra. {doc.deudor.nombre || '—'}:</>,
+    urgente:  <>Estimado/a Sr./Sra. {doc.deudor.nombre || '—'}:</>,
+  }
 
   return (
     <>
@@ -273,47 +337,45 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
       </Seccion>
 
       <div style={{ margin: '0.75rem 0', fontSize: '0.72rem', color: '#374151' }}>
-        <p style={{ marginBottom: '0.6rem' }}>
-          {TONO_SALUDO[doc.tono]}{doc.tono === 'amistoso' ? ` ${doc.deudor.nombre || ''}:` : ''}
+        {/* Saludo */}
+        <p style={{ marginBottom: '0.6rem', fontWeight: doc.tono === 'amistoso' ? 400 : 500 }}>
+          {saludo[doc.tono]}
         </p>
 
+        {/* Párrafo introductorio */}
         <p style={{ marginBottom: '0.5rem', lineHeight: 1.7 }}>
-          Por medio de la presente, <strong>{doc.acreedor.nombre}</strong>, con NIF{' '}
-          <strong>{doc.acreedor.nif}</strong>, le comunicamos que a fecha de hoy,{' '}
-          <strong>{formatFecha(doc.metadatos.fecha)}</strong>, se encuentra pendiente de pago
-          la factura n.º <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
-          <strong>{formatFecha(doc.fechaFactura)}</strong>, con fecha de vencimiento{' '}
-          <strong>{formatFecha(doc.fechaVencimiento)}</strong>, por importe de{' '}
-          <strong>{formatEuro(doc.importeDeuda)}</strong>.
+          {parrafoIntro[doc.tono]}
         </p>
 
+        {/* Párrafo de cierre / acción requerida */}
         <p style={{ marginBottom: '0.5rem', lineHeight: 1.7 }}>
-          Le rogamos proceda a la liquidación de dicho importe en un plazo máximo de{' '}
-          <strong>{diasLabel}</strong> a partir de la recepción de esta comunicación.
+          {parrafroCierre[doc.tono]}
         </p>
 
-        {doc.tono === 'formal' && (
-          <p style={{ marginBottom: '0.5rem', lineHeight: 1.7 }}>
-            En caso de no recibir el pago en el plazo indicado, nos veremos en la necesidad
-            de adoptar las medidas oportunas para la reclamación de la deuda.
-          </p>
-        )}
-
+        {/* Bloque de acción legal: solo urgente + checkbox activado */}
         {doc.tono === 'urgente' && doc.mencionAccionLegal && (
-          <p style={{ marginBottom: '0.5rem', lineHeight: 1.7, fontWeight: 600, color: '#dc2626' }}>
-            De no regularizarse la situación en el plazo indicado, procederemos a iniciar las
-            acciones legales pertinentes, incluyendo reclamación judicial y comunicación a
-            registros de morosidad, sin que sea necesario previo aviso adicional.
+          <p style={{
+            marginBottom: '0.5rem', lineHeight: 1.7,
+            fontWeight: 600, color: '#b91c1c',
+            borderLeft: '3px solid #fca5a5',
+            paddingLeft: '0.6rem',
+          }}>
+            Entre dichas acciones se incluye la reclamación judicial de la deuda más los intereses
+            de demora legalmente aplicables, así como la comunicación de la incidencia a los
+            ficheros de solvencia patrimonial y crédito, todo ello sin necesidad de previo aviso adicional.
           </p>
         )}
 
+        {/* Notas adicionales */}
         {doc.notas && (
-          <p style={{ marginBottom: '0.5rem', lineHeight: 1.7, fontStyle: 'italic' }}>
+          <p style={{ marginBottom: '0.5rem', lineHeight: 1.7, fontStyle: 'italic', color: '#6b7280' }}>
             {doc.notas}
           </p>
         )}
 
-        <p style={{ marginTop: '0.75rem', lineHeight: 1.7 }}>Atentamente,</p>
+        <p style={{ marginTop: '0.75rem', lineHeight: 1.7 }}>
+          {doc.tono === 'amistoso' ? 'Un saludo,' : 'Atentamente,'}
+        </p>
       </div>
 
       <BloquesFirma partes={[
@@ -367,9 +429,9 @@ export const LegalDocPreview = forwardRef<HTMLDivElement, LegalDocPreviewProps>(
           </div>
         </div>
 
-        {/* CUERPO — delega en el componente específico */}
-        {documento.tipo === 'contrato' && <PreviewContrato doc={documento as ContratoServiciosDoc} />}
-        {documento.tipo === 'nda'      && <PreviewNda      doc={documento as NdaDoc} />}
+        {/* CUERPO */}
+        {documento.tipo === 'contrato'    && <PreviewContrato   doc={documento as ContratoServiciosDoc} />}
+        {documento.tipo === 'nda'         && <PreviewNda        doc={documento as NdaDoc} />}
         {documento.tipo === 'reclamacion' && <PreviewReclamacion doc={documento as ReclamacionPagoDoc} />}
 
         {/* FOOTER */}
