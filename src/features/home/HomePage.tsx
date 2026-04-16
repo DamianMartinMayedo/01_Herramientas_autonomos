@@ -155,7 +155,7 @@ function ToolCard({ h }: { h: Herramienta }) {
 
       {h.activa && (!h.proximamente && !h.mantenimiento) && (
         <div className="tool-cta">
-          <div className="tool-cta-link" style={{ color: meta.ctaColor }}>
+          <div className="tool-cta-link" style={{ color: meta.ctaColor, fontWeight: 700 }}>
             Ir a la herramienta <ArrowRight size={15} />
           </div>
           {h.id === 'factura' && (
@@ -197,18 +197,49 @@ export function HomePage() {
   const herramientas = useAdminStore((s) => s.herramientas)
   const [blogPosts, setBlogPosts] = useState<PublicBlogPost[] | null>(null)
 
-  // Agrupa las herramientas por categoría manteniendo el orden del store
-  const byCategoria: Record<string, Herramienta[]> = {}
-  for (const h of herramientas) {
-    if (!byCategoria[h.categoria]) byCategoria[h.categoria] = []
-    byCategoria[h.categoria].push(h)
+  // 1. Filtrar visibles
+  const visibles = herramientas.filter(h => h.visible !== false)
+
+  // 2. Ordenar herramientas dentro de cada categoría
+  // Orden: factura/presupuesto > activa > resto
+  const sortTools = (a: Herramienta, b: Herramienta) => {
+    const priorityIds = ['factura', 'presupuesto']
+    const aPrio = priorityIds.includes(a.id)
+    const bPrio = priorityIds.includes(b.id)
+    if (aPrio && !bPrio) return -1
+    if (!aPrio && bPrio) return 1
+    if (a.activa && !b.activa) return -1
+    if (!a.activa && b.activa) return 1
+    return 0
   }
 
-  const categoriaLabels: Record<string, string> = {
-    documentos:  'Documentos',
-    contratos:   'Contratos y acuerdos',
-    calculadoras: 'Calculadoras',
+  // 3. Agrupar y detectar actividad por categoría
+  const byCategoria: Record<string, { items: Herramienta[], hasActive: boolean }> = {}
+  for (const h of visibles) {
+    if (!byCategoria[h.categoria]) {
+      byCategoria[h.categoria] = { items: [], hasActive: false }
+    }
+    byCategoria[h.categoria].items.push(h)
+    if (h.activa && !h.proximamente && !h.mantenimiento) {
+      byCategoria[h.categoria].hasActive = true
+    }
   }
+
+  // 4. Ordenar herramientas dentro de grupos y preparar array de categorías
+  const categoriasOrdenadas = Object.entries(byCategoria)
+    .map(([cat, info]) => ({
+      id: cat,
+      label: {
+        documentos: 'Documentos',
+        contratos: 'Contratos y acuerdos',
+        calculadoras: 'Calculadoras',
+      }[cat] ?? cat,
+      items: info.items.sort(sortTools),
+      hasActive: info.hasActive
+    }))
+    // 5. Ordenar categorías: primero las que tienen herramientas activas
+    .sort((a, b) => (a.hasActive === b.hasActive ? 0 : a.hasActive ? -1 : 1))
+
 
   useEffect(() => {
     let cancelled = false
@@ -270,8 +301,8 @@ export function HomePage() {
         <section className="section-pb">
           <p className="section-label">Herramientas disponibles</p>
 
-          {Object.entries(byCategoria).map(([cat, items]) => (
-            <div key={cat} style={{ marginBottom: 'var(--space-10)' }}>
+          {categoriasOrdenadas.map((cat) => (
+            <div key={cat.id} style={{ marginBottom: 'var(--space-10)' }}>
               <p style={{
                 fontSize: 'var(--text-xs)',
                 fontWeight: 700,
@@ -280,10 +311,10 @@ export function HomePage() {
                 color: 'var(--color-text-faint)',
                 marginBottom: 'var(--space-4)',
               }}>
-                {categoriaLabels[cat] ?? cat}
+                {cat.label}
               </p>
               <div className="tools-grid">
-                {items.map((h) => (
+                {cat.items.map((h) => (
                   <ToolCard key={h.id} h={h} />
                 ))}
               </div>

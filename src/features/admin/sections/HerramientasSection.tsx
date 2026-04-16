@@ -17,6 +17,7 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   const [desc,   setDesc]   = useState(h.descripcion)
   const [prox,   setProx]   = useState(h.proximamente)
   const [mant,   setMant]   = useState(h.mantenimiento || false)
+  const [visible, setVisible] = useState(h.visible !== false)
 
   const handleProxChange = (val: boolean) => {
     setProx(val)
@@ -29,7 +30,7 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   }
 
   const save = () => {
-    updateHerramienta(h.id, { nombre, descripcion: desc, proximamente: prox, mantenimiento: mant })
+    updateHerramienta(h.id, { nombre, descripcion: desc, proximamente: prox, mantenimiento: mant, visible })
     onClose()
   }
 
@@ -64,6 +65,13 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
           <label className="input-toggle">
             <input type="checkbox" checked={mant} onChange={e => handleMantChange(e.target.checked)} />
             <span>Mostrar como "Mejorando"</span>
+          </label>
+          <div style={{ borderTop: '1px solid var(--color-divider)', margin: 'var(--space-2) 0' }} />
+          <label className="input-toggle">
+            <input type="checkbox" checked={visible} onChange={e => setVisible(e.target.checked)} />
+            <span style={{ fontWeight: 600, color: visible ? 'var(--color-success)' : 'var(--color-error)' }}>
+              {visible ? 'Suministrada al usuario' : 'Oculta en la web'}
+            </span>
           </label>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
@@ -144,7 +152,17 @@ export function HerramientasSection() {
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{h.nombre}</span>
+                    <span style={{ 
+                      fontWeight: 600, 
+                      fontSize: 'var(--text-sm)', 
+                      color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text)',
+                      textDecoration: h.visible === false ? 'line-through' : 'none'
+                    }}>
+                      {h.nombre}
+                    </span>
+                    {h.visible === false && (
+                      <span className="badge badge-muted" style={{ fontSize: '10px', padding: '1px 7px' }}>Oculta</span>
+                    )}
                     {h.proximamente && (
                       <span className="badge badge-copper" style={{ fontSize: '10px', padding: '1px 7px' }}>Próximamente</span>
                     )}

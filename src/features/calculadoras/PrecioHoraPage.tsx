@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
-import { Calculator } from 'lucide-react'
+import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
 
 export function PrecioHoraPage() {
@@ -45,6 +46,17 @@ export function PrecioHoraPage() {
       <SiteHeader />
       <main className="page-main section-pb">
         <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+          
+          <nav className="post-breadcrumb" style={{ marginBottom: 'var(--space-6)' }}>
+            <Link
+              to="/"
+              className="back-link"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <ArrowLeft size={13} /> Inicio
+            </Link>
+          </nav>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
             <div className="tool-icon-box" style={{ background: 'var(--color-purple-highlight)', color: 'var(--color-purple)' }}>
               <Calculator size={24} />
