@@ -53,13 +53,13 @@ interface AdminState {
 /* ── Herramientas por defecto ───────────────────────────────────────────── */
 const HERRAMIENTAS_DEFAULT: Herramienta[] = [
   // ── Documentos ──
-  { id: 'factura',      nombre: 'Generador de facturas',      ruta: '/factura',           activa: true,  proximamente: false, visible: true,  descripcion: 'Crea facturas con IVA e IRPF y descárgalas en PDF al instante.',            categoria: 'documentos',   usosRegistrados: 0 },
-  { id: 'presupuesto',  nombre: 'Generador de presupuestos',  ruta: '/presupuesto',        activa: true,  proximamente: false, visible: true,  descripcion: 'Envía presupuestos profesionales a tus clientes en minutos.',            categoria: 'documentos',   usosRegistrados: 0 },
-  { id: 'albaran',      nombre: 'Generador de albarán',       ruta: '/albaran',            activa: false, proximamente: true,  visible: true,  descripcion: 'Genera albaranes de entrega vinculados a tus presupuestos y facturas.', categoria: 'documentos',   usosRegistrados: 0 },
+  { id: 'factura',      nombre: 'Generador de facturas',      ruta: '/factura',          activa: true,  proximamente: false, visible: true,  descripcion: 'Crea facturas con IVA e IRPF y descárgalas en PDF al instante.',            categoria: 'documentos',   usosRegistrados: 0 },
+  { id: 'presupuesto',  nombre: 'Generador de presupuestos',  ruta: '/presupuesto',       activa: true,  proximamente: false, visible: true,  descripcion: 'Envía presupuestos profesionales a tus clientes en minutos.',            categoria: 'documentos',   usosRegistrados: 0 },
+  { id: 'albaran',      nombre: 'Generador de albarán',       ruta: '/albaran',           activa: false, proximamente: true,  visible: true,  descripcion: 'Genera albaranes de entrega vinculados a tus presupuestos y facturas.', categoria: 'documentos',   usosRegistrados: 0 },
   // ── Contratos y acuerdos ──
-  { id: 'contrato',     nombre: 'Generador de contratos',     ruta: '/contrato',           activa: false, proximamente: true,  visible: true,  descripcion: 'Crea contratos de servicios personalizados listos para firmar.',           categoria: 'contratos',    usosRegistrados: 0 },
-  { id: 'nda',          nombre: 'Generador de NDA',           ruta: '/nda',                activa: false, proximamente: true,  visible: true,  descripcion: 'Acuerdos de confidencialidad (NDA) profesionales en minutos.',            categoria: 'contratos',    usosRegistrados: 0 },
-  { id: 'reclamacion',  nombre: 'Reclamación de pago',        ruta: '/reclamacion-pago',   activa: false, proximamente: true,  visible: true,  descripcion: 'Carta formal para reclamar facturas impagadas a tus clientes.',           categoria: 'contratos',    usosRegistrados: 0 },
+  { id: 'contrato',     nombre: 'Generador de contratos',     ruta: '/contrato',          activa: false, proximamente: true,  visible: true,  descripcion: 'Crea contratos de servicios personalizados listos para firmar.',           categoria: 'contratos',    usosRegistrados: 0 },
+  { id: 'nda',          nombre: 'Generador de NDA',           ruta: '/nda',               activa: false, proximamente: true,  visible: true,  descripcion: 'Acuerdos de confidencialidad (NDA) profesionales en minutos.',            categoria: 'contratos',    usosRegistrados: 0 },
+  { id: 'reclamacion',  nombre: 'Reclamación de pago',        ruta: '/reclamacion-pago',  activa: false, proximamente: true,  visible: true,  descripcion: 'Carta formal para reclamar facturas impagadas a tus clientes.',           categoria: 'contratos',    usosRegistrados: 0 },
   // ── Calculadoras ──
   { id: 'cuota-autonomos', nombre: 'Cuota de autónomos', ruta: '/cuota-autonomos', activa: false, proximamente: true,  visible: true,  descripcion: 'Calcula tu cuota mensual según tus ingresos netos reales.',              categoria: 'calculadoras', usosRegistrados: 0 },
   { id: 'precio-hora',     nombre: 'Precio por hora',    ruta: '/precio-hora',     activa: false, proximamente: true,  visible: true,  descripcion: 'Fija tu tarifa sin venderte por debajo de coste.',                       categoria: 'calculadoras', usosRegistrados: 0 },
@@ -73,7 +73,7 @@ const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN ?? 'admin1234'
 export const useAdminStore = create<AdminState>()(
   persist(
     (set) => ({
-      /* ── Auth ─────────────────────────────────────────────────────────── */
+      /* ── Auth ── */
       isAuthenticated: false,
 
       login: (pin) => {
@@ -86,7 +86,7 @@ export const useAdminStore = create<AdminState>()(
 
       logout: () => set({ isAuthenticated: false }),
 
-      /* ── Herramientas ─────────────────────────────────────────────────── */
+      /* ── Herramientas ── */
       herramientas: HERRAMIENTAS_DEFAULT,
 
       toggleHerramienta: (id) =>
@@ -102,11 +102,7 @@ export const useAdminStore = create<AdminState>()(
                   props = { mantenimiento: true }
                 }
               }
-              return {
-                ...h,
-                activa: nuevaActiva,
-                ...props
-              }
+              return { ...h, activa: nuevaActiva, ...props }
             }
             return h
           }),
@@ -119,7 +115,7 @@ export const useAdminStore = create<AdminState>()(
           ),
         })),
 
-      /* ── Eventos locales ──────────────────────────────────────────────── */
+      /* ── Eventos locales ── */
       events: [],
 
       pushEvent: (tipo, herramienta) => {
@@ -138,8 +134,7 @@ export const useAdminStore = create<AdminState>()(
                   : h
               )
             : s.herramientas,
-        })}
-      )
+        }))
       },
 
       clearOldEvents: () => {
@@ -156,7 +151,6 @@ export const useAdminStore = create<AdminState>()(
         const persisted = persistedState as Partial<AdminState>
         const mergedHerramientas = HERRAMIENTAS_DEFAULT.map((defaultH) => {
           const saved = (persisted.herramientas ?? []).find((h) => h.id === defaultH.id)
-          // Mantiene activa/proximamente/visible del store guardado, pero añade campos nuevos del default
           // La ruta SIEMPRE se toma del default para que los fixes se apliquen automáticamente
           return saved ? { ...defaultH, ...saved, ruta: defaultH.ruta } : defaultH
         })
