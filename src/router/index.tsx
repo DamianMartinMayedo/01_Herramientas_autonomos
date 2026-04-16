@@ -3,11 +3,14 @@ import { createBrowserRouter } from 'react-router-dom'
 import { lazy, Suspense, type ReactNode } from 'react'
 
 // Lazy loading para que cada herramienta cargue solo cuando se necesita
-const FacturaPage     = lazy(() => import('../features/factura/FacturaPage').then(m => ({ default: m.FacturaPage })))
-const PresupuestoPage = lazy(() => import('../features/presupuesto/PresupuestoPage').then(m => ({ default: m.PresupuestoPage })))
-const AdminPage       = lazy(() => import('../features/admin/AdminPage').then(m => ({ default: m.AdminPage })))
-const BlogPage        = lazy(() => import('../features/blog/BlogPage').then(m => ({ default: m.BlogPage })))
-const BlogPostPage    = lazy(() => import('../features/blog/BlogPostPage').then(m => ({ default: m.BlogPostPage })))
+const FacturaPage          = lazy(() => import('../features/factura/FacturaPage').then(m => ({ default: m.FacturaPage })))
+const PresupuestoPage      = lazy(() => import('../features/presupuesto/PresupuestoPage').then(m => ({ default: m.PresupuestoPage })))
+const AdminPage            = lazy(() => import('../features/admin/AdminPage').then(m => ({ default: m.AdminPage })))
+const BlogPage             = lazy(() => import('../features/blog/BlogPage').then(m => ({ default: m.BlogPage })))
+const BlogPostPage         = lazy(() => import('../features/blog/BlogPostPage').then(m => ({ default: m.BlogPostPage })))
+const CuotaAutonomosPage   = lazy(() => import('../features/calculadoras/CuotaAutonomosPage').then(m => ({ default: m.CuotaAutonomosPage })))
+const PrecioHoraPage       = lazy(() => import('../features/calculadoras/PrecioHoraPage').then(m => ({ default: m.PrecioHoraPage })))
+const IvaIrpfPage          = lazy(() => import('../features/calculadoras/IvaIrpfPage').then(m => ({ default: m.IvaIrpfPage })))
 
 import { RouteErrorPage } from '../components/routing/RouteErrorPage'
 import { RouteLoading } from '../components/routing/RouteLoading'
@@ -33,6 +36,21 @@ export const router = createBrowserRouter([
   {
     path: '/admin',
     element: withRouteSuspense(<AdminPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/cuota-autonomos',
+    element: withRouteSuspense(<CuotaAutonomosPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/precio-hora',
+    element: withRouteSuspense(<PrecioHoraPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/iva-irpf',
+    element: withRouteSuspense(<IvaIrpfPage />),
     errorElement: <RouteErrorPage />,
   },
   {
