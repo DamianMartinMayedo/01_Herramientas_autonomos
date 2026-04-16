@@ -61,7 +61,7 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
 }
 
 export function HerramientasSection() {
-  const herramientas     = useAdminStore((s) => s.herramientas)
+  const herramientas      = useAdminStore((s) => s.herramientas)
   const toggleHerramienta = useAdminStore((s) => s.toggleHerramienta)
   const [editing, setEditing] = useState<Herramienta | null>(null)
 
@@ -71,7 +71,11 @@ export function HerramientasSection() {
     return acc
   }, {})
 
-  const labels: Record<string, string> = { documentos: 'Documentos', calculadoras: 'Calculadoras' }
+  const labels: Record<string, string> = {
+    documentos:   'Documentos',
+    contratos:    'Contratos y acuerdos',
+    calculadoras: 'Calculadoras',
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
@@ -81,7 +85,7 @@ export function HerramientasSection() {
           Herramientas
         </h1>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-          Activa o desactiva herramientas de la plataforma. Los cambios se aplican en tiempo real.
+          Activa o desactiva herramientas. Los cambios se reflejan en el Home instantáneamente.
         </p>
       </div>
 
@@ -93,7 +97,7 @@ export function HerramientasSection() {
         borderRadius: 'var(--radius-md)',
         fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', lineHeight: 1.6,
       }}>
-        <strong style={{ color: 'var(--color-primary)' }}>Nota local→cloud:</strong> Actualmente los cambios se guardan en localStorage y solo afectan a este navegador. Al migrar a Supabase, esta sección leerá y escribirá en la base de datos remota, haciendo los cambios globales. Mientras tanto, el estado de las herramientas en <code style={{ fontFamily: 'var(--font-mono)' }}>HomePage.tsx</code> debe editarse manualmente.
+        <strong style={{ color: 'var(--color-primary)' }}>Nota local→cloud:</strong> Los cambios se guardan en localStorage y se reflejan en el Home en tiempo real en este navegador. Al migrar a Supabase, esta sección leerá y escribirá en la base de datos remota haciendo los cambios globales.
       </div>
 
       {Object.entries(byCategoria).map(([cat, items]) => (
