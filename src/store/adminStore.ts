@@ -89,9 +89,17 @@ export const useAdminStore = create<AdminState>()(
 
       toggleHerramienta: (id) =>
         set((s) => ({
-          herramientas: s.herramientas.map((h) =>
-            h.id === id ? { ...h, activa: !h.activa } : h
-          ),
+          herramientas: s.herramientas.map((h) => {
+            if (h.id === id) {
+              const nuevaActiva = !h.activa
+              return { 
+                ...h, 
+                activa: nuevaActiva,
+                proximamente: !nuevaActiva
+              }
+            }
+            return h
+          }),
         })),
 
       updateHerramienta: (id, data) =>
