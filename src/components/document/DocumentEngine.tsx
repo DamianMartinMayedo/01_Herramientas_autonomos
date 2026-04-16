@@ -52,6 +52,8 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
   const esFinanciero = tipo !== 'albaran'
   const metodoPago = watch('formaPago.metodo') as MetodoPago
   const clienteExterior = watch('cliente.clienteExterior') as boolean
+  // Email del cliente para autorellenar el modal de envío por correo
+  const clienteEmail = (watch('cliente.email') as unknown) as string | undefined
 
   const handleAbrirPrevia = form.handleSubmit(() => setModalAbierto(true))
 
@@ -472,13 +474,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                       )}
 
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-2)', marginLeft: 'auto' }}>
-                        {/* <span style={{
-                          fontSize: 'var(--text-sm)', fontWeight: 600,
-                          color: 'var(--color-text)', paddingBottom: '0.5rem',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          {fmt(base)}
-                        </span> */}
                         <button
                           type="button"
                           onClick={() => eliminarLinea(index)}
@@ -490,7 +485,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                             border: '1.5px solid transparent',
                             borderRadius: 'var(--radius-md)',
                             cursor: fields.length === 1 ? 'not-allowed' : 'pointer',
-                            // opacity: fields.length === 1 ? 0.5 : 1,
                             transition: 'color var(--transition), background var(--transition)',
                             fontFamily: 'var(--font-body)',
                           }}
@@ -661,6 +655,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         <PreviewModal
           documento={documento}
           totales={totales}
+          clienteEmail={clienteEmail || undefined}
           onClose={() => setModalAbierto(false)}
         />
       )}

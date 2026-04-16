@@ -66,12 +66,21 @@ export function LegalDocEngine<T extends LegalDoc>({
   const rawValues = watch() as T
   const docPreview = buildDoc(rawValues)
 
+  // Email del receptor/cliente para autorellenar el modal de correo.
+  // Cada tipo de doc usa un campo diferente: cliente, parteB o deudor.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = rawValues as any
+  const clienteEmail: string | undefined =
+    raw?.cliente?.email ||
+    raw?.parteB?.email ||
+    raw?.deudor?.email ||
+    undefined
+
   const handleExportar = handleSubmit(() => setModalAbierto(true))
 
   /**
    * Guarda los datos del emisor/prestador (parteA) en localStorage
    * para pre-rellenar futuros documentos — igual que en DocumentEngine.
-   * Guarda el bloque `prestador` (contrato), `parteA` (nda) o `acreedor` (reclamacion).
    */
   const handleGuardarDatos = useCallback(() => {
     try {
@@ -207,6 +216,7 @@ export function LegalDocEngine<T extends LegalDoc>({
       {modalAbierto && (
         <LegalDocModal
           documento={docPreview}
+          clienteEmail={clienteEmail}
           onClose={() => setModalAbierto(false)}
         />
       )}
