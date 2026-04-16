@@ -7,7 +7,7 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { ChevronLeft, Eye } from 'lucide-react'
+import { ChevronLeft, Save, CheckCircle2 } from 'lucide-react'
 import type { LegalDoc, TipoLegalDoc } from '../../types/legalDoc.types'
 import { LegalDocModal } from './LegalDocModal'
 import { LegalDocPreview } from './LegalDocPreview'
@@ -29,7 +29,7 @@ export interface LegalDocEngineProps<T extends LegalDoc> {
 
 export interface FormHelpers<T extends LegalDoc> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register: ReturnType<typeof useForm<T>>['register'] // typed shorthand
+  register: ReturnType<typeof useForm<T>>['register']
   watch: ReturnType<typeof useForm<T>>['watch']
   errors: ReturnType<typeof useForm<T>>['formState']['errors']
   setValue: ReturnType<typeof useForm<T>>['setValue']
@@ -57,6 +57,7 @@ export function LegalDocEngine<T extends LegalDoc>({
 }: LegalDocEngineProps<T>) {
   const navigate = useNavigate()
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [savedFeedback, setSavedFeedback] = useState(false)
 
   const form = useForm<T>({ defaultValues: defaultValues as Parameters<typeof useForm<T>>[0]['defaultValues'] })
   const { register, watch, formState: { errors }, setValue, handleSubmit } = form
@@ -66,6 +67,26 @@ export function LegalDocEngine<T extends LegalDoc>({
   const docPreview = buildDoc(rawValues)
 
   const handleExportar = handleSubmit(() => setModalAbierto(true))
+
+  /**
+   * Guarda los datos del emisor/prestador (parteA) en localStorage
+   * para pre-rellenar futuros documentos — igual que en DocumentEngine.
+   * Guarda el bloque `prestador` (contrato), `parteA` (nda) o `acreedor` (reclamacion).
+   */
+  const handleGuardarDatos = useCallback(() => {
+    try {
+      const values = form.getValues()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fuente = (values as any)['prestador'] ?? (values as any)['parteA'] ?? (values as any)['acreedor']
+      if (fuente) {
+        localStorage.setItem(`ha-legal-emisor-${tipo}`, JSON.stringify(fuente))
+      }
+    } catch {
+      // localStorage puede estar bloqueado en algunos entornos
+    }
+    setSavedFeedback(true)
+    setTimeout(() => setSavedFeedback(false), 2500)
+  }, [form, tipo])
 
   const helpers: FormHelpers<T> = {
     register: register as FormHelpers<T>['register'],
@@ -88,6 +109,7 @@ export function LegalDocEngine<T extends LegalDoc>({
         padding: 'var(--space-3) var(--space-6)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)',
       }}>
+        {/* Izquierda: volver + título */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <button
             type="button"
@@ -119,17 +141,26 @@ export function LegalDocEngine<T extends LegalDoc>({
           </h1>
         </div>
 
+        {/* Derecha: feedback + guardar + exportar + tema */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          {/* Botón preview móvil — solo visible cuando la columna derecha está oculta */}
+          {savedFeedback && (
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+              fontSize: 'var(--text-sm)', fontWeight: 600,
+              color: 'var(--color-success)',
+            }}>
+              <CheckCircle2 size={15} />
+              Datos guardados
+            </span>
+          )}
           <Button
             variant="secondary"
             size="sm"
             type="button"
-            className="xl:hidden"
-            onClick={() => setModalAbierto(true)}
+            onClick={handleGuardarDatos}
           >
-            <Eye size={14} />
-            Vista previa
+            <Save size={14} />
+            Guardar mis datos
           </Button>
           <Button variant="primary" size="sm" onClick={handleExportar} type="button">
             Exportar
