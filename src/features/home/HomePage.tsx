@@ -1,9 +1,10 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
+import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock, Scroll, ShieldCheck, BadgeAlert, Truck } from 'lucide-react'
 import type { BlogPost } from '../../store/blogStore'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
+import { useAdminStore, type Herramienta } from '../../store/adminStore'
 
 /*
   Paleta de 6 colores para cards de herramientas
@@ -15,59 +16,29 @@ import { SiteFooter } from '../../components/layout/SiteFooter'
   6. card-accent-gold     → oro ámbar  (#B07B00)
 */
 
-const HERRAMIENTAS = [
-  {
-    href: '/factura',
-    icon: FileText,
-    titulo: 'Generador de facturas',
-    desc: 'Crea facturas con IVA e IRPF y descárgalas en PDF al instante.',
-    activa: true,
-    accentClass: 'card-accent-primary',
-    ctaColor: 'var(--color-primary)',
-  },
-  {
-    href: '/presupuesto',
-    icon: FileText,
-    titulo: 'Generador de presupuestos',
-    desc: 'Envía presupuestos profesionales a tus clientes en minutos.',
-    activa: true,
-    accentClass: 'card-accent-success',
-    ctaColor: 'var(--color-success)',
-  },
-  {
-    href: '/cuota-autonomos',
-    icon: Calculator,
-    titulo: 'Cuota de autónomos',
-    desc: 'Calcula tu cuota mensual según tus ingresos netos reales.',
-    activa: false,
-    accentClass: 'card-accent-copper',
-    ctaColor: 'var(--color-copper)',
-  },
-  {
-    href: '/precio-hora',
-    icon: Calculator,
-    titulo: 'Precio por hora',
-    desc: 'Fija tu tarifa sin venderte por debajo de coste.',
-    activa: false,
-    accentClass: 'card-accent-purple',
-    ctaColor: 'var(--color-purple)',
-  },
-  {
-    href: '/iva-irpf',
-    icon: Calculator,
-    titulo: 'IVA / IRPF',
-    desc: 'Separa base imponible, IVA e IRPF de cualquier importe.',
-    activa: false,
-    accentClass: 'card-accent-teal',
-    ctaColor: 'var(--color-teal)',
-  },
-] as const
+// Metadatos visuales por herramienta (icon, accentClass, ctaColor)
+// El estado activa/proximamente viene del adminStore
+const HERRAMIENTA_META: Record<string, {
+  icon: React.ElementType
+  accentClass: string
+  ctaColor: string
+}> = {
+  factura:         { icon: FileText,    accentClass: 'card-accent-primary', ctaColor: 'var(--color-primary)' },
+  presupuesto:     { icon: FileText,    accentClass: 'card-accent-success', ctaColor: 'var(--color-success)' },
+  albaran:         { icon: Truck,       accentClass: 'card-accent-copper',  ctaColor: 'var(--color-warning)' },
+  contrato:        { icon: Scroll,      accentClass: 'card-accent-purple',  ctaColor: 'var(--color-purple)'  },
+  nda:             { icon: ShieldCheck, accentClass: 'card-accent-teal',    ctaColor: 'var(--color-primary)' },
+  reclamacion:     { icon: BadgeAlert,  accentClass: 'card-accent-gold',    ctaColor: 'var(--color-gold)'    },
+  'cuota-autonomos': { icon: Calculator,  accentClass: 'card-accent-copper',  ctaColor: 'var(--color-warning)' },
+  'precio-hora':   { icon: Calculator,  accentClass: 'card-accent-purple',  ctaColor: 'var(--color-purple)'  },
+  'iva-irpf':      { icon: Calculator,  accentClass: 'card-accent-teal',    ctaColor: 'var(--color-primary)' },
+}
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(iso))
 }
 
-// ── Blog Carousel ────────────────────────────────────────────────────────
+// ── Blog Carousel ──────────────────────────────────────────────────────────────────
 const CARDS_PER_PAGE = 3
 const AUTO_INTERVAL = 5000
 
@@ -81,14 +52,13 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
   const visiblePosts = posts.slice(0, total)
   const pageCount = Math.ceil(total / CARDS_PER_PAGE)
   const [page, setPage] = useState(0)
-  // Key que cambia con cada página para forzar re-mount y relanzar la animación CSS
   const [animKey, setAnimKey] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const go = useCallback((next: number) => {
     const target = ((next % pageCount) + pageCount) % pageCount
     setPage(target)
-    setAnimKey(k => k + 1) // reinicia la animación de entrada
+    setAnimKey(k => k + 1)
   }, [pageCount])
 
   useEffect(() => {
@@ -106,7 +76,6 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
 
   return (
     <div>
-      {/* Grid con animación — el key fuerza re-mount al cambiar de página */}
       <div key={animKey} className="carousel-grid">
         {slice.map((post, i) => (
           <Link
@@ -118,19 +87,14 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
             {post.tags.length > 0 && (
               <div className="blog-card-tags">
                 {post.tags.slice(0, 2).map((t) => (
-                  <span key={t} className="blog-card-tag">
-                     {/* <Tag size={0} />*/}{t}
-                  </span>
+                  <span key={t} className="blog-card-tag">{t}</span>
                 ))}
               </div>
             )}
-
             <h3 className="blog-card-title">{post.titulo}</h3>
-
             {post.extracto && (
               <p className="blog-card-excerpt">{post.extracto}</p>
             )}
-
             <div className="blog-card-footer">
               <div className="blog-card-date">
                 <Calendar size={10} />
@@ -143,18 +107,11 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
           </Link>
         ))}
       </div>
-
-      {/* Controles */}
       {pageCount > 1 && (
         <div className="carousel-controls">
-          <button
-            aria-label="Anterior"
-            className="carousel-arrow"
-            onClick={() => { resetTimer(); go(page - 1) }}
-          >
+          <button aria-label="Anterior" className="carousel-arrow" onClick={() => { resetTimer(); go(page - 1) }}>
             <ChevronLeft size={16} />
           </button>
-
           <div className="carousel-dots">
             {Array.from({ length: pageCount }).map((_, idx) => (
               <button
@@ -165,12 +122,7 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
               />
             ))}
           </div>
-
-          <button
-            aria-label="Siguiente"
-            className="carousel-arrow"
-            onClick={() => { resetTimer(); go(page + 1) }}
-          >
+          <button aria-label="Siguiente" className="carousel-arrow" onClick={() => { resetTimer(); go(page + 1) }}>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -179,9 +131,84 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
   )
 }
 
-// ── Página principal ─────────────────────────────────────────────────────
+// ── ToolCard ───────────────────────────────────────────────────────────────────────
+function ToolCard({ h }: { h: Herramienta }) {
+  const meta = HERRAMIENTA_META[h.id] ?? { icon: FileText, accentClass: 'card-accent-primary', ctaColor: 'var(--color-primary)' }
+  const Icon = meta.icon
+
+  const cardEl = (
+    <div className={`card tool-card-inner ${meta.accentClass} ${h.activa ? 'card-interactive' : 'card-disabled'}`}>
+      <div className="tool-card-top">
+        <div className="tool-icon-box">
+          <Icon size={18} style={{ color: meta.ctaColor }} />
+        </div>
+        {(!h.activa || h.proximamente) && (
+          <span className="badge badge-muted">
+            <Clock size={10} />
+            Próximamente
+          </span>
+        )}
+      </div>
+
+      <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>{h.nombre}</h3>
+      <p className="card-body" style={{ flex: 1 }}>{h.descripcion}</p>
+
+      {h.activa && !h.proximamente && (
+        <div className="tool-cta">
+          <div className="tool-cta-link" style={{ color: meta.ctaColor }}>
+            Ir a la herramienta <ArrowRight size={15} />
+          </div>
+          {h.id === 'factura' && (
+            <div className="relative flex items-center">
+              <div className="peer cursor-default">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="
+                absolute bottom-full right-0 mb-2 w-56 z-20
+                bg-zinc-900 dark:bg-zinc-800 text-white text-xs
+                rounded-lg px-3 py-2.5 leading-relaxed shadow-lg
+                opacity-0 pointer-events-none
+                peer-hover:opacity-100 peer-hover:pointer-events-auto
+                transition-opacity duration-150
+              ">
+                Esta herramienta genera facturas en formato PDF pero
+                <strong> no está conectada a Verifactu</strong>. En el futuro
+                se integrará con el sistema oficial de la AEAT.
+                <div className="absolute top-full right-3 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  return h.activa && !h.proximamente ? (
+    <Link to={h.ruta} style={{ display: 'block', textDecoration: 'none' }}>
+      {cardEl}
+    </Link>
+  ) : (
+    <div>{cardEl}</div>
+  )
+}
+
+// ── Página principal ───────────────────────────────────────────────────────────────────
 export function HomePage() {
+  const herramientas = useAdminStore((s) => s.herramientas)
   const [blogPosts, setBlogPosts] = useState<PublicBlogPost[] | null>(null)
+
+  // Agrupa las herramientas por categoría manteniendo el orden del store
+  const byCategoria: Record<string, Herramienta[]> = {}
+  for (const h of herramientas) {
+    if (!byCategoria[h.categoria]) byCategoria[h.categoria] = []
+    byCategoria[h.categoria].push(h)
+  }
+
+  const categoriaLabels: Record<string, string> = {
+    documentos:  'Documentos',
+    contratos:   'Contratos y acuerdos',
+    calculadoras: 'Calculadoras',
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -205,7 +232,6 @@ export function HomePage() {
       try {
         const { useBlogStore } = await import('../../store/blogStore')
         if (cancelled) return
-
         setBlogPosts(toPublic(useBlogStore.getState().posts))
         unsubscribe = useBlogStore.subscribe((state) => {
           if (cancelled) return
@@ -236,71 +262,33 @@ export function HomePage() {
               Todo lo que necesitas<br />como autónomo,<br />
               <span className="hero-heading-accent">sin complicaciones.</span>
             </h1>
-            <p className="hero-sub">Facturas, presupuestos, calculadoras y más.</p>
+            <p className="hero-sub">Facturas, presupuestos, contratos, calculadoras y más.</p>
           </div>
         </section>
 
-        {/* Grid herramientas */}
+        {/* Grid herramientas por categoría */}
         <section className="section-pb">
           <p className="section-label">Herramientas disponibles</p>
-          <div className="tools-grid">
-            {HERRAMIENTAS.map((h) => {
-              const Icon = h.icon
-              const cardEl = (
-                <div className={`card tool-card-inner ${h.accentClass} ${h.activa ? 'card-interactive' : 'card-disabled'}`}>
-                  <div className="tool-card-top">
-                    <div className="tool-icon-box">
-                      <Icon size={18} style={{ color: h.ctaColor }} />
-                    </div>
-                    {!h.activa && (
-                      <span className="badge badge-muted">
-                        <Clock size={10} />
-                        Próximamente
-                      </span>
-                    )}
-                  </div>
 
-                  <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>{h.titulo}</h3>
-                  <p className="card-body" style={{ flex: 1 }}>{h.desc}</p>
-
-                  {h.activa && (
-                    <div className="tool-cta">
-                      <div className="tool-cta-link" style={{ color: h.ctaColor }}>
-                        Ir a la herramienta <ArrowRight size={15} />
-                      </div>
-                      {h.href === '/factura' && (
-                        <div className="relative flex items-center">
-                          <div className="peer cursor-default">
-                            <AlertTriangle className="w-5 h-5 text-amber-400" />
-                          </div>
-                          <div className="
-                            absolute bottom-full right-0 mb-2 w-56 z-20
-                            bg-zinc-900 dark:bg-zinc-800 text-white text-xs
-                            rounded-lg px-3 py-2.5 leading-relaxed shadow-lg
-                            opacity-0 pointer-events-none
-                            peer-hover:opacity-100 peer-hover:pointer-events-auto
-                            transition-opacity duration-150
-                          ">
-                            Esta herramienta genera facturas en formato PDF pero
-                            <strong> no está conectada a Verifactu</strong>. En el futuro
-                            se integrará con el sistema oficial de la AEAT.
-                            <div className="absolute top-full right-3 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-              return h.activa ? (
-                <Link key={h.href} to={h.href} style={{ display: 'block', textDecoration: 'none' }}>
-                  {cardEl}
-                </Link>
-              ) : (
-                <div key={h.href}>{cardEl}</div>
-              )
-            })}
-          </div>
+          {Object.entries(byCategoria).map(([cat, items]) => (
+            <div key={cat} style={{ marginBottom: 'var(--space-10)' }}>
+              <p style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 700,
+                letterSpacing: '0.10em',
+                textTransform: 'uppercase',
+                color: 'var(--color-text-faint)',
+                marginBottom: 'var(--space-4)',
+              }}>
+                {categoriaLabels[cat] ?? cat}
+              </p>
+              <div className="tools-grid">
+                {items.map((h) => (
+                  <ToolCard key={h.id} h={h} />
+                ))}
+              </div>
+            </div>
+          ))}
         </section>
 
         {/* Sección Blog */}
