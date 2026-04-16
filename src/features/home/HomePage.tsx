@@ -142,10 +142,10 @@ function ToolCard({ h }: { h: Herramienta }) {
         <div className="tool-icon-box">
           <Icon size={18} style={{ color: meta.ctaColor }} />
         </div>
-        {(!h.activa || h.proximamente) && (
-          <span className="badge badge-muted">
-            <Clock size={10} />
-            Próximamente
+        {(!h.activa || h.proximamente || h.mantenimiento) && (
+          <span className={`badge ${h.mantenimiento ? 'badge-gold' : 'badge-muted'}`}>
+            {h.mantenimiento ? <AlertTriangle size={10} /> : <Clock size={10} />}
+            {h.mantenimiento ? 'Mejorando' : 'Próximamente'}
           </span>
         )}
       </div>
@@ -153,7 +153,7 @@ function ToolCard({ h }: { h: Herramienta }) {
       <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>{h.nombre}</h3>
       <p className="card-body" style={{ flex: 1 }}>{h.descripcion}</p>
 
-      {h.activa && !h.proximamente && (
+      {h.activa && (!h.proximamente && !h.mantenimiento) && (
         <div className="tool-cta">
           <div className="tool-cta-link" style={{ color: meta.ctaColor }}>
             Ir a la herramienta <ArrowRight size={15} />
@@ -183,7 +183,7 @@ function ToolCard({ h }: { h: Herramienta }) {
     </div>
   )
 
-  return h.activa && !h.proximamente ? (
+  return h.activa && !h.proximamente && !h.mantenimiento ? (
     <Link to={h.ruta} style={{ display: 'block', textDecoration: 'none' }}>
       {cardEl}
     </Link>

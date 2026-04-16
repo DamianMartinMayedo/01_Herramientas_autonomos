@@ -16,9 +16,20 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   const [nombre, setNombre] = useState(h.nombre)
   const [desc,   setDesc]   = useState(h.descripcion)
   const [prox,   setProx]   = useState(h.proximamente)
+  const [mant,   setMant]   = useState(h.mantenimiento || false)
+
+  const handleProxChange = (val: boolean) => {
+    setProx(val)
+    if (val) setMant(false)
+  }
+
+  const handleMantChange = (val: boolean) => {
+    setMant(val)
+    if (val) setProx(false)
+  }
 
   const save = () => {
-    updateHerramienta(h.id, { nombre, descripcion: desc, proximamente: prox })
+    updateHerramienta(h.id, { nombre, descripcion: desc, proximamente: prox, mantenimiento: mant })
     onClose()
   }
 
@@ -47,8 +58,12 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
             <textarea className="textarea-v3" value={desc} onChange={e => setDesc(e.target.value)} rows={3} style={{ minHeight: 'auto' }} />
           </div>
           <label className="input-toggle">
-            <input type="checkbox" checked={prox} onChange={e => setProx(e.target.checked)} />
+            <input type="checkbox" checked={prox} onChange={e => handleProxChange(e.target.checked)} />
             <span>Mostrar como "Próximamente"</span>
+          </label>
+          <label className="input-toggle">
+            <input type="checkbox" checked={mant} onChange={e => handleMantChange(e.target.checked)} />
+            <span>Mostrar como "Mejorando"</span>
           </label>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
@@ -132,6 +147,9 @@ export function HerramientasSection() {
                     <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{h.nombre}</span>
                     {h.proximamente && (
                       <span className="badge badge-copper" style={{ fontSize: '10px', padding: '1px 7px' }}>Próximamente</span>
+                    )}
+                    {h.mantenimiento && (
+                      <span className="badge badge-gold" style={{ fontSize: '10px', padding: '1px 7px' }}>Mejorando</span>
                     )}
                   </div>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>

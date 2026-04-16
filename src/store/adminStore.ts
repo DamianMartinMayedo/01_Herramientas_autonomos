@@ -19,6 +19,7 @@ export interface Herramienta {
   ruta: string
   activa: boolean
   proximamente: boolean
+  mantenimiento?: boolean
   descripcion: string
   categoria: 'documentos' | 'calculadoras' | 'contratos'
   usosRegistrados: number
@@ -92,10 +93,18 @@ export const useAdminStore = create<AdminState>()(
           herramientas: s.herramientas.map((h) => {
             if (h.id === id) {
               const nuevaActiva = !h.activa
+              let props: Partial<Herramienta> = {}
+              if (nuevaActiva) {
+                props = { proximamente: false, mantenimiento: false }
+              } else {
+                if (!h.proximamente && !h.mantenimiento) {
+                  props = { mantenimiento: true }
+                }
+              }
               return { 
                 ...h, 
                 activa: nuevaActiva,
-                proximamente: !nuevaActiva
+                ...props
               }
             }
             return h
