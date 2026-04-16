@@ -5,6 +5,7 @@
  */
 import { useState } from 'react'
 import { useBlogStore, type BlogPost, type BlogStatus } from '../../../store/blogStore'
+import { ConfirmModal } from '../components/ConfirmModal'
 import { Plus, Pencil, Trash2, Eye, EyeOff, FileText, Tag, Calendar, X } from 'lucide-react'
 
 /* ── Utilidades ────────────────────────────────────────────────────────── */
@@ -134,6 +135,9 @@ function PostEditor({ post, onClose }: EditorProps) {
   )
 }
 
+/* ── Tipo estado modal ───────────────────────────────────────────────────── */
+type ModalTarget = { post: BlogPost; accion: 'visibilidad' | 'eliminar' } | null
+
 /* ── BlogSection ─────────────────────────────────────────────────────────── */
 export function BlogSection() {
   const posts       = useBlogStore((s) => s.posts)
@@ -141,17 +145,48 @@ export function BlogSection() {
   const publishPost = useBlogStore((s) => s.publishPost)
   const unpublish   = useBlogStore((s) => s.unpublishPost)
 
-  const [editing,    setEditing]    = useState<BlogPost | null | 'new'>(null)
-  const [filter,     setFilter]     = useState<'all' | BlogStatus>('all')
-  const [confirmDel, setConfirmDel] = useState<string | null>(null)
-  const [confirmVis, setConfirmVis] = useState<string | null>(null)
+  const [editing,     setEditing]     = useState<BlogPost | null | 'new'>(null)
+  const [filter,      setFilter]      = useState<'all' | BlogStatus>('all')
+  const [modalTarget, setModalTarget] = useState<ModalTarget>(null)
 
   const filtered = posts.filter(p => filter === 'all' || p.status === filter)
 
-  const handleToggleVis = (post: BlogPost) => {
-    post.status === 'published' ? unpublish(post.id) : publishPost(post.id)
-    setConfirmVis(null)
+  // ── Handlers confirmados ────────────────────────────────────────────
+  const handleConfirm = () => {
+    if (!modalTarget) return
+    const { post, accion } = modalTarget
+    if (accion === 'eliminar') {
+      deletePost(post.id)
+    } else {
+      post.status === 'published' ? unpublish(post.id) : publishPost(post.id)
+    }
+    setModalTarget(null)
   }
+
+  // ── Textos del modal ────────────────────────────────────────────────
+  const getModalProps = (target: ModalTarget) => {
+    if (!target) return { title: '', description: '', confirmLabel: '', confirmVariant: 'danger' as const }
+    const { post, accion } = target
+    if (accion === 'eliminar') {
+      return {
+        title:          `Eliminar "${post.titulo || 'Sin título'}"`,
+        description:    'Esta acción es permanente. El artículo se eliminará y no podrá recuperarse.',
+        confirmLabel:   'Sí, eliminar',
+        confirmVariant: 'danger' as const,
+      }
+    }
+    const publicado = post.status === 'published'
+    return {
+      title:          publicado ? `Despublicar "${post.titulo || 'Sin título'}"` : `Publicar "${post.titulo || 'Sin título'}"`,
+      description:    publicado
+        ? 'El artículo pasará a borrador y dejará de ser visible en el blog público.'
+        : 'El artículo será visible en el blog público inmediatamente.',
+      confirmLabel:   publicado ? 'Sí, despublicar' : 'Sí, publicar',
+      confirmVariant: publicado ? 'warning' as const : 'success' as const,
+    }
+  }
+
+  const modalProps = getModalProps(modalTarget)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -259,45 +294,32 @@ export function BlogSection() {
 
               {/* Acciones */}
               <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
-                {/* Ojo con confirmación: primer clic pide confirmación, segundo ejecuta */}
-                {confirmVis === post.id ? (
-                  <button
-                    title={post.status === 'published' ? 'Confirmar: despublicar' : 'Confirmar: publicar'}
-                    onClick={() => handleToggleVis(post)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: '32px', height: '32px',
-                      background: post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)',
-                      border: `2px solid ${post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)'}`,
-                      borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'white',
-                    }}
-                  >
-                    {post.status === 'published' ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                ) : (
-                  <button
-                    title={post.status === 'published' ? 'Despublicar' : 'Publicar'}
-                    onClick={() => setConfirmVis(post.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: '32px', height: '32px',
-                      background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                      color: post.status === 'published' ? 'var(--color-success)' : 'var(--color-text-faint)',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.color = post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)'
-                      e.currentTarget.style.borderColor = post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)'
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.color = post.status === 'published' ? 'var(--color-success)' : 'var(--color-text-faint)'
-                      e.currentTarget.style.borderColor = 'var(--color-border)'
-                    }}
-                  >
-                    {post.status === 'published' ? <Eye size={14} /> : <EyeOff size={14} />}
-                  </button>
-                )}
 
+                {/* Ojo: publicar/despublicar → abre ConfirmModal */}
+                <button
+                  title={post.status === 'published' ? 'Despublicar' : 'Publicar'}
+                  onClick={() => setModalTarget({ post, accion: 'visibilidad' })}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: '32px', height: '32px',
+                    background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                    color: post.status === 'published' ? 'var(--color-success)' : 'var(--color-text-faint)',
+                    transition: 'color var(--transition-interactive), border-color var(--transition-interactive)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.color = post.status === 'published' ? 'var(--color-gold)' : 'var(--color-success)'
+                    e.currentTarget.style.borderColor = post.status === 'published' ? 'var(--color-gold)' : 'var(--color-success)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.color = post.status === 'published' ? 'var(--color-success)' : 'var(--color-text-faint)'
+                    e.currentTarget.style.borderColor = 'var(--color-border)'
+                  }}
+                >
+                  {post.status === 'published' ? <Eye size={14} /> : <EyeOff size={14} />}
+                </button>
+
+                {/* Editar */}
                 <button
                   title="Editar"
                   onClick={() => setEditing(post)}
@@ -311,34 +333,22 @@ export function BlogSection() {
                   <Pencil size={14} />
                 </button>
 
-                {confirmDel === post.id ? (
-                  <button
-                    onClick={() => { deletePost(post.id); setConfirmDel(null) }}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: '32px', height: '32px',
-                      background: 'var(--color-error)', border: '2px solid var(--color-error)',
-                      borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'white',
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                ) : (
-                  <button
-                    title="Eliminar"
-                    onClick={() => setConfirmDel(post.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: '32px', height: '32px',
-                      background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-text-faint)',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-error)'; e.currentTarget.style.borderColor = 'var(--color-error)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-faint)'; e.currentTarget.style.borderColor = 'var(--color-border)' }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
+                {/* Eliminar → abre ConfirmModal */}
+                <button
+                  title="Eliminar"
+                  onClick={() => setModalTarget({ post, accion: 'eliminar' })}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: '32px', height: '32px',
+                    background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-text-faint)',
+                    transition: 'color var(--transition-interactive), border-color var(--transition-interactive)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-error)'; e.currentTarget.style.borderColor = 'var(--color-error)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-faint)'; e.currentTarget.style.borderColor = 'var(--color-border)' }}
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           ))}
@@ -351,6 +361,15 @@ export function BlogSection() {
           key={editing === 'new' ? 'new' : editing.id}
           post={editing === 'new' ? undefined : editing}
           onClose={() => setEditing(null)}
+        />
+      )}
+
+      {/* Modal confirmar (visibilidad y eliminar) */}
+      {modalTarget && (
+        <ConfirmModal
+          {...modalProps}
+          onConfirm={handleConfirm}
+          onCancel={() => setModalTarget(null)}
         />
       )}
     </div>

@@ -1,88 +1,12 @@
 /**
  * HerramientasSection.tsx
- * Gestión de herramientas: activar/desactivar con modal de confirmación,
- * editar descripción, mostrar/ocultar con botón ojo + confirmación en fila.
+ * Gestión de herramientas: activar/desactivar, mostrar/ocultar y editar.
+ * Todas las acciones destructivas pasan por ConfirmModal.
  */
 import { useState } from 'react'
 import { useAdminStore, type Herramienta } from '../../../store/adminStore'
-import { ToggleLeft, ToggleRight, Pencil, X, CheckCircle, Clock, Eye, EyeOff, AlertTriangle } from 'lucide-react'
-
-// ── Modal de confirmación genérico ────────────────────────────────────────
-interface ConfirmModalProps {
-  title: string
-  description: string
-  confirmLabel: string
-  confirmVariant?: 'danger' | 'success'
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function ConfirmModal({ title, description, confirmLabel, confirmVariant = 'danger', onConfirm, onCancel }: ConfirmModalProps) {
-  const confirmStyle: React.CSSProperties = confirmVariant === 'danger'
-    ? { background: 'var(--color-error)', borderColor: 'var(--color-error)', color: 'white', boxShadow: '3px 3px 0 var(--color-error-highlight)' }
-    : { background: 'var(--color-success)', borderColor: 'var(--color-success-active)', color: 'white', boxShadow: '3px 3px 0 var(--color-success-active)' }
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 200,
-      background: 'rgba(0,0,0,0.45)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 'var(--space-4)',
-    }}
-      onClick={onCancel}
-    >
-      <div
-        style={{
-          background: 'var(--color-bg)',
-          border: '2px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: '6px 6px 0 var(--color-border)',
-          width: '100%', maxWidth: '400px',
-          overflow: 'hidden',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-          padding: 'var(--space-5) var(--space-6)',
-          borderBottom: '1px solid var(--color-divider)',
-        }}>
-          <AlertTriangle size={18} style={{ color: 'var(--color-gold)', flexShrink: 0 }} />
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', flex: 1 }}>
-            {title}
-          </h2>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: 'var(--space-6)' }}>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
-            {description}
-          </p>
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)',
-          padding: 'var(--space-4) var(--space-6)',
-          borderTop: '1px solid var(--color-divider)',
-        }}>
-          <button className="btn btn-secondary btn-sm" onClick={onCancel}>Cancelar</button>
-          <button
-            className="btn btn-sm"
-            style={confirmStyle}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { ConfirmModal } from '../components/ConfirmModal'
+import { ToggleLeft, ToggleRight, Pencil, X, CheckCircle, Clock, Eye, EyeOff } from 'lucide-react'
 
 // ── Editor de herramienta ────────────────────────────────────────────────
 interface EditorProps {
@@ -143,15 +67,17 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   )
 }
 
-// ── HerramientasSection ────────────────────────────────────────────────
+// ── Tipo para el estado del modal ────────────────────────────────────────
+type ModalTarget = { herramienta: Herramienta; accion: 'visibilidad' | 'activacion' } | null
+
+// ── HerramientasSection ──────────────────────────────────────────────────
 export function HerramientasSection() {
   const herramientas      = useAdminStore(s => s.herramientas)
   const toggleHerramienta = useAdminStore(s => s.toggleHerramienta)
   const updateHerramienta = useAdminStore(s => s.updateHerramienta)
 
-  const [editing,    setEditing]    = useState<Herramienta | null>(null)
-  const [confirmVis, setConfirmVis] = useState<string | null>(null)   // ojo: ocultar del home
-  const [confirmAct, setConfirmAct] = useState<Herramienta | null>(null) // toggle activa/inactiva
+  const [editing,     setEditing]     = useState<Herramienta | null>(null)
+  const [modalTarget, setModalTarget] = useState<ModalTarget>(null)
 
   const byCategoria = herramientas.reduce<Record<string, Herramienta[]>>((acc, h) => {
     if (!acc[h.categoria]) acc[h.categoria] = []
@@ -165,15 +91,47 @@ export function HerramientasSection() {
     calculadoras: 'Calculadoras',
   }
 
-  const handleToggleVisible = (h: Herramienta) => {
-    updateHerramienta(h.id, { visible: h.visible === false ? true : false })
-    setConfirmVis(null)
+  // ── Handlers confirmados ─────────────────────────────────────────────
+  const handleConfirm = () => {
+    if (!modalTarget) return
+    const { herramienta: h, accion } = modalTarget
+    if (accion === 'visibilidad') {
+      updateHerramienta(h.id, { visible: h.visible === false ? true : false })
+    } else {
+      toggleHerramienta(h.id)
+    }
+    setModalTarget(null)
   }
 
-  const handleToggleActiva = (h: Herramienta) => {
-    toggleHerramienta(h.id)
-    setConfirmAct(null)
+  // ── Textos del modal según acción ────────────────────────────────────
+  const getModalProps = (target: ModalTarget) => {
+    if (!target) return { title: '', description: '', confirmLabel: '', confirmVariant: 'danger' as const }
+    const { herramienta: h, accion } = target
+
+    if (accion === 'visibilidad') {
+      const oculta = h.visible === false
+      return {
+        title:         oculta ? `Mostrar "${h.nombre}"` : `Ocultar "${h.nombre}"`,
+        description:   oculta
+          ? 'La herramienta volverá a aparecer en el Home para todos los usuarios.'
+          : 'La herramienta dejará de mostrarse en el Home. Seguirá siendo accesible por URL directa.',
+        confirmLabel:  oculta ? 'Sí, mostrar' : 'Sí, ocultar',
+        confirmVariant: oculta ? 'success' as const : 'warning' as const,
+      }
+    }
+
+    // activacion
+    return {
+      title:         h.activa ? `Desactivar "${h.nombre}"` : `Activar "${h.nombre}"`,
+      description:   h.activa
+        ? 'La herramienta quedará inaccesible para los usuarios y se mostrará como "Próximamente" en el Home.'
+        : 'La herramienta pasará a estar disponible para todos los usuarios.',
+      confirmLabel:  h.activa ? 'Sí, desactivar' : 'Sí, activar',
+      confirmVariant: h.activa ? 'danger' as const : 'success' as const,
+    }
   }
+
+  const modalProps = getModalProps(modalTarget)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
@@ -244,45 +202,29 @@ export function HerramientasSection() {
                 {/* Acciones */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
 
-                  {/* Ojo: ocultar/mostrar en Home — clic pide confirmación en fila */}
-                  {confirmVis === h.id ? (
-                    <button
-                      title={h.visible === false ? 'Confirmar: mostrar' : 'Confirmar: ocultar'}
-                      onClick={() => handleToggleVisible(h)}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: '32px', height: '32px',
-                        background: h.visible === false ? 'var(--color-success)' : 'var(--color-error)',
-                        border: `2px solid ${h.visible === false ? 'var(--color-success)' : 'var(--color-error)'}`,
-                        borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'white',
-                      }}
-                    >
-                      {h.visible === false ? <Eye size={14} /> : <EyeOff size={14} />}
-                    </button>
-                  ) : (
-                    <button
-                      title={h.visible === false ? 'Mostrar en Home' : 'Ocultar en Home'}
-                      onClick={() => setConfirmVis(h.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: '32px', height: '32px',
-                        background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
-                        borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                        color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)',
-                        transition: 'color 150ms, border-color 150ms',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.color = h.visible === false ? 'var(--color-success)' : 'var(--color-error)'
-                        e.currentTarget.style.borderColor = h.visible === false ? 'var(--color-success)' : 'var(--color-error)'
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.color = h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)'
-                        e.currentTarget.style.borderColor = 'var(--color-border)'
-                      }}
-                    >
-                      {h.visible === false ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  )}
+                  {/* Ojo: mostrar/ocultar en Home → abre ConfirmModal */}
+                  <button
+                    title={h.visible === false ? 'Mostrar en Home' : 'Ocultar en Home'}
+                    onClick={() => setModalTarget({ herramienta: h, accion: 'visibilidad' })}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: '32px', height: '32px',
+                      background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)',
+                      transition: 'color var(--transition-interactive), border-color var(--transition-interactive)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = h.visible === false ? 'var(--color-success)' : 'var(--color-gold)'
+                      e.currentTarget.style.borderColor = h.visible === false ? 'var(--color-success)' : 'var(--color-gold)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)'
+                      e.currentTarget.style.borderColor = 'var(--color-border)'
+                    }}
+                  >
+                    {h.visible === false ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
 
                   {/* Editar */}
                   <button
@@ -297,9 +239,9 @@ export function HerramientasSection() {
                     <Pencil size={13} />
                   </button>
 
-                  {/* Toggle activa — abre modal de confirmación */}
+                  {/* Toggle activa → abre ConfirmModal */}
                   <button
-                    onClick={() => setConfirmAct(h)}
+                    onClick={() => setModalTarget({ herramienta: h, accion: 'activacion' })}
                     title={h.activa ? 'Desactivar herramienta' : 'Activar herramienta'}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
@@ -328,19 +270,12 @@ export function HerramientasSection() {
       {/* Modal editar */}
       {editing && <HerramientaEditor herramienta={editing} onClose={() => setEditing(null)} />}
 
-      {/* Modal confirmar activar/desactivar */}
-      {confirmAct && (
+      {/* Modal confirmar (visibilidad y activación) */}
+      {modalTarget && (
         <ConfirmModal
-          title={confirmAct.activa ? `Desactivar "${confirmAct.nombre}"` : `Activar "${confirmAct.nombre}"`}
-          description={
-            confirmAct.activa
-              ? `La herramienta quedará inaccesible para los usuarios y se mostrará como “Próximamente” en el Home. ¿Deseas desactivarla?`
-              : `La herramienta pasará a estar disponible para todos los usuarios. ¿Deseas activarla?`
-          }
-          confirmLabel={confirmAct.activa ? 'Sí, desactivar' : 'Sí, activar'}
-          confirmVariant={confirmAct.activa ? 'danger' : 'success'}
-          onConfirm={() => handleToggleActiva(confirmAct)}
-          onCancel={() => setConfirmAct(null)}
+          {...modalProps}
+          onConfirm={handleConfirm}
+          onCancel={() => setModalTarget(null)}
         />
       )}
     </div>
