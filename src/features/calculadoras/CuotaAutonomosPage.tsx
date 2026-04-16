@@ -5,7 +5,6 @@ import { SiteFooter } from '../../components/layout/SiteFooter'
 import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
 
-// Tramos aproximados 2024
 const TRAMOS_2024 = [
   { min: 0,    max: 670,  cuota: 225 },
   { min: 670,  max: 900,  cuota: 250 },
@@ -28,7 +27,6 @@ export function CuotaAutonomosPage() {
   const [ingresos, setIngresos] = useState<number | ''>('')
   const [gastos, setGastos] = useState<number | ''>('')
 
-  // Track event on first interaction
   const pushEvent = useAdminStore(s => s.pushEvent)
   const [tracked, setTracked] = useState(false)
 
@@ -42,32 +40,24 @@ export function CuotaAutonomosPage() {
 
   const vIngresos = Number(ingresos) || 0
   const vGastos = Number(gastos) || 0
-
-  // Cálculo de rendimiento neto previo (Ingresos - Gastos)
   const rendimientoNetoPrevio = Math.max(0, vIngresos - vGastos)
-  // Deducción por gastos de difícil justificación (7% con tope, simplificado aquí al 7% directo)
-  const deduccion = rendimientoNetoPrevio * 0.07 
+  const deduccion = rendimientoNetoPrevio * 0.07
   const rendimientoNeto = Math.max(0, rendimientoNetoPrevio - deduccion)
-
   const tramo = TRAMOS_2024.find(t => rendimientoNeto <= t.max) || TRAMOS_2024[TRAMOS_2024.length - 1]
 
   return (
     <div className="page-root">
       <SiteHeader />
       <main className="page-main section-pb">
-        <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
-          
-          <nav className="post-breadcrumb" style={{ marginBottom: 'var(--space-6)' }}>
-            <Link
-              to="/"
-              className="back-link"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
+        <div className="tool-page-inner">
+
+          <nav className="post-breadcrumb">
+            <Link to="/" className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <ArrowLeft size={13} /> Inicio
             </Link>
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+          <div className="tool-page-header">
             <div className="tool-icon-box" style={{ background: 'var(--color-copper-highlight)', color: 'var(--color-copper)' }}>
               <Calculator size={24} />
             </div>
@@ -81,23 +71,11 @@ export function CuotaAutonomosPage() {
             <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: '1fr 1fr' }}>
               <div className="input-group">
                 <label className="input-label">Ingresos mensuales (€)</label>
-                <input 
-                  type="number" 
-                  className="input-v3" 
-                  placeholder="0" 
-                  value={ingresos} 
-                  onChange={e => handleInput(e.target.value, setIngresos)} 
-                />
+                <input type="number" className="input-v3" placeholder="0" value={ingresos} onChange={e => handleInput(e.target.value, setIngresos)} />
               </div>
               <div className="input-group">
                 <label className="input-label">Gastos mensuales (€)</label>
-                <input 
-                  type="number" 
-                  className="input-v3" 
-                  placeholder="0" 
-                  value={gastos} 
-                  onChange={e => handleInput(e.target.value, setGastos)} 
-                />
+                <input type="number" className="input-v3" placeholder="0" value={gastos} onChange={e => handleInput(e.target.value, setGastos)} />
               </div>
             </div>
 
@@ -112,7 +90,6 @@ export function CuotaAutonomosPage() {
 
             <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
               <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>Tu cuota estimada (2024)</h3>
-              
               <div style={{
                 background: 'var(--color-copper-highlight)',
                 border: '2px solid var(--color-copper)',
@@ -126,12 +103,12 @@ export function CuotaAutonomosPage() {
                 </span>
                 <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-copper)', marginLeft: 'var(--space-2)', fontWeight: 600 }}>/ mes</span>
               </div>
-              
               <p style={{ marginTop: 'var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
-                Esta es una estimación basada en los tramos de rendimiento neto vigentes. La cuota final puede variar según circunstancias personales (tarifa plana, bonificaciones, etc.).
+                Estimación basada en los tramos de rendimiento neto vigentes. La cuota final puede variar según circunstancias personales.
               </p>
             </div>
           </div>
+
         </div>
       </main>
       <SiteFooter />

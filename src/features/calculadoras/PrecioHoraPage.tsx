@@ -29,35 +29,27 @@ export function PrecioHoraPage() {
   const vPorcentaje = Number(porcentajeFacturable) || 0
   const vVacaciones = Number(vacacionesSemanas) || 0
 
-  // Asumimos un 25% extra para impuestos, cuota de autónomo (simplificado)
   const COSTO_IMPUESTOS_AGREGADO = 1.30
-
   const gastosTotalMensual = vSalario * COSTO_IMPUESTOS_AGREGADO + vGastos
   const gastosAnuales = gastosTotalMensual * 12
-
   const semanasLaborables = Math.max(0, 52 - vVacaciones)
   const horasTotalesAnuales = vHorasSemanales * semanasLaborables
   const horasFacturablesAnuales = horasTotalesAnuales * (vPorcentaje / 100)
-
   const precioHora = horasFacturablesAnuales > 0 ? (gastosAnuales / horasFacturablesAnuales) : 0
 
   return (
     <div className="page-root">
       <SiteHeader />
       <main className="page-main section-pb">
-        <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
-          
-          <nav className="post-breadcrumb" style={{ marginBottom: 'var(--space-6)' }}>
-            <Link
-              to="/"
-              className="back-link"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
+        <div className="tool-page-inner">
+
+          <nav className="post-breadcrumb">
+            <Link to="/" className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <ArrowLeft size={13} /> Inicio
             </Link>
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+          <div className="tool-page-header">
             <div className="tool-icon-box" style={{ background: 'var(--color-purple-highlight)', color: 'var(--color-purple)' }}>
               <Calculator size={24} />
             </div>
@@ -69,8 +61,8 @@ export function PrecioHoraPage() {
 
           <div className="card" style={{ padding: 'var(--space-6)' }}>
             <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-              
-              <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
+
+              <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)' }}>
                 <div className="input-group">
                   <label className="input-label">Sueldo neto deseado (€/mes)</label>
                   <input type="number" className="input-v3" placeholder="1500" value={salarioNeto} onChange={e => handleInput(e.target.value, setSalarioNeto)} />
@@ -98,13 +90,12 @@ export function PrecioHoraPage() {
                 </div>
               </div>
               <p style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
-                *% Facturable: Parte de tu tiempo dedicas a trabajar para clientes (que puedes cobrar). El resto lo pasas buscando clientes, facturando, formándote, etc. Un buen estimado es 60%.
+                *% Facturable: parte del tiempo dedicado a clientes (facturable). El resto va a gestión, formación, ventas, etc. Un estimado razonable es 60%.
               </p>
             </div>
 
             <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
               <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>Tu tarifa mínima recomendada</h3>
-              
               <div style={{
                 background: 'var(--color-purple-highlight)', border: '2px solid var(--color-purple)',
                 padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)', color: 'var(--color-text)', textAlign: 'center'
@@ -114,10 +105,9 @@ export function PrecioHoraPage() {
                 </span>
                 <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-purple)', marginLeft: 'var(--space-2)', fontWeight: 600 }}>/ hora</span>
               </div>
-              
               <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>Mínimo facturación mensual:</span>
-                <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{(gastosTotalMensual).toFixed(2)} €</span>
+                <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{gastosTotalMensual.toFixed(2)} €</span>
               </div>
               <div style={{ marginTop: 'var(--space-2)', display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>Horas facturables al mes:</span>
@@ -125,6 +115,7 @@ export function PrecioHoraPage() {
               </div>
             </div>
           </div>
+
         </div>
       </main>
       <SiteFooter />

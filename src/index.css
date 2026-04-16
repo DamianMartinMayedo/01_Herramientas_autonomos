@@ -109,12 +109,6 @@
   --radius-2xl:  1.5rem;
   --radius-full: 9999px;
 
-  /* ── Sombras ── */
-  /* --shadow-sm: 0 1px 3px oklch(0.18 0.01 80 / 0.08), 0 1px 2px oklch(0.18 0.01 80 / 0.06);
-  --shadow-md: 0 4px 12px oklch(0.18 0.01 80 / 0.1),  0 2px 4px oklch(0.18 0.01 80 / 0.06);
-  --shadow-lg: 0 12px 32px oklch(0.18 0.01 80 / 0.14), 0 4px 8px oklch(0.18 0.01 80 / 0.08);
-  --shadow-xl: 0 24px 48px oklch(0.18 0.01 80 / 0.18), 0 8px 16px oklch(0.18 0.01 80 / 0.1); */
-
   /* ── Transiciones ── */
   --transition:      150ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-slow: 300ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -181,11 +175,6 @@
   --color-gold-active:    #9A6E00;
   --color-gold-highlight: #3A2E08;
   --color-gold-subtle:    #211A04;
-
-  /* --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.2),  0 1px 2px oklch(0 0 0 / 0.16);
-  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3),  0 2px 4px oklch(0 0 0 / 0.2);
-  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.4), 0 4px 8px oklch(0 0 0 / 0.25);
-  --shadow-xl: 0 24px 48px oklch(0 0 0 / 0.5), 0 8px 16px oklch(0 0 0 / 0.3); */
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -538,7 +527,23 @@ body {
 .page-main {
   max-width: var(--content-wide);
   margin: 0 auto;
-  padding: 0 var(--space-6) var(--space-16);
+  /* padding-top añadido para respetar margen con el header sticky */
+  padding: var(--space-8) var(--space-6) var(--space-16);
+}
+/* Herramientas (calculadoras, facturas, etc.) usan un wrapper más estrecho.
+   La clase tool-page-inner centra y da respiro visual al contenido. */
+.tool-page-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.tool-page-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 .section-pb { padding-bottom: var(--space-10); }
 .section-hero { padding: var(--space-12) 0; }
@@ -648,7 +653,6 @@ body {
    BLOG CAROUSEL — animación de entrada de tarjetas
 ══════════════════════════════════════════════════════════════════════════ */
 
-/* Keyframe: las tarjetas entran desde abajo con fade-in */
 @keyframes carousel-enter {
   from {
     opacity: 0;
@@ -667,13 +671,11 @@ body {
   margin-bottom: var(--space-5);
 }
 
-/* Cada tarjeta recibe la animación con stagger via --i */
 .carousel-grid .blog-card {
   animation: carousel-enter 2000ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--i, 0) * 160ms);
 }
 
-/* La card en sí */
 .blog-card {
   display: flex;
   flex-direction: column;
@@ -691,12 +693,10 @@ body {
 .blog-card:hover {
   transform: translate(-2px, -2px);
   box-shadow: 5px 5px 0px 0px var(--color-border);
- 
   background-image:
     linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
     linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
   background-size: 32px 32px;
-
 }
 .blog-card-tags {
   display: flex;
@@ -716,7 +716,6 @@ body {
   border-radius: var(--radius-full);
 }
 
-/* blog-tag: alias semántico de blog-card-tag */
 .blog-tag {
   display: inline-flex;
   align-items: center;
@@ -738,14 +737,12 @@ body {
   margin-bottom: var(--space-3);
   flex: 1;
 }
-/* Variante de título más grande para BlogPage */
 .blog-card-title--lg {
   font-size: var(--text-lg);
   font-weight: 800;
   line-height: 1.25;
   margin-bottom: var(--space-3);
 }
-/* Variante pequeña para relacionados */
 .blog-card-title--sm {
   font-size: var(--text-base);
   font-weight: 700;
@@ -763,7 +760,6 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-/* Variante 3 líneas para BlogPage */
 .blog-card-excerpt--3 {
   -webkit-line-clamp: 3;
   margin-bottom: var(--space-5);
@@ -790,14 +786,12 @@ body {
   color: var(--color-primary);
 }
 
-/* Grid de lista de blog completo (BlogPage) */
 .blog-list-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
   gap: var(--space-5);
 }
 
-/* Controles del carrusel */
 .carousel-controls {
   display: flex;
   align-items: center;
@@ -938,7 +932,6 @@ body {
    BLOG PAGE — clases específicas de BlogPage y BlogPostPage
 ══════════════════════════════════════════════════════════════════════════ */
 
-/* Enlace "Volver" con flecha */
 .back-link {
   font-size: var(--text-sm);
   font-weight: 500;
@@ -948,20 +941,18 @@ body {
 }
 .back-link:hover { color: var(--color-text); }
 
-/* Cabecera de navegación con breadcrumb */
 .post-breadcrumb {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 .breadcrumb-sep {
   color: var(--color-text-faint);
   font-size: var(--text-sm);
 }
 
-/* Meta-info del artículo (fecha) */
 .post-meta {
   display: flex;
   align-items: center;
@@ -973,7 +964,6 @@ body {
   border-bottom: 1px solid var(--color-divider);
 }
 
-/* Blockquote del extracto */
 .post-blockquote {
   padding: var(--space-5);
   background: var(--color-primary-highlight);
@@ -986,7 +976,6 @@ body {
   font-style: italic;
 }
 
-/* CTA al final del artículo */
 .post-cta-box {
   margin-top: var(--space-12);
   padding: var(--space-6);
@@ -1007,7 +996,6 @@ body {
   margin-bottom: var(--space-5);
 }
 
-/* Encabezado de artículos relacionados */
 .related-heading {
   font-family: var(--font-display);
   font-size: var(--text-lg);
@@ -1016,19 +1004,16 @@ body {
   margin-bottom: var(--space-5);
 }
 
-/* Grid de artículos relacionados */
 .related-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: var(--space-2);
 }
 
-/* Variante de blog-card más compacta (relacionados) */
 .blog-card--sm {
   padding: var(--space-5);
 }
 
-/* Hero heading adaptado para páginas de contenido (texto oscuro en bg claro) */
 .hero-heading--page {
   font-family: var(--font-display);
   font-size: var(--text-2xl);
