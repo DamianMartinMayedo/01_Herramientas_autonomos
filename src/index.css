@@ -49,8 +49,8 @@
   --color-success-subtle:    #F1F6EE;
 
   /* ── Error ── */
-  --color-error:           #9e1818;
-  --color-error-highlight: #F0D0D0;
+  --color-error:           #c50000;
+  --color-error-highlight: #5c0000;
 
   /* ── Purple ── */
   --color-purple:           #6D3BB8;
