@@ -5,6 +5,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 // Lazy loading para que cada herramienta cargue solo cuando se necesita
 const FacturaPage          = lazy(() => import('../features/factura/FacturaPage').then(m => ({ default: m.FacturaPage })))
 const PresupuestoPage      = lazy(() => import('../features/presupuesto/PresupuestoPage').then(m => ({ default: m.PresupuestoPage })))
+const AlbaranPage          = lazy(() => import('../features/albaran/AlbaranPage').then(m => ({ default: m.AlbaranPage })))
 const AdminPage            = lazy(() => import('../features/admin/AdminPage').then(m => ({ default: m.AdminPage })))
 const BlogPage             = lazy(() => import('../features/blog/BlogPage').then(m => ({ default: m.BlogPage })))
 const BlogPostPage         = lazy(() => import('../features/blog/BlogPostPage').then(m => ({ default: m.BlogPostPage })))
@@ -31,6 +32,11 @@ export const router = createBrowserRouter([
   {
     path: '/presupuesto',
     element: withRouteSuspense(<PresupuestoPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/albaran',
+    element: withRouteSuspense(<AlbaranPage />),
     errorElement: <RouteErrorPage />,
   },
   {
