@@ -13,39 +13,38 @@ export interface ConfirmModalProps {
   onCancel: () => void
 }
 
-// Estilos base por variante (estado reposo: shadow visible)
-const VARIANT_BASE: Record<string, React.CSSProperties> = {
+/**
+ * Cada variante define:
+ *   borderColor  → el borde del botón
+ *   shadowColor  → el color del box-shadow (mismo que el borde, igual que btn-primary usa primary-active)
+ *   background   → fondo del botón
+ *   hoverBg      → fondo en hover (tono ligeramente más oscuro, como btn-primary-hover)
+ */
+const VARIANTS: Record<
+  'danger' | 'success' | 'warning',
+  { background: string; hoverBg: string; borderColor: string; shadowColor: string; color: string }
+> = {
   danger: {
     background:  'var(--color-error)',
-    border:      '2px solid var(--color-error)',
+    hoverBg:     'var(--color-error)',
+    borderColor: 'var(--color-error-highlight)',
+    shadowColor: 'var(--color-error-highlight)',
     color:       'white',
-    boxShadow:   '3px 3px 0 var(--color-error-highlight)',
-    transform:   'translate(0, 0)',
-    transition:  'transform 120ms ease, box-shadow 120ms ease',
   },
   success: {
     background:  'var(--color-success)',
-    border:      '2px solid var(--color-success-active)',
+    hoverBg:     'var(--color-success-hover)',
+    borderColor: 'var(--color-success-active)',
+    shadowColor: 'var(--color-success-active)',
     color:       'white',
-    boxShadow:   '3px 3px 0 var(--color-success-active)',
-    transform:   'translate(0, 0)',
-    transition:  'transform 120ms ease, box-shadow 120ms ease',
   },
   warning: {
     background:  'var(--color-gold)',
-    border:      '2px solid var(--color-gold-active)',
+    hoverBg:     'var(--color-gold-hover)',
+    borderColor: 'var(--color-gold-active)',
+    shadowColor: 'var(--color-gold-active)',
     color:       'white',
-    boxShadow:   '3px 3px 0 var(--color-gold-active)',
-    transform:   'translate(0, 0)',
-    transition:  'transform 120ms ease, box-shadow 120ms ease',
   },
-}
-
-// Hover: sube 3px y elimina el shadow (mismo efecto que btn-secondary)
-const VARIANT_HOVER: Record<string, React.CSSProperties> = {
-  danger:  { boxShadow: 'none', transform: 'translate(-1px, -2px)' },
-  success: { boxShadow: 'none', transform: 'translate(-1px, -2px)' },
-  warning: { boxShadow: 'none', transform: 'translate(-1px, -2px)' },
 }
 
 export function ConfirmModal({
@@ -56,13 +55,33 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
-  const baseStyle  = VARIANT_BASE[confirmVariant]
-  const hoverStyle = VARIANT_HOVER[confirmVariant]
+  const v = VARIANTS[confirmVariant]
 
-  const applyHover   = (e: React.MouseEvent<HTMLButtonElement>) =>
-    Object.assign(e.currentTarget.style, hoverStyle)
-  const removeHover  = (e: React.MouseEvent<HTMLButtonElement>) =>
-    Object.assign(e.currentTarget.style, { boxShadow: baseStyle.boxShadow as string, transform: 'translate(0, 0)' })
+  const baseStyle: React.CSSProperties = {
+    background:  v.background,
+    border:      `2px solid ${v.borderColor}`,
+    color:       v.color,
+    boxShadow:   `3px 3px 0px 0px ${v.shadowColor}`,
+    transform:   'translate(0, 0)',
+    transition:  'transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 90ms cubic-bezier(0.34, 1.56, 0.64, 1), background 100ms ease',
+  }
+
+  const applyHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.transform  = 'translate(-2px, -2px)'
+    e.currentTarget.style.boxShadow  = `5px 5px 0px 0px ${v.shadowColor}`
+    e.currentTarget.style.background = v.hoverBg
+  }
+
+  const removeHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.transform  = 'translate(0, 0)'
+    e.currentTarget.style.boxShadow  = `3px 3px 0px 0px ${v.shadowColor}`
+    e.currentTarget.style.background = v.background
+  }
+
+  const applyActive = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.transform = 'translate(2px, 2px)'
+    e.currentTarget.style.boxShadow = `1px 1px 0px 0px ${v.shadowColor}`
+  }
 
   return (
     <div
@@ -127,6 +146,8 @@ export function ConfirmModal({
             style={baseStyle}
             onMouseEnter={applyHover}
             onMouseLeave={removeHover}
+            onMouseDown={applyActive}
+            onMouseUp={applyHover}
             onClick={onConfirm}
           >
             {confirmLabel}
