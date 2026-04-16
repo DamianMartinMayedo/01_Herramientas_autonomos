@@ -87,7 +87,8 @@ export function ReclamacionPage() {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
-        const tono = watch('tono' as never) as string
+        // Doble cast via unknown para evitar el error de solapamiento de tipos
+        const tono = (watch('tono' as never) as unknown) as string
 
         // Cuando se selecciona «urgente» se activa el checkbox automáticamente;
         // al salir de «urgente» se desactiva para no dejar ruido en otros tonos.
@@ -193,8 +194,6 @@ export function ReclamacionPage() {
                   })}
                   error={err['plazoRespuesta'] as never}
                 />
-                {/* El checkbox se muestra siempre en urgente (ya viene marcado automáticamente).
-                    En amistoso/formal queda oculto para no confundir. */}
                 {tono === 'urgente' && (
                   <label className="input-toggle">
                     <input type="checkbox" {...reg('mencionAccionLegal')} />

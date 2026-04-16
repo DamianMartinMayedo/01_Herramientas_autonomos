@@ -64,9 +64,10 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
   )
 }
 
-function Parrafo({ children }: { children: React.ReactNode }) {
+// style es opcional para permitir overrides puntuales (whiteSpace, fontStyle...)
+function Parrafo({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <p style={{ fontSize: '0.72rem', color: '#374151', lineHeight: 1.65, marginBottom: '0.4rem' }}>
+    <p style={{ fontSize: '0.72rem', color: '#374151', lineHeight: 1.65, marginBottom: '0.4rem', ...style }}>
       {children}
     </p>
   )
@@ -183,7 +184,7 @@ function PreviewContrato({ doc }: { doc: ContratoServiciosDoc }) {
 
       {doc.notas && (
         <Seccion titulo="Notas">
-          <Parrafo style={{ whiteSpace: 'pre-wrap' } as React.CSSProperties}>{doc.notas}</Parrafo>
+          <Parrafo style={{ whiteSpace: 'pre-wrap' }}>{doc.notas}</Parrafo>
         </Seccion>
       )}
 
@@ -212,7 +213,7 @@ function PreviewNda({ doc }: { doc: NdaDoc }) {
             <strong>{doc.direction === 'bilateral' ? 'bilateral' : 'unilateral'}</strong>{' '}
             tiene por objeto proteger la siguiente información:
           </Parrafo>
-          <Parrafo style={{ fontStyle: 'italic', paddingLeft: '0.5rem' } as React.CSSProperties}>
+          <Parrafo style={{ fontStyle: 'italic', paddingLeft: '0.5rem' }}>
             {doc.objetoConfidencialidad || '— (pendiente de definir)'}
           </Parrafo>
         </Clausula>
@@ -261,16 +262,15 @@ function PreviewNda({ doc }: { doc: NdaDoc }) {
 function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
   const diasLabel = doc.plazoRespuesta === 1 ? '1 día hábil' : `${doc.plazoRespuesta} días hábiles`
 
-  // ── Párrafo introductorio: varía según el tono ───────────────────────────
   const parrafoIntro: Record<string, React.ReactNode> = {
     amistoso: (
       <>
-        Me pongo en contacto con usted para recordarle que la factura n.º{' '}
+        Me pongo en contacto contigo para recordarte, de forma amistosa, que la factura n.º{' '}
         <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
         <strong>{formatFecha(doc.fechaFactura)}</strong> por un importe de{' '}
         <strong>{formatEuro(doc.importeDeuda)}</strong>, venció el{' '}
         <strong>{formatFecha(doc.fechaVencimiento)}</strong> y aún no hemos recibido el pago.
-        Entiendo que puede ser un simple olvido o un cruce de fechas, así que se lo comento
+        Entiendo que puede ser un simple olvido o un cruce de fechas, así que te lo comento
         antes de que vaya a más.
       </>
     ),
@@ -297,8 +297,7 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
     ),
   }
 
-  // ── Párrafo de cierre: también varía según el tono ───────────────────────
-  const parrafroCierre: Record<string, React.ReactNode> = {
+  const parrafoCierre: Record<string, React.ReactNode> = {
     amistoso: (
       <>
         Te agradeceré que efectúes el pago en los próximos{' '}
@@ -323,7 +322,6 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
     ),
   }
 
-  // ── Saludo ────────────────────────────────────────────────────────────────
   const saludo: Record<string, React.ReactNode> = {
     amistoso: <>{`Hola${doc.deudor.nombre ? `, ${doc.deudor.nombre.split(' ')[0]}` : ''}:`}</>,
     formal:   <>Estimado/a Sr./Sra. {doc.deudor.nombre || '—'}:</>,
@@ -337,22 +335,18 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
       </Seccion>
 
       <div style={{ margin: '0.75rem 0', fontSize: '0.72rem', color: '#374151' }}>
-        {/* Saludo */}
         <p style={{ marginBottom: '0.6rem', fontWeight: doc.tono === 'amistoso' ? 400 : 500 }}>
           {saludo[doc.tono]}
         </p>
 
-        {/* Párrafo introductorio */}
         <p style={{ marginBottom: '0.5rem', lineHeight: 1.7 }}>
           {parrafoIntro[doc.tono]}
         </p>
 
-        {/* Párrafo de cierre / acción requerida */}
         <p style={{ marginBottom: '0.5rem', lineHeight: 1.7 }}>
-          {parrafroCierre[doc.tono]}
+          {parrafoCierre[doc.tono]}
         </p>
 
-        {/* Bloque de acción legal: solo urgente + checkbox activado */}
         {doc.tono === 'urgente' && doc.mencionAccionLegal && (
           <p style={{
             marginBottom: '0.5rem', lineHeight: 1.7,
@@ -366,7 +360,6 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
           </p>
         )}
 
-        {/* Notas adicionales */}
         {doc.notas && (
           <p style={{ marginBottom: '0.5rem', lineHeight: 1.7, fontStyle: 'italic', color: '#6b7280' }}>
             {doc.notas}
