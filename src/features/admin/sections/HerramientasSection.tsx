@@ -1,10 +1,11 @@
 /**
  * HerramientasSection.tsx
- * Gestión de herramientas: activar/desactivar, editar descripción.
+ * Gestión de herramientas: activar/desactivar, editar descripción,
+ * mostrar/ocultar con botón ojo + confirmación directa en fila.
  */
 import { useState } from 'react'
 import { useAdminStore, type Herramienta } from '../../../store/adminStore'
-import { ToggleLeft, ToggleRight, Pencil, X, CheckCircle, Clock } from 'lucide-react'
+import { ToggleLeft, ToggleRight, Pencil, X, CheckCircle, Clock, Eye, EyeOff } from 'lucide-react'
 
 interface EditorProps {
   herramienta: Herramienta
@@ -17,7 +18,6 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   const [desc,   setDesc]   = useState(h.descripcion)
   const [prox,   setProx]   = useState(h.proximamente)
   const [mant,   setMant]   = useState(h.mantenimiento || false)
-  const [visible, setVisible] = useState(h.visible !== false)
 
   const handleProxChange = (val: boolean) => {
     setProx(val)
@@ -30,7 +30,7 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   }
 
   const save = () => {
-    updateHerramienta(h.id, { nombre, descripcion: desc, proximamente: prox, mantenimiento: mant, visible })
+    updateHerramienta(h.id, { nombre, descripcion: desc, proximamente: prox, mantenimiento: mant })
     onClose()
   }
 
@@ -66,13 +66,6 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
             <input type="checkbox" checked={mant} onChange={e => handleMantChange(e.target.checked)} />
             <span>Mostrar como "Mejorando"</span>
           </label>
-          <div style={{ borderTop: '1px solid var(--color-divider)', margin: 'var(--space-2) 0' }} />
-          <label className="input-toggle">
-            <input type="checkbox" checked={visible} onChange={e => setVisible(e.target.checked)} />
-            <span style={{ fontWeight: 600, color: visible ? 'var(--color-success)' : 'var(--color-error)' }}>
-              {visible ? 'Suministrada al usuario' : 'Oculta en la web'}
-            </span>
-          </label>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
           <button className="btn btn-secondary btn-sm" onClick={onClose}>Cancelar</button>
@@ -86,7 +79,9 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
 export function HerramientasSection() {
   const herramientas      = useAdminStore((s) => s.herramientas)
   const toggleHerramienta = useAdminStore((s) => s.toggleHerramienta)
-  const [editing, setEditing] = useState<Herramienta | null>(null)
+  const updateHerramienta = useAdminStore((s) => s.updateHerramienta)
+  const [editing,     setEditing]     = useState<Herramienta | null>(null)
+  const [confirmVis,  setConfirmVis]  = useState<string | null>(null)
 
   const byCategoria = herramientas.reduce<Record<string, Herramienta[]>>((acc, h) => {
     if (!acc[h.categoria]) acc[h.categoria] = []
@@ -98,6 +93,11 @@ export function HerramientasSection() {
     documentos:   'Documentos',
     contratos:    'Contratos y acuerdos',
     calculadoras: 'Calculadoras',
+  }
+
+  const handleToggleVisible = (h: Herramienta) => {
+    updateHerramienta(h.id, { visible: h.visible === false ? true : false })
+    setConfirmVis(null)
   }
 
   return (
@@ -181,6 +181,45 @@ export function HerramientasSection() {
 
                 {/* Acciones */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
+                  {/* Botón ojo: primer clic pide confirmación, segundo ejecuta */}
+                  {confirmVis === h.id ? (
+                    <button
+                      title={h.visible === false ? 'Confirmar: mostrar' : 'Confirmar: ocultar'}
+                      onClick={() => handleToggleVisible(h)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '32px', height: '32px',
+                        background: h.visible === false ? 'var(--color-success)' : 'var(--color-error)',
+                        border: `2px solid ${h.visible === false ? 'var(--color-success)' : 'var(--color-error)'}`,
+                        borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'white',
+                      }}
+                    >
+                      {h.visible === false ? <Eye size={14} /> : <EyeOff size={14} />}
+                    </button>
+                  ) : (
+                    <button
+                      title={h.visible === false ? 'Mostrar en Home' : 'Ocultar en Home'}
+                      onClick={() => setConfirmVis(h.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '32px', height: '32px',
+                        background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                        color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.color = h.visible === false ? 'var(--color-success)' : 'var(--color-error)'
+                        e.currentTarget.style.borderColor = h.visible === false ? 'var(--color-success)' : 'var(--color-error)'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.color = h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)'
+                        e.currentTarget.style.borderColor = 'var(--color-border)'
+                      }}
+                    >
+                      {h.visible === false ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setEditing(h)}
                     style={{

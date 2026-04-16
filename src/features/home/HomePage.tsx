@@ -17,15 +17,15 @@ import { useAdminStore, type Herramienta } from '../../store/adminStore'
 */
 
 // Metadatos visuales por herramienta (icon, accentClass, ctaColor)
-// El estado activa/proximamente viene del adminStore
+// Regla: ctaColor SIEMPRE debe coincidir con el color del acento de la card
 const HERRAMIENTA_META: Record<string, {
   icon: React.ElementType
   accentClass: string
   ctaColor: string
 }> = {
-  factura:         { icon: FileText,    accentClass: 'card-accent-primary', ctaColor: 'var(--color-primary)' },
+  factura:         { icon: FileText,    accentClass: 'card-accent-primary', ctaColor: 'var(--color-blue)'    },
   presupuesto:     { icon: FileText,    accentClass: 'card-accent-success', ctaColor: 'var(--color-success)' },
-  albaran:         { icon: Truck,       accentClass: 'card-accent-copper',  ctaColor: 'var(--color-warning)' },
+  albaran:         { icon: Truck,       accentClass: 'card-accent-copper',  ctaColor: 'var(--color-warning)'  },
   contrato:        { icon: Scroll,      accentClass: 'card-accent-purple',  ctaColor: 'var(--color-purple)'  },
   nda:             { icon: ShieldCheck, accentClass: 'card-accent-teal',    ctaColor: 'var(--color-primary)' },
   reclamacion:     { icon: BadgeAlert,  accentClass: 'card-accent-gold',    ctaColor: 'var(--color-gold)'    },
@@ -133,7 +133,7 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
 
 // ── ToolCard ───────────────────────────────────────────────────────────────────────
 function ToolCard({ h }: { h: Herramienta }) {
-  const meta = HERRAMIENTA_META[h.id] ?? { icon: FileText, accentClass: 'card-accent-primary', ctaColor: 'var(--color-primary)' }
+  const meta = HERRAMIENTA_META[h.id] ?? { icon: FileText, accentClass: 'card-accent-primary', ctaColor: 'var(--color-blue)' }
   const Icon = meta.icon
 
   const cardEl = (

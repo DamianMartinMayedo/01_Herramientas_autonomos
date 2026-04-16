@@ -141,11 +141,17 @@ export function BlogSection() {
   const publishPost = useBlogStore((s) => s.publishPost)
   const unpublish   = useBlogStore((s) => s.unpublishPost)
 
-  const [editing,   setEditing]   = useState<BlogPost | null | 'new'>(null)
-  const [filter,    setFilter]    = useState<'all' | BlogStatus>('all')
+  const [editing,    setEditing]    = useState<BlogPost | null | 'new'>(null)
+  const [filter,     setFilter]     = useState<'all' | BlogStatus>('all')
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
+  const [confirmVis, setConfirmVis] = useState<string | null>(null)
 
   const filtered = posts.filter(p => filter === 'all' || p.status === filter)
+
+  const handleToggleVis = (post: BlogPost) => {
+    post.status === 'published' ? unpublish(post.id) : publishPost(post.id)
+    setConfirmVis(null)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -253,19 +259,45 @@ export function BlogSection() {
 
               {/* Acciones */}
               <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
-                <button
-                  title={post.status === 'published' ? 'Despublicar' : 'Publicar'}
-                  onClick={() => post.status === 'published' ? unpublish(post.id) : publishPost(post.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: '32px', height: '32px',
-                    background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                    color: post.status === 'published' ? 'var(--color-success)' : 'var(--color-text-faint)',
-                  }}
-                >
-                  {post.status === 'published' ? <Eye size={14} /> : <EyeOff size={14} />}
-                </button>
+                {/* Ojo con confirmación: primer clic pide confirmación, segundo ejecuta */}
+                {confirmVis === post.id ? (
+                  <button
+                    title={post.status === 'published' ? 'Confirmar: despublicar' : 'Confirmar: publicar'}
+                    onClick={() => handleToggleVis(post)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: '32px', height: '32px',
+                      background: post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)',
+                      border: `2px solid ${post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)'}`,
+                      borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'white',
+                    }}
+                  >
+                    {post.status === 'published' ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                ) : (
+                  <button
+                    title={post.status === 'published' ? 'Despublicar' : 'Publicar'}
+                    onClick={() => setConfirmVis(post.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: '32px', height: '32px',
+                      background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      color: post.status === 'published' ? 'var(--color-success)' : 'var(--color-text-faint)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)'
+                      e.currentTarget.style.borderColor = post.status === 'published' ? 'var(--color-error)' : 'var(--color-success)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = post.status === 'published' ? 'var(--color-success)' : 'var(--color-text-faint)'
+                      e.currentTarget.style.borderColor = 'var(--color-border)'
+                    }}
+                  >
+                    {post.status === 'published' ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
+                )}
+
                 <button
                   title="Editar"
                   onClick={() => setEditing(post)}
@@ -278,6 +310,7 @@ export function BlogSection() {
                 >
                   <Pencil size={14} />
                 </button>
+
                 {confirmDel === post.id ? (
                   <button
                     onClick={() => { deletePost(post.id); setConfirmDel(null) }}
