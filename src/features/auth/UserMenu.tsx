@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import { signOut } from '../../store/authStore'
 import type { Plan } from '../../types/auth.types'
+import { LayoutDashboard, LogOut } from 'lucide-react'
 
 interface UserMenuProps {
   user: User
@@ -16,6 +18,7 @@ const PLAN_LABEL: Record<string, string> = {
 export function UserMenu({ user, plan }: UserMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -30,6 +33,7 @@ export function UserMenu({ user, plan }: UserMenuProps) {
   const handleSignOut = async () => {
     await signOut()
     setOpen(false)
+    navigate('/')
   }
 
   const emailShort = user.email?.split('@')[0] ?? 'Usuario'
@@ -54,11 +58,23 @@ export function UserMenu({ user, plan }: UserMenuProps) {
             </p>
           )}
           <hr className="user-menu__divider" />
+          <Link
+            to="/usuario"
+            className="user-menu__item"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}
+          >
+            <LayoutDashboard size={14} />
+            Mi panel
+          </Link>
           <button
             className="user-menu__item user-menu__item--danger"
             onClick={handleSignOut}
             role="menuitem"
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
           >
+            <LogOut size={14} />
             Cerrar sesión
           </button>
         </div>
