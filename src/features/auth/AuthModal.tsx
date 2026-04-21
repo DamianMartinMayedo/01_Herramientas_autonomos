@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { LoginForm } from './LoginForm'
 import { RegisterForm } from './RegisterForm'
 
@@ -10,6 +11,7 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalProps) {
   const [view, setView] = useState<'login' | 'register'>(initialView)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (isOpen) setView(initialView)
@@ -22,6 +24,11 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
     if (isOpen) document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
   }, [isOpen, onClose])
+
+  const handleSuccess = () => {
+    onClose()
+    navigate('/usuario')
+  }
 
   if (!isOpen) return null
 
@@ -43,12 +50,12 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
         </button>
         {view === 'login' ? (
           <LoginForm
-            onSuccess={onClose}
+            onSuccess={handleSuccess}
             onSwitchToRegister={() => setView('register')}
           />
         ) : (
           <RegisterForm
-            onSuccess={onClose}
+            onSuccess={handleSuccess}
             onSwitchToLogin={() => setView('login')}
           />
         )}
