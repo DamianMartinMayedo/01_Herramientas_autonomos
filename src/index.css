@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import './features/auth/auth.css';
 
 /* ── Tailwind dark mode via class ────────────────────────────────────────── */
 @custom-variant dark (&:where(.dark, .dark *));
