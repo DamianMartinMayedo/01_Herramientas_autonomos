@@ -14,6 +14,7 @@ const BlogPostPage       = lazy(() => import('../features/blog/BlogPostPage').th
 const CuotaAutonomosPage = lazy(() => import('../features/calculadoras/CuotaAutonomosPage').then(m => ({ default: m.CuotaAutonomosPage })))
 const PrecioHoraPage     = lazy(() => import('../features/calculadoras/PrecioHoraPage').then(m => ({ default: m.PrecioHoraPage })))
 const IvaIrpfPage        = lazy(() => import('../features/calculadoras/IvaIrpfPage').then(m => ({ default: m.IvaIrpfPage })))
+const UserPage           = lazy(() => import('../features/usuario/UserPage').then(m => ({ default: m.UserPage })))
 
 import { RouteErrorPage } from '../components/routing/RouteErrorPage'
 import { RouteLoading }   from '../components/routing/RouteLoading'
@@ -26,6 +27,7 @@ function withRouteSuspense(element: ReactNode) {
 
 export const router = createBrowserRouter([
   { path: '/',                  element: <HomePage />,                               errorElement: <RouteErrorPage /> },
+  { path: '/usuario',           element: withRouteSuspense(<UserPage />),            errorElement: <RouteErrorPage /> },
   { path: '/factura',           element: withRouteSuspense(<FacturaPage />),         errorElement: <RouteErrorPage /> },
   { path: '/presupuesto',       element: withRouteSuspense(<PresupuestoPage />),     errorElement: <RouteErrorPage /> },
   { path: '/albaran',           element: withRouteSuspense(<AlbaranPage />),         errorElement: <RouteErrorPage /> },
