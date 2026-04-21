@@ -192,7 +192,6 @@
   align-items: center;
 }
 
-/* Reutiliza las clases .btn del sistema global — solo añade el tamaño pequeño */
 .auth-btn {
   display: inline-flex;
   align-items: center;
@@ -318,11 +317,27 @@
 .user-menu__email {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-body);
+}
+
+.user-menu__plan {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 var(--space-3) var(--space-2);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--color-primary-highlight);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
 }
 
 .user-menu__divider {
