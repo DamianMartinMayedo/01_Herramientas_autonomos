@@ -23,8 +23,7 @@ const TRAMOS_2024 = [
   { min: 6000, max: Infinity, cuota: 500 },
 ]
 
-/** Widget reutilizable sin header/footer — para usar dentro del panel de usuario */
-export function CuotaAutonomosWidget() {
+function CuotaCalculator() {
   const [ingresos, setIngresos] = useState<number | ''>('')
   const [gastos, setGastos] = useState<number | ''>('')
   const pushEvent = useAdminStore(s => s.pushEvent)
@@ -46,7 +45,7 @@ export function CuotaAutonomosWidget() {
   const tramo = TRAMOS_2024.find(t => rendimientoNeto <= t.max) || TRAMOS_2024[TRAMOS_2024.length - 1]
 
   return (
-    <div className="tool-page-inner">
+    <>
       <div className="tool-page-header">
         <div className="tool-icon-box" style={{ background: 'var(--color-copper-highlight)', color: 'var(--color-copper)' }}>
           <Calculator size={24} />
@@ -57,30 +56,56 @@ export function CuotaAutonomosWidget() {
         </div>
       </div>
 
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        <div className="input-group">
-          <label className="input-label">Ingresos mensuales (€)</label>
-          <input type="number" className="input-v3" placeholder="0" value={ingresos} onChange={e => handleInput(e.target.value, setIngresos)} />
+      <div className="card" style={{ padding: 'var(--space-6)' }}>
+        <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: '1fr 1fr' }}>
+          <div className="input-group">
+            <label className="input-label">Ingresos mensuales (€)</label>
+            <input type="number" className="input-v3" placeholder="0" value={ingresos} onChange={e => handleInput(e.target.value, setIngresos)} />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Gastos mensuales (€)</label>
+            <input type="number" className="input-v3" placeholder="0" value={gastos} onChange={e => handleInput(e.target.value, setGastos)} />
+          </div>
         </div>
-        <div className="input-group">
-          <label className="input-label">Gastos mensuales (€)</label>
-          <input type="number" className="input-v3" placeholder="0" value={gastos} onChange={e => handleInput(e.target.value, setGastos)} />
-        </div>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-          Rendimiento neto computable (incl. 7% deduc.): <strong>{rendimientoNeto.toFixed(2)} € / mes</strong>
-        </p>
-      </div>
 
-      <div className="card">
-        <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 'var(--space-3)' }}>Tu cuota estimada (2024)</h3>
-        <p className="result-highlight">
-          <span className="result-value">{tramo.cuota}€</span>
-          <span className="result-unit">/ mes</span>
-        </p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 'var(--space-2)' }}>
-          Estimación basada en los tramos de rendimiento neto vigentes.
-        </p>
+        <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--color-surface-offset)', borderRadius: 'var(--radius-md)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-1)' }}>
+            Rendimiento neto computable (incl. 7% deduc.):
+          </p>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 600 }}>
+            {rendimientoNeto.toFixed(2)} € / mes
+          </p>
+        </div>
+
+        <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
+          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>Tu cuota estimada (2024)</h3>
+          <div style={{
+            background: 'var(--color-copper-highlight)',
+            border: '2px solid var(--color-copper)',
+            padding: 'var(--space-5)',
+            borderRadius: 'var(--radius-lg)',
+            color: 'var(--color-text)',
+            textAlign: 'center'
+          }}>
+            <span style={{ fontSize: '3rem', fontWeight: 800, fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+              {tramo.cuota}€
+            </span>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-copper)', marginLeft: 'var(--space-2)', fontWeight: 600 }}>/ mes</span>
+          </div>
+          <p style={{ marginTop: 'var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
+            Estimación basada en los tramos de rendimiento neto vigentes. La cuota final puede variar según circunstancias personales.
+          </p>
+        </div>
       </div>
+    </>
+  )
+}
+
+/** Widget reutilizable sin header/footer — para usar dentro del panel de usuario */
+export function CuotaAutonomosWidget() {
+  return (
+    <div className="tool-page-inner">
+      <CuotaCalculator />
     </div>
   )
 }
@@ -97,7 +122,7 @@ export function CuotaAutonomosPage() {
               <ArrowLeft size={13} /> Inicio
             </Link>
           </nav>
-          <CuotaAutonomosWidget />
+          <CuotaCalculator />
         </div>
       </main>
       <SiteFooter />
