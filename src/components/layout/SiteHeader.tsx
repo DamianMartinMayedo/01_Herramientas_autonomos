@@ -1,24 +1,63 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '../ui/ThemeToggle'
+import { AuthModal } from '../../features/auth/AuthModal'
+import { UserMenu } from '../../features/auth/UserMenu'
+import { useAuth } from '../../hooks/useAuth'
 
 /**
  * Cabecera global del sitio.
- * Reutilizable en cualquier página — importa y coloca al principio del JSX.
+ * Incluye botón de login/registro y menú de usuario si hay sesión activa.
  */
 export function SiteHeader() {
+  const { user, loading } = useAuth()
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalView, setModalView] = useState<'login' | 'register'>('login')
+
+  const openLogin = () => {
+    setModalView('login')
+    setModalOpen(true)
+  }
+
+  const openRegister = () => {
+    setModalView('register')
+    setModalOpen(true)
+  }
+
   return (
-    <header className="site-header">
-      <div className="site-header-inner">
-        <Link to="/" className="site-logo" style={{ textDecoration: 'none' }}>
-          HerramientasAutonomos
-        </Link>
-        <nav className="site-nav">
-          <Link to="/blog" className="site-nav-link">
-            Blog
+    <>
+      <header className="site-header">
+        <div className="site-header-inner">
+          <Link to="/" className="site-logo" style={{ textDecoration: 'none' }}>
+            HerramientasAutonomos
           </Link>
-          <ThemeToggle />
-        </nav>
-      </div>
-    </header>
+          <nav className="site-nav">
+            <Link to="/blog" className="site-nav-link">
+              Blog
+            </Link>
+            <ThemeToggle />
+            {!loading && (
+              user ? (
+                <UserMenu user={user} />
+              ) : (
+                <div className="auth-buttons">
+                  <button className="auth-btn auth-btn--ghost" onClick={openLogin}>
+                    Entrar
+                  </button>
+                  <button className="auth-btn auth-btn--primary" onClick={openRegister}>
+                    Registrarse
+                  </button>
+                </div>
+              )
+            )}
+          </nav>
+        </div>
+      </header>
+      <AuthModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        initialView={modalView}
+      />
+    </>
   )
 }
