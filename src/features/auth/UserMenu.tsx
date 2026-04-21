@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import { signOut } from '../../store/authStore'
 import type { Plan } from '../../types/auth.types'
-import { LayoutDashboard, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 
 interface UserMenuProps {
   user: User
@@ -58,24 +58,12 @@ export function UserMenu({ user, plan }: UserMenuProps) {
             </p>
           )}
           <hr className="user-menu__divider" />
-          <Link
-            to="/usuario"
-            className="user-menu__item"
-            role="menuitem"
-            onClick={() => setOpen(false)}
-            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}
-          >
-            <LayoutDashboard size={14} />
-            Mi panel
-          </Link>
           <button
-            className="user-menu__item user-menu__item--danger"
+            className="user-menu__item"
             onClick={handleSignOut}
-            role="menuitem"
-            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-2) var(--space-3)', color: 'var(--color-text)', fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', borderRadius: 'var(--radius-md)' }}
           >
-            <LogOut size={14} />
-            Cerrar sesión
+            <LogOut size={14} /> Cerrar sesión
           </button>
         </div>
       )}
