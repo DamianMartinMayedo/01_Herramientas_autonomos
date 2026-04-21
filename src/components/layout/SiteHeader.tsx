@@ -5,12 +5,8 @@ import { AuthModal } from '../../features/auth/AuthModal'
 import { UserMenu } from '../../features/auth/UserMenu'
 import { useAuth } from '../../hooks/useAuth'
 
-/**
- * Cabecera global del sitio.
- * Incluye botón de login/registro y menú de usuario si hay sesión activa.
- */
 export function SiteHeader() {
-  const { user, loading } = useAuth()
+  const { user, plan, loading } = useAuth()
   const [modalOpen, setModalOpen] = useState(false)
   const [modalView, setModalView] = useState<'login' | 'register'>('login')
 
@@ -38,7 +34,7 @@ export function SiteHeader() {
             <ThemeToggle />
             {!loading && (
               user ? (
-                <UserMenu user={user} />
+                <UserMenu user={user} plan={plan} />
               ) : (
                 <div className="auth-buttons">
                   <button className="auth-btn auth-btn--ghost" onClick={openLogin}>

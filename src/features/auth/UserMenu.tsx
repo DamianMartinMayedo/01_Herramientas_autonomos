@@ -1,12 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { signOut } from '../../store/authStore'
+import type { Plan } from '../../types/auth.types'
 
 interface UserMenuProps {
   user: User
+  plan: Plan | null
 }
 
-export function UserMenu({ user }: UserMenuProps) {
+const PLAN_LABEL: Record<string, string> = {
+  free: 'Plan gratuito',
+  premium: 'Plan premium',
+}
+
+export function UserMenu({ user, plan }: UserMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -41,6 +48,11 @@ export function UserMenu({ user }: UserMenuProps) {
       {open && (
         <div className="user-menu__dropdown" role="menu">
           <p className="user-menu__email">{user.email}</p>
+          {plan && (
+            <p className="user-menu__plan">
+              {PLAN_LABEL[plan] ?? plan}
+            </p>
+          )}
           <hr className="user-menu__divider" />
           <button
             className="user-menu__item user-menu__item--danger"
