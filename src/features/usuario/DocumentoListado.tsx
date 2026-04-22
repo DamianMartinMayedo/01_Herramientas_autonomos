@@ -46,31 +46,49 @@ const ESTADO_COLORS: Record<string, string> = {
 
 interface Props {
   tipo: TipoDocumento
+  refreshKey?: number
+  onCreate?: () => void
+  onOpen?: (id: string) => void
+  flashMessage?: string | null
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DocRow = Record<string, any>
 
-export function DocumentoListado({ tipo }: Props) {
+export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flashMessage }: Props) {
   const { user } = useAuth()
   const cfg = TABLA_CONFIG[tipo]
   const [rows, setRows] = useState<DocRow[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const userId = user?.id
 
-  const fetchRows = async () => {
-    if (!user) return
-    setLoading(true)
-    const { data } = await supabase
-      .from(tipo)
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-    setRows(data ?? [])
-    setLoading(false)
-  }
+  useEffect(() => {
+    if (!userId) {
+      return
+    }
 
-  useEffect(() => { fetchRows() }, [user, tipo])
+    let active = true
+
+    async function fetchRows() {
+      setLoading(true)
+      const { data } = await supabase
+        .from(tipo)
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (!active) return
+      setRows(data ?? [])
+      setLoading(false)
+    }
+
+    void fetchRows()
+
+    return () => {
+      active = false
+    }
+  }, [refreshKey, tipo, userId])
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este documento? Esta acción no se puede deshacer.')) return
@@ -81,11 +99,31 @@ export function DocumentoListado({ tipo }: Props) {
   }
 
   const handleCrear = () => {
+    if (onCreate) {
+      onCreate()
+      return
+    }
     window.open(cfg.routeCrear, '_blank')
   }
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      {/* Confirmación de guardado desde el editor embebido */}
+      {flashMessage && (
+        <div
+          style={{
+            marginBottom: 'var(--space-5)',
+            padding: 'var(--space-4)',
+            background: 'var(--color-primary-highlight)',
+            border: '1.5px solid var(--color-primary)',
+            borderRadius: 'var(--radius-lg)',
+            color: 'var(--color-primary)',
+            fontWeight: 600,
+          }}
+        >
+          {flashMessage}
+        </div>
+      )}
 
       {/* Cabecera */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
@@ -199,11 +237,9 @@ export function DocumentoListado({ tipo }: Props) {
 
                 {/* Acciones */}
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
-                  <a
-                    href={cfg.routeCrear}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Abrir herramienta"
+                  <button
+                    type="button"
+                    title={onOpen ? 'Abrir documento' : 'Abrir herramienta'}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       width: 32, height: 32, borderRadius: 'var(--radius-md)',
@@ -212,12 +248,20 @@ export function DocumentoListado({ tipo }: Props) {
                       color: 'var(--color-text-muted)',
                       transition: 'background 100ms, color 100ms',
                       textDecoration: 'none',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      if (onOpen) {
+                        onOpen(row.id)
+                        return
+                      }
+                      window.open(cfg.routeCrear, '_blank')
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-offset)'; e.currentTarget.style.color = 'var(--color-text)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
                   >
                     <ExternalLink size={13} />
-                  </a>
+                  </button>
                   <button
                     onClick={() => handleDelete(row.id)}
                     disabled={deleting === row.id}

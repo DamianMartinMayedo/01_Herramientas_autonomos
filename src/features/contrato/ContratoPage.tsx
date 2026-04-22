@@ -7,6 +7,7 @@ import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ContratoServiciosDoc, ParteLegal } from '../../types/legalDoc.types'
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
+import type { RegularClient } from '../../types/regularClient.types'
 
 // ─── Valores por defecto ─────────────────────────────────────────────────────
 
@@ -31,10 +32,7 @@ const DEFAULT_CONTRATO: ContratoServiciosDoc = {
 
 // ─── Sub-formulario de parte (prestador / cliente) ─────────────────────────────
 
-type RegisterFn = Parameters<typeof FormField>[0]['name'] extends infer _N
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ? (name: any, opts?: any) => any
-  : never
+type RegisterFn = (name: string, opts?: Record<string, unknown>) => Record<string, unknown>
 
 type ErrorsObj = Record<string, { message?: string } | undefined>
 
@@ -95,20 +93,40 @@ function FormParte({
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
-export function ContratoPage() {
+interface ContratoPageProps {
+  embedded?: boolean
+  onBack?: () => void
+  defaultValues?: ContratoServiciosDoc
+  onSave?: (documento: ContratoServiciosDoc) => Promise<void>
+  saving?: boolean
+  clientes?: RegularClient[]
+}
+
+export function ContratoPage({
+  embedded = false,
+  onBack,
+  defaultValues = DEFAULT_CONTRATO,
+  onSave,
+  saving = false,
+  clientes = [],
+}: ContratoPageProps) {
   return (
     <LegalDocEngine<ContratoServiciosDoc>
       tipo="contrato"
       titulo="Contratos de servicios"
       toolClass="tool-contrato"
-      defaultValues={DEFAULT_CONTRATO}
+      defaultValues={defaultValues}
       buildDoc={(v) => ({ ...v, tipo: 'contrato' as const })}
+      embedded={embedded}
+      onBack={onBack}
+      onSave={onSave}
+      saving={saving}
+      clientes={clientes}
+      clienteField="cliente"
       renderForm={({ register, watch, errors }) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const reg = register as RegisterFn
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const err = errors as ErrorsObj
-        const duracion = watch('duracion' as never) as string
+        const duracion = (watch('duracion' as never) as unknown) as string
         const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
 
         return (

@@ -50,11 +50,12 @@ export function PreviewModal({ documento, totales, clienteEmail, onClose }: Prev
   return (
     <>
       <div
-        className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
+        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-8"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col"
+          style={{ maxHeight: 'calc(100vh - 2rem)' }}
           role="dialog"
           aria-modal="true"
           aria-label="Vista previa del documento"
@@ -77,7 +78,7 @@ export function PreviewModal({ documento, totales, clienteEmail, onClose }: Prev
           </div>
 
           {/* Preview escalada y centrada */}
-          <div className="bg-stone-100 py-6 flex justify-center overflow-hidden">
+          <div className="bg-stone-100 flex-1 overflow-auto py-6 flex justify-center" style={{ minHeight: 0 }}>
             <div style={{ zoom: PREVIEW_ZOOM }}>
               <div className="shadow-lg">
                 <DocumentPreview

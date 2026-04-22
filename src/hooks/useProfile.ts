@@ -29,9 +29,6 @@ export function useProfile(): UseProfileReturn {
       return
     }
 
-    setLoading(true)
-    setError(null)
-
     const { data, error: fetchError } = await supabase
       .from('profiles')
       .select('*')
@@ -43,13 +40,44 @@ export function useProfile(): UseProfileReturn {
     } else {
       setProfile(data as Profile)
     }
-
-    setLoading(false)
   }, [user])
 
   useEffect(() => {
-    fetchProfile()
-  }, [fetchProfile])
+    let active = true
+
+    async function run() {
+      if (!user) {
+        setProfile(null)
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      setError(null)
+
+      const { data, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (!active) return
+
+      if (fetchError) {
+        setError(fetchError.message)
+      } else {
+        setProfile(data as Profile)
+      }
+
+      setLoading(false)
+    }
+
+    void run()
+
+    return () => {
+      active = false
+    }
+  }, [user])
 
   const updateProfile = async (data: ProfileUpdate) => {
     if (!user) return { error: 'No hay sesión activa' }

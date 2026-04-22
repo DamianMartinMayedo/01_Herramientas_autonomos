@@ -14,10 +14,6 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (isOpen) setView(initialView)
-  }, [isOpen, initialView])
-
-  useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { nanoid } from 'nanoid'
 import type { DocumentoBase, LineaDocumento, MetodoPago } from '../types/document.types'
 import { DEFAULT_LINEA, TIPOS_IVA } from '../types/document.types'
@@ -14,50 +14,71 @@ const PREFIJOS: Record<DocumentoBase['tipo'], string> = {
   albaran: 'ALB',
 }
 
-export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
+function ensureDocumentDefaults(tipo: DocumentoBase['tipo'], document: DocumentoBase): DocumentoBase {
+  return {
+    ...document,
+    tipo,
+    lineas: document.lineas?.length ? document.lineas : [{ id: nanoid(), ...DEFAULT_LINEA }],
+    formaPago: {
+      metodo: 'transferencia',
+      cuenta: '',
+      telefono: '',
+      email: '',
+      detalle: '',
+      ...document.formaPago,
+    },
+  }
+}
+
+export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: DocumentoBase | null) {
   const {
     emisorGuardado,
     setEmisorGuardado,
     presupuestoPendiente,
     limpiarPresupuestoPendiente,
   } = useDocumentStore()
+  const clientePendiente = presupuestoPendiente?.cliente
+
+  const createDefaultDocument = (): DocumentoBase => initialData
+    ? ensureDocumentDefaults(tipo, initialData)
+    : ({
+    tipo,
+    numero: generarNumeroDocumento(PREFIJOS[tipo], 1),
+    fecha: fechaHoy(),
+    emisor: emisorGuardado ?? {
+      nombre: '',
+      nif: '',
+      direccion: '',
+      ciudad: '',
+      cp: '',
+      provincia: '',
+      email: '',
+      telefono: '',
+    },
+    cliente: {
+      nombre: clientePendiente?.nombre ?? '',
+      nif: clientePendiente?.nif ?? '',
+      direccion: clientePendiente?.direccion ?? '',
+      ciudad: clientePendiente?.ciudad ?? '',
+      cp: clientePendiente?.cp ?? '',
+      provincia: clientePendiente?.provincia ?? '',
+      email: clientePendiente?.email ?? '',
+    },
+    lineas: presupuestoPendiente?.lineas ?? [{ id: nanoid(), ...DEFAULT_LINEA }],
+    notas: presupuestoPendiente?.notas ?? '',
+    mostrarIrpf: presupuestoPendiente?.mostrarIrpf ?? true,
+    formaPago: {
+      metodo: 'transferencia' as MetodoPago,
+      cuenta: '',
+      telefono: '',
+      email: '',
+      detalle: '',
+    },
+  })
 
   const form = useForm<DocumentoBase>({
     mode: 'onBlur',
-    defaultValues: {
-      tipo,
-      numero: generarNumeroDocumento(PREFIJOS[tipo], 1),
-      fecha: fechaHoy(),
-      emisor: emisorGuardado ?? {
-        nombre: '',
-        nif: '',
-        direccion: '',
-        ciudad: '',
-        cp: '',
-        provincia: '',
-        email: '',
-        telefono: '',
-      },
-      cliente: presupuestoPendiente?.cliente ?? {
-        nombre: '',
-        nif: '',
-        direccion: '',
-        ciudad: '',
-        cp: '',
-        provincia: '',
-        email: '',
-      },
-      lineas: presupuestoPendiente?.lineas ?? [{ id: nanoid(), ...DEFAULT_LINEA }],
-      notas: presupuestoPendiente?.notas ?? '',
-      mostrarIrpf: presupuestoPendiente?.mostrarIrpf ?? true,
-      formaPago: {
-        metodo: 'transferencia' as MetodoPago,
-        cuenta: '',
-        telefono: '',
-        email: '',
-        detalle: '',
-      },
-    },
+    defaultValues: createDefaultDocument(),
   })
 
   // Limpiar el presupuesto pendiente tras cargarlo para no reutilizarlo
@@ -88,9 +109,9 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo']) {
     [fields.length, remove]
   )
 
-  const lineas = form.watch('lineas') as LineaDocumento[]
-  const mostrarIrpf = form.watch('mostrarIrpf')
-  const clienteExterior = form.watch('cliente.clienteExterior')
+  const lineas = (useWatch({ control: form.control, name: 'lineas' }) ?? []) as LineaDocumento[]
+  const mostrarIrpf = Boolean(useWatch({ control: form.control, name: 'mostrarIrpf' }))
+  const clienteExterior = Boolean(useWatch({ control: form.control, name: 'cliente.clienteExterior' }))
   const totales = calcularTotales(lineas ?? [], mostrarIrpf)
 
   useEffect(() => {

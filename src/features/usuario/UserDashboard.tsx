@@ -44,33 +44,47 @@ export function UserDashboard({ onNav }: Props) {
     contratos: 0, ndas: 0, reclamaciones: 0, totalFacturado: 0,
   })
   const [loadingStats, setLoadingStats] = useState(true)
+  const userId = user?.id
 
   useEffect(() => {
-    if (!user) return
-    const fetchStats = async () => {
+    if (!userId) {
+      return
+    }
+
+    let active = true
+
+    async function fetchStats() {
       setLoadingStats(true)
       const [f, p, a, c, n, r] = await Promise.all([
-        supabase.from('facturas').select('id, total', { count: 'exact' }).eq('user_id', user.id),
-        supabase.from('presupuestos').select('id', { count: 'exact' }).eq('user_id', user.id),
-        supabase.from('albaranes').select('id', { count: 'exact' }).eq('user_id', user.id),
-        supabase.from('contratos').select('id', { count: 'exact' }).eq('user_id', user.id),
-        supabase.from('ndas').select('id', { count: 'exact' }).eq('user_id', user.id),
-        supabase.from('reclamaciones').select('id', { count: 'exact' }).eq('user_id', user.id),
+        supabase.from('facturas').select('id, total', { count: 'exact' }).eq('user_id', userId),
+        supabase.from('presupuestos').select('id', { count: 'exact' }).eq('user_id', userId),
+        supabase.from('albaranes').select('id', { count: 'exact' }).eq('user_id', userId),
+        supabase.from('contratos').select('id', { count: 'exact' }).eq('user_id', userId),
+        supabase.from('ndas').select('id', { count: 'exact' }).eq('user_id', userId),
+        supabase.from('reclamaciones').select('id', { count: 'exact' }).eq('user_id', userId),
       ])
+
+      if (!active) return
+
       const totalFacturado = (f.data ?? []).reduce((acc: number, row: { total: number }) => acc + Number(row.total ?? 0), 0)
       setStats({
-        facturas:      f.count ?? 0,
-        presupuestos:  p.count ?? 0,
-        albaranes:     a.count ?? 0,
-        contratos:     c.count ?? 0,
-        ndas:          n.count ?? 0,
+        facturas: f.count ?? 0,
+        presupuestos: p.count ?? 0,
+        albaranes: a.count ?? 0,
+        contratos: c.count ?? 0,
+        ndas: n.count ?? 0,
         reclamaciones: r.count ?? 0,
         totalFacturado,
       })
       setLoadingStats(false)
     }
-    fetchStats()
-  }, [user])
+
+    void fetchStats()
+
+    return () => {
+      active = false
+    }
+  }, [userId])
 
   const nombre = profile?.display_name ?? profile?.email?.split('@')[0] ?? 'usuario'
   const hora = new Date().getHours()

@@ -7,6 +7,7 @@ import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ReclamacionPagoDoc, ParteLegal } from '../../types/legalDoc.types'
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
+import type { RegularClient } from '../../types/regularClient.types'
 
 // ─── Valores por defecto ─────────────────────────────────────────────────────
 
@@ -26,8 +27,7 @@ const DEFAULT_RECLAMACION: ReclamacionPagoDoc = {
 }
 
 // ─── Sub-formulario de parte ─────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RegisterFn = (name: any, opts?: any) => any
+type RegisterFn = (name: string, opts?: Record<string, unknown>) => Record<string, unknown>
 type ErrorsObj = Record<string, { message?: string } | undefined>
 
 function FormParte({
@@ -75,14 +75,36 @@ function FormParte({
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
-export function ReclamacionPage() {
+interface ReclamacionPageProps {
+  embedded?: boolean
+  onBack?: () => void
+  defaultValues?: ReclamacionPagoDoc
+  onSave?: (documento: ReclamacionPagoDoc) => Promise<void>
+  saving?: boolean
+  clientes?: RegularClient[]
+}
+
+export function ReclamacionPage({
+  embedded = false,
+  onBack,
+  defaultValues = DEFAULT_RECLAMACION,
+  onSave,
+  saving = false,
+  clientes = [],
+}: ReclamacionPageProps) {
   return (
     <LegalDocEngine<ReclamacionPagoDoc>
       tipo="reclamacion"
       titulo="Reclamación de pago"
       toolClass="tool-reclamacion"
-      defaultValues={DEFAULT_RECLAMACION}
+      defaultValues={defaultValues}
       buildDoc={(v) => ({ ...v, tipo: 'reclamacion' as const })}
+      embedded={embedded}
+      onBack={onBack}
+      onSave={onSave}
+      saving={saving}
+      clientes={clientes}
+      clienteField="deudor"
       renderForm={({ register, watch, errors, setValue }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj

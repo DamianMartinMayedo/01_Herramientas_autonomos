@@ -6,6 +6,7 @@ import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { NdaDoc, ParteLegal } from '../../types/legalDoc.types'
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
+import type { RegularClient } from '../../types/regularClient.types'
 
 // ─── Valores por defecto ─────────────────────────────────────────────────────
 
@@ -24,8 +25,7 @@ const DEFAULT_NDA: NdaDoc = {
 }
 
 // ─── Sub-formulario de parte ────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RegisterFn = (name: any, opts?: any) => any
+type RegisterFn = (name: string, opts?: Record<string, unknown>) => Record<string, unknown>
 type ErrorsObj = Record<string, { message?: string } | undefined>
 
 function FormParte({
@@ -77,19 +77,41 @@ function FormParte({
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
-export function NdaPage() {
+interface NdaPageProps {
+  embedded?: boolean
+  onBack?: () => void
+  defaultValues?: NdaDoc
+  onSave?: (documento: NdaDoc) => Promise<void>
+  saving?: boolean
+  clientes?: RegularClient[]
+}
+
+export function NdaPage({
+  embedded = false,
+  onBack,
+  defaultValues = DEFAULT_NDA,
+  onSave,
+  saving = false,
+  clientes = [],
+}: NdaPageProps) {
   return (
     <LegalDocEngine<NdaDoc>
       tipo="nda"
       titulo="Acuerdo de confidencialidad (NDA)"
       toolClass="tool-nda"
-      defaultValues={DEFAULT_NDA}
+      defaultValues={defaultValues}
       buildDoc={(v) => ({ ...v, tipo: 'nda' as const })}
+      embedded={embedded}
+      onBack={onBack}
+      onSave={onSave}
+      saving={saving}
+      clientes={clientes}
+      clienteField="parteB"
       renderForm={({ register, watch, errors }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
-        const direction = watch('direction' as never) as string
+        const direction = (watch('direction' as never) as unknown) as string
 
         return (
           <>

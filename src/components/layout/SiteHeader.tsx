@@ -49,11 +49,14 @@ export function SiteHeader() {
           </nav>
         </div>
       </header>
-      <AuthModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initialView={modalView}
-      />
+      {modalOpen && (
+        <AuthModal
+          key={modalView}
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          initialView={modalView}
+        />
+      )}
     </>
   )
 }

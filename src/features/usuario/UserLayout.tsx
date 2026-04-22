@@ -6,13 +6,12 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
-import { useProfile } from '../../hooks/useProfile'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import {
   LayoutDashboard, FileText, Receipt, Package,
   FileSignature, ShieldOff, AlertCircle,
   Calculator, TrendingUp, Clock,
-  LogOut, Menu, X, ChevronRight, User,
+  LogOut, Menu, X, ChevronRight, User, Settings,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 
@@ -20,6 +19,7 @@ export type UserSection =
   | 'dashboard'
   | 'facturas' | 'presupuestos' | 'albaranes'
   | 'contratos' | 'ndas' | 'reclamaciones'
+  | 'clientes'
   | 'cuota-autonomos' | 'precio-hora' | 'iva-irpf'
 
 interface UserLayoutProps {
@@ -33,6 +33,7 @@ const NAV_GROUPS = [
     label: 'General',
     items: [
       { id: 'dashboard' as UserSection, label: 'Dashboard', Icon: LayoutDashboard },
+      { id: 'clientes' as UserSection, label: 'Cliente', Icon: Settings },
     ],
   },
   {
@@ -63,7 +64,7 @@ function UserSidebar({
   onNav: (s: UserSection) => void
   onClose?: () => void
 }) {
-  const { profile } = useProfile()
+  const { profile } = useAuth()
   const navigate = useNavigate()
   const initials = (profile?.display_name ?? profile?.email ?? 'U')
     .slice(0, 2).toUpperCase()
@@ -178,7 +179,7 @@ function UserSidebar({
       {/* Footer */}
       <div style={{ padding: 'var(--space-4) var(--space-3) 0', borderTop: '1px solid var(--color-border)', marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <button
-          onClick={() => onNav('dashboard')}
+          onClick={() => onNav('clientes')}
           style={{
             display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
             width: '100%', padding: 'var(--space-2) var(--space-3)',
@@ -189,7 +190,7 @@ function UserSidebar({
           onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.background = 'var(--color-surface-offset)' }}
           onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-faint)'; e.currentTarget.style.background = 'none' }}
         >
-          <User size={16} /> Mi perfil
+          <User size={16} /> Cliente
         </button>
         <button
           onClick={handleLogout}

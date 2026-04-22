@@ -6,17 +6,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDocumentEngine } from '../../hooks/useDocumentEngine'
-import type { DocumentoBase, MetodoPago } from '../../types/document.types'
+import type { DocumentoBase, MetodoPago, TotalesDocumento } from '../../types/document.types'
 import { TIPOS_IVA, TIPOS_IRPF } from '../../types/document.types'
 import { DocumentPreview } from './DocumentPreview'
 import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
-import { ThemeToggle } from '../ui/ThemeToggle'
 import { validarNif } from '../../utils/validarNif'
 import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle } from 'lucide-react'
 import { useDocumentStore } from '../../store/documentStore'
-
+import type { RegularClient } from '../../types/regularClient.types'
+import { regularClientToClienteInfo } from '../../types/regularClient.types'
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Encabezado de la factura',
@@ -28,11 +28,28 @@ interface DocumentEngineProps {
   tipo: DocumentoBase['tipo']
   titulo: string
   toolClass?: string
+  embedded?: boolean
+  onBack?: () => void
+  initialData?: DocumentoBase | null
+  onSave?: (documento: DocumentoBase, totales: TotalesDocumento) => Promise<void>
+  saving?: boolean
+  clientes?: RegularClient[]
 }
 
-export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineProps) {
+export function DocumentEngine({
+  tipo,
+  titulo,
+  toolClass = '',
+  embedded = false,
+  onBack,
+  initialData,
+  onSave,
+  saving = false,
+  clientes = [],
+}: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
-  const [savedFeedback, setSavedFeedback] = useState(false)
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+  const [selectedClientId, setSelectedClientId] = useState('')
   const navigate = useNavigate()
   const { setPresupuestoPendiente } = useDocumentStore()
 
@@ -45,23 +62,46 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
     eliminarLinea,
     guardarEmisor,
     formatEuro: fmt,
-  } = useDocumentEngine(tipo)
+  } = useDocumentEngine(tipo, initialData)
 
-  const { register, watch, formState: { errors } } = form
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = form
+
   const documento = watch() as DocumentoBase
   const esFinanciero = tipo !== 'albaran'
   const metodoPago = watch('formaPago.metodo') as MetodoPago
   const clienteExterior = watch('cliente.clienteExterior') as boolean
-  // Email del cliente para autorellenar el modal de envío por correo
-  const clienteEmail = (watch('cliente.email') as unknown) as string | undefined
+  const clienteEmail = watch('cliente.email') as string | undefined
 
   const handleAbrirPrevia = form.handleSubmit(() => setModalAbierto(true))
 
+  const showFeedback = (message: string) => {
+    setFeedbackMessage(message)
+    setTimeout(() => setFeedbackMessage(null), 2500)
+  }
+
   const handleGuardarEmisor = () => {
     guardarEmisor()
-    setSavedFeedback(true)
-    setTimeout(() => setSavedFeedback(false), 2500)
+    showFeedback('Datos guardados')
   }
+
+  const handleGuardarDocumento = form.handleSubmit(async (values) => {
+    if (!onSave) return
+    try {
+      await onSave(values as DocumentoBase, totales)
+      showFeedback('Documento guardado')
+    } catch (error) {
+      console.error(error)
+      showFeedback('No se pudo guardar. Inténtalo de nuevo.')
+    }
+  }, () => {
+    // Si hay errores de validación, react-hook-form no llama al handler principal.
+    showFeedback('Revisa los campos obligatorios antes de guardar.')
+  })
 
   const handleConvertirAFactura = () => {
     const datos = form.getValues()
@@ -74,7 +114,23 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
     navigate('/factura')
   }
 
-  /* ── Estilos inline reutilizables ──────────────────────────────────────────── */
+  const handleSeleccionCliente = (clientId: string) => {
+    setSelectedClientId(clientId)
+    const client = clientes.find((item) => item.id === clientId)
+    if (!client) return
+
+    const cliente = regularClientToClienteInfo(client)
+    setValue('cliente.nombre', cliente.nombre, { shouldDirty: true })
+    setValue('cliente.nif', cliente.nif, { shouldDirty: true })
+    setValue('cliente.direccion', cliente.direccion, { shouldDirty: true })
+    setValue('cliente.ciudad', cliente.ciudad, { shouldDirty: true })
+    setValue('cliente.cp', cliente.cp, { shouldDirty: true })
+    setValue('cliente.provincia', cliente.provincia, { shouldDirty: true })
+    setValue('cliente.email', cliente.email ?? '', { shouldDirty: true })
+    setValue('cliente.pais', cliente.pais ?? '', { shouldDirty: true })
+    setValue('cliente.clienteExterior', Boolean(cliente.clienteExterior), { shouldDirty: true })
+  }
+
   const sectionLabelStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
     fontWeight: 700,
@@ -93,10 +149,8 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
   return (
     <div
       className={toolClass}
-      style={{ minHeight: '100vh', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}
+      style={{ minHeight: embedded ? 'auto' : '100vh', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}
     >
-
-      {/* ── Top bar ─────────────────────────────────────────────────────────────────────── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: 'oklch(from var(--color-surface) l c h / 0.95)',
@@ -106,25 +160,35 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-              fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
-              background: 'none', border: 'none', cursor: 'pointer',
-              transition: 'color var(--transition)',
-              fontFamily: 'var(--font-body)',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
-            aria-label="Volver al inicio"
-          >
-            <ChevronLeft size={15} />
-            <span className="hidden sm:inline">Volver</span>
-          </button>
+          {!embedded && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onBack) {
+                    onBack()
+                    return
+                  }
+                  navigate('/')
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+                  fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  transition: 'color var(--transition)',
+                  fontFamily: 'var(--font-body)',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                aria-label="Volver"
+              >
+                <ChevronLeft size={15} />
+                <span className="hidden sm:inline">Volver</span>
+              </button>
 
-          <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
+              <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
+            </>
+          )}
 
           <h1 style={{
             fontFamily: 'var(--font-display)',
@@ -137,20 +201,34 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          {savedFeedback && (
+          {feedbackMessage && (
             <span style={{
               display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
               fontSize: 'var(--text-sm)', fontWeight: 600,
               color: 'var(--color-success)',
             }}>
               <CheckCircle2 size={15} />
-              Datos guardados
+              {feedbackMessage}
             </span>
           )}
-          <Button variant="secondary" size="sm" onClick={handleGuardarEmisor} type="button">
-            <Save size={14} />
-            Guardar mis datos
-          </Button>
+          {!embedded && (
+            <Button variant="secondary" size="sm" onClick={handleGuardarEmisor} type="button">
+              <Save size={14} />
+              Guardar mis datos
+            </Button>
+          )}
+          {onSave && (
+            <Button variant="secondary" size="sm" onClick={handleGuardarDocumento} type="button" disabled={saving}>
+              <Save size={14} />
+              {saving
+                ? 'Guardando...'
+                : tipo === 'factura'
+                  ? 'Guardar factura'
+                  : tipo === 'presupuesto'
+                    ? 'Guardar presupuesto'
+                    : 'Guardar albarán'}
+            </Button>
+          )}
           {tipo === 'presupuesto' && (
             <Button variant="secondary" size="sm" onClick={handleConvertirAFactura} type="button">
               <ArrowRight size={14} />
@@ -160,11 +238,9 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
           <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
             Exportar
           </Button>
-          <ThemeToggle />
         </div>
       </div>
 
-       {/* ── Banner disclaimer (solo para factura) ──────────────────────────────────── */}
       {tipo === 'factura' && (
         <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/30 px-6 py-4">
           <div className="max-w-[1400px] mx-auto flex gap-5">
@@ -181,7 +257,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         </div>
       )}
 
-      {/* ── Layout dos columnas ────────────────────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 560px), 1fr))',
@@ -190,11 +265,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
         maxWidth: '1400px',
         margin: '0 auto',
       }}>
-
-        {/* ── COLUMNA IZQUIERDA — Formulario ──────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-
-          {/* ENCABEZADO */}
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">{TITULO_ENCABEZADO[tipo]}</legend>
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
@@ -216,14 +287,11 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   label="Vencimiento"
                   type="date"
                   {...register('fechaVencimiento', {
-                    validate: (v) => {
-                      if (!v) return true
+                    validate: (value) => {
+                      if (!value) return true
                       const fechaDoc = form.getValues('fecha')
                       if (!fechaDoc) return true
-                      return (
-                        v >= fechaDoc ||
-                        'El vencimiento no puede ser anterior a la fecha del documento'
-                      )
+                      return value >= fechaDoc || 'El vencimiento no puede ser anterior a la fecha del documento'
                     },
                   })}
                   error={errors.fechaVencimiento}
@@ -232,7 +300,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </div>
           </fieldset>
 
-          {/* TUS DATOS */}
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Tus datos</legend>
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
@@ -246,7 +313,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                   label="NIF / CIF / NIE *"
                   {...register('emisor.nif', {
                     required: 'El NIF es obligatorio',
-                    validate: (v) => validarNif(v),
+                    validate: (value) => validarNif(value),
                   })}
                   error={errors.emisor?.nif}
                 />
@@ -287,17 +354,29 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </div>
           </fieldset>
 
-          {/* DATOS DEL CLIENTE */}
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Datos del cliente</legend>
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              {clientes.length > 0 && (
+                <div className="input-group">
+                  <label className="input-label">Cliente frecuente</label>
+                  <select
+                    className="select-v3"
+                    value={selectedClientId}
+                    onChange={(event) => handleSeleccionCliente(event.target.value)}
+                  >
+                    <option value="">Selecciona un cliente guardado</option>
+                    {clientes.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-              {/* Checkbox cliente exterior */}
               <label className="input-toggle" style={{ marginBottom: 'var(--space-3)' }}>
-                <input
-                  type="checkbox"
-                  {...register('cliente.clienteExterior')}
-                />
+                <input type="checkbox" {...register('cliente.clienteExterior')} />
                 <span>Cliente fuera de España</span>
               </label>
 
@@ -313,9 +392,9 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                     required: clienteExterior
                       ? 'El número de identificación del cliente es obligatorio'
                       : 'El NIF del cliente es obligatorio',
-                    validate: (v) => {
+                    validate: (value) => {
                       if (clienteExterior) return true
-                      return validarNif(v)
+                      return validarNif(value)
                     },
                   })}
                   error={errors.cliente?.nif}
@@ -338,9 +417,7 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
                 <FormField
                   label="Código postal"
                   {...register('cliente.cp', {
-                    pattern: clienteExterior
-                      ? undefined
-                      : { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
+                    pattern: clienteExterior ? undefined : { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
                   })}
                   error={errors.cliente?.cp}
                 />
@@ -358,155 +435,147 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </div>
           </fieldset>
 
-          {/* CONCEPTOS */}
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Conceptos</legend>
 
             {esFinanciero && (
               <label className="input-toggle" style={{ marginTop: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
-                <input
-                  type="checkbox"
-                  {...register('mostrarIrpf')}
-                />
+                <input type="checkbox" {...register('mostrarIrpf')} />
                 <span>Incluir IRPF</span>
               </label>
             )}
 
             <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
-              {fields.map((field, index) => {
-                return (
-                  <div key={field.id} className="linea-concepto">
+              {fields.map((field, index) => (
+                <div key={field.id} className="linea-concepto">
+                  <FormField
+                    label="Descripción *"
+                    {...register(`lineas.${index}.descripcion`, { required: 'La descripción es obligatoria' })}
+                    error={errors.lineas?.[index]?.descripcion}
+                  />
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 'var(--space-3)' }}>
                     <FormField
-                      label="Descripción *"
-                      {...register(`lineas.${index}.descripcion`, {
-                        required: 'La descripción es obligatoria',
+                      label="Cantidad *"
+                      type="number"
+                      step="any"
+                      {...register(`lineas.${index}.cantidad`, {
+                        valueAsNumber: true,
+                        required: true,
+                        min: { value: 0.01, message: 'Debe ser mayor que 0' },
                       })}
-                      error={errors.lineas?.[index]?.descripcion}
+                      error={errors.lineas?.[index]?.cantidad}
+                      className="w-24"
+                      style={{ width: '6rem' }}
+                    />
+                    <FormField
+                      label="Precio/ud (€) *"
+                      type="number"
+                      step="0.01"
+                      {...register(`lineas.${index}.precioUnitario`, {
+                        valueAsNumber: true,
+                        required: true,
+                        min: { value: 0, message: 'No puede ser negativo' },
+                      })}
+                      error={errors.lineas?.[index]?.precioUnitario}
+                      style={{ width: '7rem' }}
                     />
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 'var(--space-3)' }}>
-                      <FormField
-                        label="Cantidad *"
-                        type="number"
-                        step="any"
-                        {...register(`lineas.${index}.cantidad`, {
-                          valueAsNumber: true,
-                          required: true,
-                          min: { value: 0.01, message: 'Debe ser mayor que 0' },
-                        })}
-                        error={errors.lineas?.[index]?.cantidad}
-                        className="w-24"
-                        style={{ width: '6rem' }}
-                      />
-                      <FormField
-                        label="Precio/ud (€) *"
-                        type="number"
-                        step="0.01"
-                        {...register(`lineas.${index}.precioUnitario`, {
-                          valueAsNumber: true,
-                          required: true,
-                          min: { value: 0, message: 'No puede ser negativo' },
-                        })}
-                        error={errors.lineas?.[index]?.precioUnitario}
-                        style={{ width: '7rem' }}
-                      />
-
-                      {esFinanciero && (
-                        <>
-                          {clienteExterior ? (
-                            <div className="input-group">
-                              <label className="input-label">IVA</label>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                <input
-                                  type="number"
-                                  step="any"
-                                  {...register(`lineas.${index}.iva`, {
-                                    valueAsNumber: true,
-                                    min: { value: 0, message: 'No puede ser negativo' },
-                                  })}
-                                  className="input-v3"
-                                  style={{ width: '6.5rem' }}
-                                />
-                                <span
-                                  style={{
-                                    paddingBottom: '0.55rem',
-                                    fontSize: 'var(--text-sm)',
-                                    color: 'var(--color-text-muted)',
-                                  }}
-                                >
-                                  %
-                                </span>
-                              </div>
-                              {errors.lineas?.[index]?.iva && (
-                                <p className="input-error-msg">{errors.lineas[index]?.iva?.message}</p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="input-group">
-                              <label className="input-label">IVA</label>
-                              <select
-                                {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
-                                className="select-v3"
+                    {esFinanciero && (
+                      <>
+                        {clienteExterior ? (
+                          <div className="input-group">
+                            <label className="input-label">IVA</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                              <input
+                                type="number"
+                                step="any"
+                                {...register(`lineas.${index}.iva`, {
+                                  valueAsNumber: true,
+                                  min: { value: 0, message: 'No puede ser negativo' },
+                                })}
+                                className="input-v3"
                                 style={{ width: '6.5rem' }}
+                              />
+                              <span
+                                style={{
+                                  paddingBottom: '0.55rem',
+                                  fontSize: 'var(--text-sm)',
+                                  color: 'var(--color-text-muted)',
+                                }}
                               >
-                                {TIPOS_IVA.map((t) => (
-                                  <option key={t} value={t}>{t}%</option>
-                                ))}
-                              </select>
+                                %
+                              </span>
                             </div>
-                          )}
+                            {errors.lineas?.[index]?.iva && (
+                              <p className="input-error-msg">{errors.lineas[index]?.iva?.message}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="input-group">
+                            <label className="input-label">IVA</label>
+                            <select
+                              {...register(`lineas.${index}.iva`, { valueAsNumber: true })}
+                              className="select-v3"
+                              style={{ width: '6.5rem' }}
+                            >
+                              {TIPOS_IVA.map((item) => (
+                                <option key={item} value={item}>{item}%</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
-                          {mostrarIrpf && (
-                            <div className="input-group">
-                              <label className="input-label">IRPF</label>
-                              <select
-                                {...register(`lineas.${index}.irpf`, { valueAsNumber: true })}
-                                className="select-v3"
-                                style={{ width: '6.5rem' }}
-                              >
-                                {TIPOS_IRPF.map((t) => (
-                                  <option key={t} value={t}>{t}%</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </>
-                      )}
+                        {mostrarIrpf && (
+                          <div className="input-group">
+                            <label className="input-label">IRPF</label>
+                            <select
+                              {...register(`lineas.${index}.irpf`, { valueAsNumber: true })}
+                              className="select-v3"
+                              style={{ width: '6.5rem' }}
+                            >
+                              {TIPOS_IRPF.map((item) => (
+                                <option key={item} value={item}>{item}%</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </>
+                    )}
 
-                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-2)', marginLeft: 'auto' }}>
-                        <button
-                          type="button"
-                          onClick={() => eliminarLinea(index)}
-                          disabled={fields.length === 1}
-                          style={{
-                            padding: 'var(--space-2)',
-                            color: 'var(--color-error)',
-                            background: 'none',
-                            border: '1.5px solid transparent',
-                            borderRadius: 'var(--radius-md)',
-                            cursor: fields.length === 1 ? 'not-allowed' : 'pointer',
-                            transition: 'color var(--transition), background var(--transition)',
-                            fontFamily: 'var(--font-body)',
-                          }}
-                          onMouseEnter={e => {
-                            if (fields.length > 1) {
-                              e.currentTarget.style.color = 'var(--color-error)'
-                              e.currentTarget.style.background = 'var(--color-error-highlight)'
-                            }
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.color = 'none'
-                            e.currentTarget.style.background = 'none'
-                          }}
-                          aria-label="Eliminar línea"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-2)', marginLeft: 'auto' }}>
+                      <button
+                        type="button"
+                        onClick={() => eliminarLinea(index)}
+                        disabled={fields.length === 1}
+                        style={{
+                          padding: 'var(--space-2)',
+                          color: 'var(--color-error)',
+                          background: 'none',
+                          border: '1.5px solid transparent',
+                          borderRadius: 'var(--radius-md)',
+                          cursor: fields.length === 1 ? 'not-allowed' : 'pointer',
+                          transition: 'color var(--transition), background var(--transition)',
+                          fontFamily: 'var(--font-body)',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (fields.length > 1) {
+                            e.currentTarget.style.color = 'var(--color-error)'
+                            e.currentTarget.style.background = 'var(--color-error-highlight)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'none'
+                          e.currentTarget.style.background = 'none'
+                        }}
+                        aria-label="Eliminar línea"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
 
             <Button
@@ -519,7 +588,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               Añadir concepto
             </Button>
 
-            {/* Totales */}
             {esFinanciero && (
               <div style={{
                 borderTop: '1px solid var(--color-divider)',
@@ -556,7 +624,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             )}
           </fieldset>
 
-          {/* FORMA DE PAGO */}
           {esFinanciero && (
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Forma de pago</legend>
@@ -616,7 +683,6 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </fieldset>
           )}
 
-          {/* NOTAS */}
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Notas</legend>
             <div style={{ marginTop: 'var(--space-4)' }}>
@@ -628,10 +694,8 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
               />
             </div>
           </fieldset>
-
         </div>
 
-        {/* ── COLUMNA DERECHA — Preview estática ────────────────────────────────────────────── */}
         <div className="hidden xl:flex" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
           <p style={sectionLabelStyle}>Vista previa en tiempo real</p>
           <div style={{
@@ -647,15 +711,13 @@ export function DocumentEngine({ tipo, titulo, toolClass = '' }: DocumentEngineP
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* ── Modal ────────────────────────────────────────────────────────────────────────── */}
       {modalAbierto && (
         <PreviewModal
           documento={documento}
           totales={totales}
-          clienteEmail={clienteEmail || undefined}
+          clienteEmail={clienteEmail}
           onClose={() => setModalAbierto(false)}
         />
       )}

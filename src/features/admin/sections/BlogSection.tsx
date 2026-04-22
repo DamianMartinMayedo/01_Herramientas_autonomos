@@ -158,7 +158,11 @@ export function BlogSection() {
     if (accion === 'eliminar') {
       deletePost(post.id)
     } else {
-      post.status === 'published' ? unpublish(post.id) : publishPost(post.id)
+      if (post.status === 'published') {
+        unpublish(post.id)
+      } else {
+        publishPost(post.id)
+      }
     }
     setModalTarget(null)
   }

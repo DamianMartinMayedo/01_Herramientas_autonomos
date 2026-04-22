@@ -6,36 +6,36 @@
  */
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch, type DefaultValues } from 'react-hook-form'
 import { ChevronLeft, Save, CheckCircle2 } from 'lucide-react'
-import type { LegalDoc, TipoLegalDoc } from '../../types/legalDoc.types'
+import type { LegalDoc, ParteLegal, TipoLegalDoc } from '../../types/legalDoc.types'
 import { LegalDocModal } from './LegalDocModal'
 import { LegalDocPreview } from './LegalDocPreview'
 import { Button } from '../ui/Button'
-import { ThemeToggle } from '../ui/ThemeToggle'
-
-// ─── Tipos del engine ─────────────────────────────────────────────────────────
+import type { RegularClient } from '../../types/regularClient.types'
+import { regularClientToParteLegal } from '../../types/regularClient.types'
 
 export interface LegalDocEngineProps<T extends LegalDoc> {
   tipo: TipoLegalDoc
   titulo: string
   toolClass?: string
   defaultValues: T
-  /** Render prop: recibe register/watch/errors y renderiza el formulario */
   renderForm: (helpers: FormHelpers<T>) => React.ReactNode
-  /** Convierte los valores crudos del form en un LegalDoc tipado */
   buildDoc: (values: T) => LegalDoc
+  embedded?: boolean
+  onBack?: () => void
+  onSave?: (documento: T) => Promise<void>
+  saving?: boolean
+  clientes?: RegularClient[]
+  clienteField?: 'cliente' | 'parteB' | 'deudor'
 }
 
 export interface FormHelpers<T extends LegalDoc> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register: ReturnType<typeof useForm<T>>['register']
   watch: ReturnType<typeof useForm<T>>['watch']
   errors: ReturnType<typeof useForm<T>>['formState']['errors']
   setValue: ReturnType<typeof useForm<T>>['setValue']
 }
-
-// ─── Estilos compartidos ──────────────────────────────────────────────────────
 
 const sectionLabelStyle: React.CSSProperties = {
   fontSize: 'var(--text-xs)',
@@ -45,7 +45,21 @@ const sectionLabelStyle: React.CSSProperties = {
   marginBottom: 'var(--space-4)',
 }
 
-// ─── Motor ────────────────────────────────────────────────────────────────────
+function setParteValue<T extends LegalDoc>(
+  setValue: ReturnType<typeof useForm<T>>['setValue'],
+  field: 'cliente' | 'parteB' | 'deudor',
+  parte: ParteLegal
+) {
+  const prefix = field as string
+  setValue(`${prefix}.nombre` as never, parte.nombre as never, { shouldDirty: true })
+  setValue(`${prefix}.nif` as never, parte.nif as never, { shouldDirty: true })
+  setValue(`${prefix}.direccion` as never, parte.direccion as never, { shouldDirty: true })
+  setValue(`${prefix}.ciudad` as never, parte.ciudad as never, { shouldDirty: true })
+  setValue(`${prefix}.cp` as never, parte.cp as never, { shouldDirty: true })
+  setValue(`${prefix}.provincia` as never, (parte.provincia ?? '') as never, { shouldDirty: true })
+  setValue(`${prefix}.email` as never, (parte.email ?? '') as never, { shouldDirty: true })
+  setValue(`${prefix}.telefono` as never, (parte.telefono ?? '') as never, { shouldDirty: true })
+}
 
 export function LegalDocEngine<T extends LegalDoc>({
   tipo,
@@ -54,62 +68,96 @@ export function LegalDocEngine<T extends LegalDoc>({
   defaultValues,
   renderForm,
   buildDoc,
+  embedded = false,
+  onBack,
+  onSave,
+  saving = false,
+  clientes = [],
+  clienteField,
 }: LegalDocEngineProps<T>) {
   const navigate = useNavigate()
   const [modalAbierto, setModalAbierto] = useState(false)
-  const [savedFeedback, setSavedFeedback] = useState(false)
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [selectedClientId, setSelectedClientId] = useState('')
 
-  const form = useForm<T>({ defaultValues: defaultValues as Parameters<typeof useForm<T>>[0]['defaultValues'] })
-  const { register, watch, formState: { errors }, setValue, handleSubmit } = form
+  const form = useForm<T>({
+    defaultValues: defaultValues as DefaultValues<T>,
+  })
+  const {
+    register,
+    watch,
+    formState: { errors },
+    setValue,
+    handleSubmit,
+  } = form
 
-  // Documento en tiempo real para la preview lateral
-  const rawValues = watch() as T
-  const docPreview = buildDoc(rawValues)
+  const rawValues = useWatch({ control: form.control }) as T
+  const docPreview = buildDoc(rawValues) as T
 
-  // Email del receptor/cliente para autorellenar el modal de correo.
-  // Cada tipo de doc usa un campo diferente: cliente, parteB o deudor.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const raw = rawValues as any
-  const clienteEmail: string | undefined =
-    raw?.cliente?.email ||
-    raw?.parteB?.email ||
-    raw?.deudor?.email ||
+  const raw = rawValues as Partial<Record<'cliente' | 'parteB' | 'deudor', { email?: string }>>
+  const clienteEmail =
+    raw.cliente?.email ||
+    raw.parteB?.email ||
+    raw.deudor?.email ||
     undefined
+
+  const showFeedback = (message: string) => {
+    setFeedbackMessage(message)
+    setTimeout(() => setFeedbackMessage(null), 2500)
+  }
 
   const handleExportar = handleSubmit(() => setModalAbierto(true))
 
-  /**
-   * Guarda los datos del emisor/prestador (parteA) en localStorage
-   * para pre-rellenar futuros documentos — igual que en DocumentEngine.
-   */
   const handleGuardarDatos = useCallback(() => {
     try {
       const values = form.getValues()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fuente = (values as any)['prestador'] ?? (values as any)['parteA'] ?? (values as any)['acreedor']
-      if (fuente) {
-        localStorage.setItem(`ha-legal-emisor-${tipo}`, JSON.stringify(fuente))
+      const source =
+        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).prestador ??
+        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).parteA ??
+        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).acreedor
+
+      if (source) {
+        localStorage.setItem(`ha-legal-emisor-${tipo}`, JSON.stringify(source))
       }
     } catch {
-      // localStorage puede estar bloqueado en algunos entornos
+      // localStorage puede estar bloqueado
     }
-    setSavedFeedback(true)
-    setTimeout(() => setSavedFeedback(false), 2500)
+    showFeedback('Datos guardados')
   }, [form, tipo])
 
+  const handleGuardarDocumento = handleSubmit(async (values) => {
+    if (!onSave) return
+    setSaveError(null)
+    try {
+      await onSave(values as T)
+      showFeedback('Documento guardado')
+    } catch (error) {
+      console.error(error)
+      setSaveError('No se pudo guardar el documento. Inténtalo de nuevo.')
+    }
+  })
+
+  const handleSeleccionCliente = (clientId: string) => {
+    setSelectedClientId(clientId)
+    const client = clientes.find((item) => item.id === clientId)
+    if (!client || !clienteField) return
+
+    setParteValue(setValue, clienteField, regularClientToParteLegal(client))
+  }
+
   const helpers: FormHelpers<T> = {
-    register: register as FormHelpers<T>['register'],
+    register,
     watch,
     errors,
-    setValue: setValue as FormHelpers<T>['setValue'],
+    setValue,
   }
 
   return (
     <div
       className={toolClass}
-      style={{ minHeight: '100vh', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}
+      style={{ minHeight: embedded ? 'auto' : '100vh', background: 'var(--color-bg)', transition: 'background var(--transition-slow)' }}
     >
-      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: 'oklch(from var(--color-surface) l c h / 0.95)',
@@ -118,27 +166,36 @@ export function LegalDocEngine<T extends LegalDoc>({
         padding: 'var(--space-3) var(--space-6)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)',
       }}>
-        {/* Izquierda: volver + título */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-              fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
-              background: 'none', border: 'none', cursor: 'pointer',
-              transition: 'color var(--transition)',
-              fontFamily: 'var(--font-body)',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
-            aria-label="Volver al inicio"
-          >
-            <ChevronLeft size={15} />
-            <span className="hidden sm:inline">Volver</span>
-          </button>
+          {!embedded && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onBack) {
+                    onBack()
+                    return
+                  }
+                  navigate('/')
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+                  fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  transition: 'color var(--transition)',
+                  fontFamily: 'var(--font-body)',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                aria-label="Volver"
+              >
+                <ChevronLeft size={15} />
+                <span className="hidden sm:inline">Volver</span>
+              </button>
 
-          <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
+              <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
+            </>
+          )}
 
           <h1 style={{
             fontFamily: 'var(--font-display)',
@@ -150,35 +207,35 @@ export function LegalDocEngine<T extends LegalDoc>({
           </h1>
         </div>
 
-        {/* Derecha: feedback + guardar + exportar + tema */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          {savedFeedback && (
+          {feedbackMessage && (
             <span style={{
               display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
               fontSize: 'var(--text-sm)', fontWeight: 600,
               color: 'var(--color-success)',
             }}>
               <CheckCircle2 size={15} />
-              Datos guardados
+              {feedbackMessage}
             </span>
           )}
-          <Button
-            variant="secondary"
-            size="sm"
-            type="button"
-            onClick={handleGuardarDatos}
-          >
-            <Save size={14} />
-            Guardar mis datos
-          </Button>
+          {!embedded && (
+            <Button variant="secondary" size="sm" type="button" onClick={handleGuardarDatos}>
+              <Save size={14} />
+              Guardar mis datos
+            </Button>
+          )}
+          {onSave && (
+            <Button variant="secondary" size="sm" type="button" onClick={handleGuardarDocumento} disabled={saving}>
+              <Save size={14} />
+              {saving ? 'Guardando...' : 'Guardar documento'}
+            </Button>
+          )}
           <Button variant="primary" size="sm" onClick={handleExportar} type="button">
             Exportar
           </Button>
-          <ThemeToggle />
         </div>
       </div>
 
-      {/* ── Layout dos columnas ─────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 560px), 1fr))',
@@ -187,13 +244,33 @@ export function LegalDocEngine<T extends LegalDoc>({
         maxWidth: '1400px',
         margin: '0 auto',
       }}>
-
-        {/* COLUMNA IZQUIERDA — formulario inyectado por la página */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+          {clientes.length > 0 && clienteField && (
+            <fieldset className="fieldset-v3">
+              <legend className="fieldset-legend">Cliente frecuente</legend>
+              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+                <div className="input-group">
+                  <label className="input-label">Selecciona un cliente guardado</label>
+                  <select
+                    className="select-v3"
+                    value={selectedClientId}
+                    onChange={(event) => handleSeleccionCliente(event.target.value)}
+                  >
+                    <option value="">Selecciona un cliente guardado</option>
+                    {clientes.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+          )}
+
           {renderForm(helpers)}
         </div>
 
-        {/* COLUMNA DERECHA — preview estática (solo xl+) */}
         <div className="hidden xl:flex" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
           <p style={sectionLabelStyle}>Vista previa en tiempo real</p>
           <div style={{
@@ -208,11 +285,14 @@ export function LegalDocEngine<T extends LegalDoc>({
               <LegalDocPreview documento={docPreview} />
             </div>
           </div>
+          {saveError && (
+            <p className="input-error-msg" style={{ marginTop: 'var(--space-3)' }}>
+              {saveError}
+            </p>
+          )}
         </div>
-
       </div>
 
-      {/* ── Modal exportar ──────────────────────────────────────────────────── */}
       {modalAbierto && (
         <LegalDocModal
           documento={docPreview}
