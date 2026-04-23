@@ -1,132 +1,313 @@
 /**
- * UsuariosSection.tsx
- * Sección de usuarios. Placeholder con roadmap para cuando haya auth real.
+ * UsuariosFacturasSection.tsx
+ * Sección de administración para gestionar usuarios y sus facturas.
  */
-import { useAdminStore } from '../../../store/adminStore'
-import { Users, Shield, Clock, TrendingUp, ExternalLink } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../../../lib/supabase'
+import { 
+  Users, Search, ChevronRight, FileText, 
+  Trash2, Eye, ArrowLeft, Calendar, 
+  CreditCard, ShieldCheck, Clock
+} from 'lucide-react'
+
+type UserProfile = {
+  id: string
+  email: string
+  created_at: string
+  plan?: string
+}
+
+type Factura = {
+  id: string
+  numero: string
+  fecha: string
+  total: number
+  estado: string
+  cliente_nombre: string
+  datos_json: any
+  user_id: string
+}
 
 export function UsuariosSection() {
-  const events = useAdminStore((s) => s.events)
+  const [view, setView] = useState<'users' | 'user_detail'>('users')
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
+  const [users, setUsers] = useState<UserProfile[]>([])
+  const [userFacturas, setUserFacturas] = useState<Factura[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedFactura, setSelectedFactura] = useState<Factura | null>(null)
 
-  // Sesiones únicas aproximadas (eventos en ventanas de 30min)
-  const uniqueSessions = (() => {
-    if (events.length === 0) return 0
-    let sessions = 1
-    for (let i = 1; i < events.length; i++) {
-      const diff = new Date(events[i - 1].timestamp).getTime() - new Date(events[i].timestamp).getTime()
-      if (diff > 30 * 60 * 1000) sessions++
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  async function fetchUsers() {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      setUsers(data || [])
+    } catch (err) {
+      console.error('Error fetching users:', err)
+    } finally {
+      setLoading(false)
     }
-    return sessions
-  })()
+  }
 
-  const toolEvents = events.filter(e => e.tipo === 'tool_use' || e.tipo === 'pdf_export')
+  async function fetchUserFacturas(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('facturas')
+        .select('*')
+        .eq('user_id', userId)
+        .order('fecha', { ascending: false })
+      
+      if (error) throw error
+      setUserFacturas(data || [])
+    } catch (err) {
+      console.error('Error fetching facturas:', err)
+    }
+  }
+
+  const handleSelectUser = (user: UserProfile) => {
+    setSelectedUser(user)
+    fetchUserFacturas(user.id)
+    setView('user_detail')
+  }
+
+  const handleDeleteFactura = async (id: string) => {
+    if (!confirm('¿Seguro que quieres borrar esta factura? Esta acción solo está permitida en desarrollo.')) return
+    
+    try {
+      const { error } = await supabase
+        .from('facturas')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      setUserFacturas(prev => prev.filter(f => f.id !== id))
+    } catch (err) {
+      alert('Error al borrar la factura')
+    }
+  }
+
+  const filteredUsers = users.filter(u => 
+    u.email?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  if (view === 'user_detail' && selectedUser) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+          <button 
+            onClick={() => setView('users')}
+            className="btn-v3-secondary"
+            style={{ padding: 'var(--space-2)' }}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800 }}>
+              Detalle de Usuario
+            </h1>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+              {selectedUser.email}
+            </p>
+          </div>
+        </div>
+
+        <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-6)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-surface-offset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
+              <Calendar size={20} />
+            </div>
+            <div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', fontWeight: 600, textTransform: 'uppercase' }}>Registro</p>
+              <p style={{ fontWeight: 600 }}>{new Date(selectedUser.created_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-surface-offset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-success)' }}>
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', fontWeight: 600, textTransform: 'uppercase' }}>Estado Plan</p>
+              <span className={`badge ${selectedUser.plan === 'premium' ? 'badge-primary' : 'badge-muted'}`}>
+                {selectedUser.plan || 'Free'}
+              </span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-surface-offset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-copper)' }}>
+              <FileText size={20} />
+            </div>
+            <div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', fontWeight: 600, textTransform: 'uppercase' }}>Facturas</p>
+              <p style={{ fontWeight: 600 }}>{userFacturas.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Facturas emitidas</h2>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 'var(--text-sm)' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-surface-offset)', borderBottom: '1px solid var(--color-border)' }}>
+                  <th style={{ padding: 'var(--space-4)' }}>Número</th>
+                  <th style={{ padding: 'var(--space-4)' }}>Cliente</th>
+                  <th style={{ padding: 'var(--space-4)' }}>Fecha</th>
+                  <th style={{ padding: 'var(--space-4)' }}>Importe</th>
+                  <th style={{ padding: 'var(--space-4)' }}>Estado</th>
+                  <th style={{ padding: 'var(--space-4)', textAlign: 'right' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userFacturas.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--color-text-faint)' }}>
+                      No hay facturas registradas para este usuario
+                    </td>
+                  </tr>
+                ) : (
+                  userFacturas.map(f => (
+                    <tr key={f.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td style={{ padding: 'var(--space-4)', fontWeight: 600 }}>{f.numero || 'S/N'}</td>
+                      <td style={{ padding: 'var(--space-4)' }}>{f.cliente_nombre}</td>
+                      <td style={{ padding: 'var(--space-4)' }}>{new Date(f.fecha).toLocaleDateString()}</td>
+                      <td style={{ padding: 'var(--space-4)', fontWeight: 600 }}>{f.total.toLocaleString()}€</td>
+                      <td style={{ padding: 'var(--space-4)' }}>
+                        <span className={`badge ${
+                          f.estado === 'cobrada' ? 'badge-success' : 
+                          f.estado === 'borrador' ? 'badge-muted' : 'badge-primary'
+                        }`}>
+                          {f.estado}
+                        </span>
+                      </td>
+                      <td style={{ padding: 'var(--space-4)', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                          <button 
+                            onClick={() => setSelectedFactura(f)}
+                            className="btn-v3-secondary" 
+                            style={{ padding: 'var(--space-1) var(--space-2)' }}
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteFactura(f.id)}
+                            className="btn-v3-secondary" 
+                            style={{ padding: 'var(--space-1) var(--space-2)', color: 'var(--color-error)' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {selectedFactura && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+            <div className="card" style={{ maxWidth: '600px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+                <h3 style={{ fontWeight: 800 }}>JSON Detalle Factura</h3>
+                <button onClick={() => setSelectedFactura(null)} className="btn-v3-secondary" style={{ padding: 'var(--space-1) var(--space-2)' }}>×</button>
+              </div>
+              <pre style={{ background: 'var(--color-surface-offset)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', fontSize: '12px', overflow: 'auto' }}>
+                {JSON.stringify(selectedFactura.datos_json, null, 2)}
+              </pre>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-
       <div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--color-text)', marginBottom: 'var(--space-1)' }}>
-          Usuarios
+          Usuarios y Facturas
         </h1>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-          HerramientasAutonomos no tiene sistema de cuentas actualmente — la app es completamente anónima.
+          Gestión de usuarios registrados y auditoría de documentos fiscales.
         </p>
       </div>
 
-      {/* Estado actual */}
-      <div style={{
-        background: 'var(--color-surface)', border: '2px solid var(--color-border)',
-        borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)',
-        boxShadow: '4px 4px 0 var(--color-border)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-5)',
-        textAlign: 'center',
-      }}>
-        <div style={{
-          width: '56px', height: '56px',
-          background: 'var(--color-surface-offset)',
-          border: '2px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Users size={22} style={{ color: 'var(--color-text-muted)' }} />
-        </div>
-        <div>
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
-            Sin sistema de autenticación
-          </p>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', maxWidth: '420px', lineHeight: 1.7 }}>
-            Los usuarios usan la plataforma de forma anónima, sin registro. Todos los datos se procesan en su navegador — nunca llegan a ningún servidor.
-          </p>
-        </div>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
-          padding: 'var(--space-2) var(--space-4)',
-          background: 'var(--color-success-highlight)',
-          border: '1.5px solid var(--color-success)',
-          borderRadius: 'var(--radius-full)',
-          fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-success)',
-        }}>
-          <Shield size={12} />
-          Privacidad total para el usuario final
+      <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Search size={18} style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-faint)' }} />
+          <input 
+            type="text" 
+            placeholder="Buscar por email..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="input-v3"
+            style={{ paddingLeft: '2.5rem' }}
+          />
         </div>
       </div>
 
-      {/* Métricas de sesiones aproximadas */}
-      <div>
-        <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--color-text-faint)', marginBottom: 'var(--space-4)' }}>
-          Métricas de sesiones (estimación local)
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 'var(--space-4)' }}>
-          {[
-            { label: 'Sesiones aprox.', value: uniqueSessions, icon: Users, sub: 'en este navegador' },
-            { label: 'Interacciones', value: toolEvents.length, icon: TrendingUp, sub: 'usos y exportaciones' },
-            { label: 'Eventos totales', value: events.length, icon: Clock, sub: 'últimos 30 días' },
-          ].map(({ label, value, icon: Icon, sub }) => (
-            <div key={label} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <Icon size={16} style={{ color: 'var(--color-text-faint)' }} />
-              <div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-1)' }}>{label}</p>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>{value}</p>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '4px' }}>{sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Roadmap */}
-      <div style={{
-        background: 'var(--color-surface)', border: '2px solid var(--color-border)',
-        borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)',
-        boxShadow: '4px 4px 0 var(--color-border)',
-      }}>
-        <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-5)' }}>
-          Roadmap: autenticación (cuando sea necesario)
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {[
-            { title: 'Google / GitHub OAuth via Supabase', desc: 'Una sola línea de configuración. Sin contraseñas que gestionar. El usuario se registra con su cuenta existente.', tag: 'Recomendado' },
-            { title: 'Guardado de documentos en la nube', desc: 'Con auth activo, cada usuario tiene su propia tabla de facturas y presupuestos en Supabase. Row Level Security garantiza que solo ven sus datos.' },
-            { title: 'Historial de exportaciones', desc: 'Registro de todos los PDFs generados por usuario, con posibilidad de regenerarlos.' },
-          ].map((item, i) => (
-            <div key={i} style={{ display: 'flex', gap: 'var(--space-4)' }}>
-              <div style={{ width: '20px', height: '20px', flexShrink: 0, borderRadius: 'var(--radius-full)', background: 'var(--color-surface-offset)', border: '2px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: 'var(--color-text-faint)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-                {i + 1}
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '4px' }}>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text)' }}>{item.title}</span>
-                  {item.tag && <span className="badge badge-primary" style={{ fontSize: '10px', padding: '1px 7px' }}>{item.tag}</span>}
-                </div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <a href="https://supabase.com/docs/guides/auth" target="_blank" rel="noopener noreferrer"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: 'var(--space-5)', fontSize: 'var(--text-xs)', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>
-          Documentación de Supabase Auth <ExternalLink size={11} />
-        </a>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 'var(--text-sm)' }}>
+          <thead>
+            <tr style={{ background: 'var(--color-surface-offset)', borderBottom: '1px solid var(--color-border)' }}>
+              <th style={{ padding: 'var(--space-4)' }}>Usuario / Email</th>
+              <th style={{ padding: 'var(--space-4)' }}>Plan</th>
+              <th style={{ padding: 'var(--space-4)' }}>Suscripción</th>
+              <th style={{ padding: 'var(--space-4)' }}>Registrado</th>
+              <th style={{ padding: 'var(--space-4)', textAlign: 'right' }}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} style={{ padding: 'var(--space-8)', textAlign: 'center' }}>Cargando usuarios...</td></tr>
+            ) : filteredUsers.length === 0 ? (
+              <tr><td colSpan={5} style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--color-text-faint)' }}>No se encontraron usuarios</td></tr>
+            ) : (
+              filteredUsers.map(user => (
+                <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <td style={{ padding: 'var(--space-4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-primary-highlight)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                        {user.email?.[0].toUpperCase()}
+                      </div>
+                      <span style={{ fontWeight: 600 }}>{user.email}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: 'var(--space-4)' }}>
+                    <span className={`badge ${user.plan === 'premium' ? 'badge-primary' : 'badge-muted'}`}>
+                      {user.plan || 'Free'}
+                    </span>
+                  </td>
+                  <td style={{ padding: 'var(--space-4)', color: 'var(--color-text-faint)' }}>
+                    {user.plan === 'premium' ? <CreditCard size={14} /> : '—'}
+                  </td>
+                  <td style={{ padding: 'var(--space-4)', color: 'var(--color-text-muted)' }}>
+                    {new Date(user.created_at).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: 'var(--space-4)', textAlign: 'right' }}>
+                    <button 
+                      onClick={() => handleSelectUser(user)}
+                      className="btn-v3-secondary"
+                      style={{ gap: 'var(--space-1)' }}
+                    >
+                      Ver facturas <ChevronRight size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )
