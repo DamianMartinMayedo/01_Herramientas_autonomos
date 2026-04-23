@@ -1,13 +1,13 @@
 /**
  * AdminPage.tsx
  * Página principal del panel de administración.
- * Ruta: /admin
+ * Ruta: /adminUpdate AdminPage to use enhanced UsuariosSectionIntegración de UsuariosSection en AdminPage
  */
 import { useState } from 'react'
 import { AdminLayout, type AdminSection } from './AdminLayout'
-import { OverviewSection }     from './sections/OverviewSection'
-import { AnalyticsSection }    from './sections/AnalyticsSection'
-import { BlogSection }         from './sections/BlogSection'
+import { OverviewSection }    from './sections/OverviewSection'
+import { AnalyticsSection }   from './sections/AnalyticsSection'
+import { BlogSection }        from './sections/BlogSection'
 import { HerramientasSection } from './sections/HerramientasSection'
 import { UsuariosSection }     from './sections/UsuariosSection'
 
@@ -15,11 +15,11 @@ export function AdminPage() {
   const [section, setSection] = useState<AdminSection>('overview')
 
   const content = {
-    overview:      <OverviewSection />,
-    analytics:     <AnalyticsSection />,
-    blog:          <BlogSection />,
-    herramientas:  <HerramientasSection />,
-    usuarios:      <UsuariosSection />,
+    overview:     <OverviewSection />,
+    analytics:    <AnalyticsSection />,
+    blog:         <BlogSection />,
+    herramientas: <HerramientasSection />,
+    usuarios:     <UsuariosSection />,
   }[section]
 
   return (
