@@ -6,7 +6,15 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabaseClient'
-import { Plus, FileText, Trash2, ExternalLink } from 'lucide-react'
+import { Plus, FileText, Trash2, ExternalLink, CheckCircle2, Undo2, Send } from 'lucide-react'
+import {
+  canDeleteFactura,
+  canMarkFacturaAsCobrada,
+  canMarkFacturaAsEmitida,
+  canMarkFacturaAsNoCobrada,
+  FACTURA_STATUS_LABELS,
+  isFacturaStatus,
+} from '../../types/facturaStatus'
 
 export type TipoDocumento =
   | 'facturas' | 'presupuestos' | 'albaranes'
@@ -30,6 +38,7 @@ const TABLA_CONFIG: Record<TipoDocumento, {
 
 const ESTADO_COLORS: Record<string, string> = {
   borrador:    'var(--color-text-faint)',
+  emitida:     'var(--color-blue)',
   enviada:     'var(--color-blue)',
   enviado:     'var(--color-blue)',
   cobrada:     'var(--color-success)',
@@ -91,11 +100,36 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
   }, [refreshKey, tipo, userId])
 
   const handleDelete = async (id: string) => {
+    const row = rows.find((item) => item.id === id)
+    if (!row) return
+    if (tipo === 'facturas' && !canDeleteFactura(row.estado ?? '')) {
+      alert('Solo puedes eliminar facturas en estado borrador. Para conservar trazabilidad fiscal, cambia el estado en lugar de borrar.')
+      return
+    }
     if (!confirm('¿Eliminar este documento? Esta acción no se puede deshacer.')) return
     setDeleting(id)
-    await supabase.from(tipo).delete().eq('id', id)
+    const { error } = await supabase.from(tipo).delete().eq('id', id)
+    if (error) {
+      alert('No se pudo eliminar el documento. Inténtalo de nuevo.')
+      setDeleting(null)
+      return
+    }
     setRows(prev => prev.filter(r => r.id !== id))
     setDeleting(null)
+  }
+
+  const handleFacturaStatus = async (id: string, estado: 'cobrada' | 'emitida') => {
+    const { error } = await supabase
+      .from('facturas')
+      .update({ estado })
+      .eq('id', id)
+
+    if (error) {
+      alert('No se pudo actualizar el estado de la factura.')
+      return
+    }
+
+    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, estado } : row)))
   }
 
   const handleCrear = () => {
@@ -185,6 +219,9 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
             const estado   = row.estado ?? ''
             const fecha    = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES') : ''
             const estadoColor = ESTADO_COLORS[estado] ?? 'var(--color-text-muted)'
+            const estadoLabel = tipo === 'facturas' && isFacturaStatus(estado)
+              ? FACTURA_STATUS_LABELS[estado]
+              : estado
 
             return (
               <div
@@ -220,7 +257,7 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                         background: `color-mix(in oklch, ${estadoColor} 12%, var(--color-surface-2))`,
                         border: `1px solid color-mix(in oklch, ${estadoColor} 30%, var(--color-border))`,
                         borderRadius: 'var(--radius-full)', padding: '1px 7px',
-                      }}>{estado}</span>
+                      }}>{estadoLabel}</span>
                     )}
                   </div>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>
@@ -280,6 +317,63 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                   >
                     <Trash2 size={13} />
                   </button>
+                  {tipo === 'facturas' && canMarkFacturaAsCobrada(estado) && (
+                    <button
+                      onClick={() => { void handleFacturaStatus(row.id, 'cobrada') }}
+                      title="Marcar como cobrada"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 32, height: 32, borderRadius: 'var(--radius-md)',
+                        border: '1.5px solid var(--color-border)',
+                        background: 'var(--color-surface-2)',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                        transition: 'background 100ms, color 100ms',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-success-highlight)'; e.currentTarget.style.color = 'var(--color-success)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
+                    >
+                      <CheckCircle2 size={13} />
+                    </button>
+                  )}
+                  {tipo === 'facturas' && canMarkFacturaAsEmitida(estado) && (
+                    <button
+                      onClick={() => { void handleFacturaStatus(row.id, 'emitida') }}
+                      title="Marcar como emitida"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 32, height: 32, borderRadius: 'var(--radius-md)',
+                        border: '1.5px solid var(--color-border)',
+                        background: 'var(--color-surface-2)',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                        transition: 'background 100ms, color 100ms',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-blue-highlight)'; e.currentTarget.style.color = 'var(--color-blue)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
+                    >
+                      <Send size={13} />
+                    </button>
+                  )}
+                  {tipo === 'facturas' && canMarkFacturaAsNoCobrada(estado) && (
+                    <button
+                      onClick={() => { void handleFacturaStatus(row.id, 'emitida') }}
+                      title="Marcar como no cobrada"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 32, height: 32, borderRadius: 'var(--radius-md)',
+                        border: '1.5px solid var(--color-border)',
+                        background: 'var(--color-surface-2)',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                        transition: 'background 100ms, color 100ms',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-warning-highlight)'; e.currentTarget.style.color = 'var(--color-warning)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
+                    >
+                      <Undo2 size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
             )

@@ -21,6 +21,7 @@ interface StatsState {
   ndas: number
   reclamaciones: number
   totalFacturado: number
+  totalPendienteCobro: number
 }
 
 const STAT_CARDS = [
@@ -41,7 +42,7 @@ export function UserDashboard({ onNav }: Props) {
   const { profile } = useProfile()
   const [stats, setStats] = useState<StatsState>({
     facturas: 0, presupuestos: 0, albaranes: 0,
-    contratos: 0, ndas: 0, reclamaciones: 0, totalFacturado: 0,
+    contratos: 0, ndas: 0, reclamaciones: 0, totalFacturado: 0, totalPendienteCobro: 0,
   })
   const [loadingStats, setLoadingStats] = useState(true)
   const userId = user?.id
@@ -56,7 +57,7 @@ export function UserDashboard({ onNav }: Props) {
     async function fetchStats() {
       setLoadingStats(true)
       const [f, p, a, c, n, r] = await Promise.all([
-        supabase.from('facturas').select('id, total', { count: 'exact' }).eq('user_id', userId),
+        supabase.from('facturas').select('id, total, estado', { count: 'exact' }).eq('user_id', userId),
         supabase.from('presupuestos').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('albaranes').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('contratos').select('id', { count: 'exact' }).eq('user_id', userId),
@@ -66,7 +67,12 @@ export function UserDashboard({ onNav }: Props) {
 
       if (!active) return
 
-      const totalFacturado = (f.data ?? []).reduce((acc: number, row: { total: number }) => acc + Number(row.total ?? 0), 0)
+      const totalFacturado = (f.data ?? [])
+        .filter((row: { estado?: string }) => row.estado === 'cobrada')
+        .reduce((acc: number, row: { total: number }) => acc + Number(row.total ?? 0), 0)
+      const totalPendienteCobro = (f.data ?? [])
+        .filter((row: { estado?: string }) => row.estado === 'emitida')
+        .reduce((acc: number, row: { total: number }) => acc + Number(row.total ?? 0), 0)
       setStats({
         facturas: f.count ?? 0,
         presupuestos: p.count ?? 0,
@@ -75,6 +81,7 @@ export function UserDashboard({ onNav }: Props) {
         ndas: n.count ?? 0,
         reclamaciones: r.count ?? 0,
         totalFacturado,
+        totalPendienteCobro,
       })
       setLoadingStats(false)
     }
@@ -122,9 +129,12 @@ export function UserDashboard({ onNav }: Props) {
           <TrendingUp size={22} style={{ color: 'var(--color-primary)' }} />
         </div>
         <div>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Total facturado</p>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Ingresos cobrados</p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-text)', fontVariantNumeric: 'tabular-nums' }}>
             {loadingStats ? '—' : `${stats.totalFacturado.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`}
+          </p>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
+            Pendiente de cobro: {loadingStats ? '—' : `${stats.totalPendienteCobro.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`}
           </p>
         </div>
       </div>

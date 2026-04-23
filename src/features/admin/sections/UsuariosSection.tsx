@@ -5,10 +5,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
 import { 
-  Users, Search, ChevronRight, FileText, 
+  Search, ChevronRight, FileText, 
   Trash2, Eye, ArrowLeft, Calendar, 
   CreditCard, ShieldCheck, Clock
 } from 'lucide-react'
+import { FACTURA_STATUS_LABELS, isFacturaStatus, type FacturaStatus } from '../../../types/facturaStatus'
 
 type UserProfile = {
   id: string
@@ -73,6 +74,19 @@ export function UsuariosSection() {
     }
   }
 
+  async function handleUpdateFacturaStatus(id: string, estado: FacturaStatus) {
+    try {
+      const { error } = await supabase
+        .from('facturas')
+        .update({ estado })
+        .eq('id', id)
+      if (error) throw error
+      setUserFacturas((prev) => prev.map((factura) => (factura.id === id ? { ...factura, estado } : factura)))
+    } catch (err) {
+      alert('Error al actualizar estado de la factura')
+    }
+  }
+
   const handleSelectUser = (user: UserProfile) => {
     setSelectedUser(user)
     fetchUserFacturas(user.id)
@@ -100,6 +114,12 @@ export function UsuariosSection() {
   )
 
   if (view === 'user_detail' && selectedUser) {
+    const facturasCobradas = userFacturas.filter((factura) => factura.estado === 'cobrada')
+    const ingresosCobrados = facturasCobradas.reduce((acc, factura) => acc + Number(factura.total ?? 0), 0)
+    const pendienteCobro = userFacturas
+      .filter((factura) => factura.estado === 'emitida')
+      .reduce((acc, factura) => acc + Number(factura.total ?? 0), 0)
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
@@ -150,6 +170,16 @@ export function UsuariosSection() {
               <p style={{ fontWeight: 600 }}>{userFacturas.length}</p>
             </div>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--color-surface-offset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-success)' }}>
+              <Clock size={20} />
+            </div>
+            <div>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', fontWeight: 600, textTransform: 'uppercase' }}>Ingresos cobrados</p>
+              <p style={{ fontWeight: 600 }}>{ingresosCobrados.toLocaleString()}€</p>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>Pendiente: {pendienteCobro.toLocaleString()}€</p>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -185,11 +215,24 @@ export function UsuariosSection() {
                           f.estado === 'cobrada' ? 'badge-success' : 
                           f.estado === 'borrador' ? 'badge-muted' : 'badge-primary'
                         }`}>
-                          {f.estado}
+                          {isFacturaStatus(f.estado) ? FACTURA_STATUS_LABELS[f.estado] : f.estado}
                         </span>
                       </td>
                       <td style={{ padding: 'var(--space-4)', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                          <select
+                            className="select-v3"
+                            value={isFacturaStatus(f.estado) ? f.estado : 'borrador'}
+                            onChange={(event) => {
+                              void handleUpdateFacturaStatus(f.id, event.target.value as FacturaStatus)
+                            }}
+                            style={{ maxWidth: 120 }}
+                          >
+                            <option value="borrador">Borrador</option>
+                            <option value="emitida">Emitida</option>
+                            <option value="cobrada">Cobrada</option>
+                            <option value="anulada">Anulada</option>
+                          </select>
                           <button 
                             onClick={() => setSelectedFactura(f)}
                             className="btn-v3-secondary" 

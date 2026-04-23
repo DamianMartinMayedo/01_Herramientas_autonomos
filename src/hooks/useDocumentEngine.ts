@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { nanoid } from 'nanoid'
 import type { DocumentoBase, LineaDocumento, MetodoPago } from '../types/document.types'
@@ -7,6 +7,7 @@ import { calcularTotales } from '../utils/calculos'
 import { fechaHoy, formatEuro } from '../utils/formatters'
 import { useDocumentStore } from '../store/documentStore'
 import { generarNumeroDocumento } from '../utils/calculos'
+import { supabase } from '../lib/supabaseClient'
 
 const PREFIJOS: Record<DocumentoBase['tipo'], string> = {
   factura: 'FAC',
@@ -43,7 +44,8 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: Doc
     ? ensureDocumentDefaults(tipo, initialData)
     : ({
     tipo,
-    numero: generarNumeroDocumento(PREFIJOS[tipo], 1),
+    // En factura el número se asigna al primer guardado en BD.
+    numero: tipo === 'factura' ? '' : generarNumeroDocumento(PREFIJOS[tipo], 1),
     fecha: fechaHoy(),
     emisor: emisorGuardado ?? {
       nombre: '',
@@ -80,6 +82,7 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: Doc
     mode: 'onBlur',
     defaultValues: createDefaultDocument(),
   })
+  const numeroPrevisualizadoRef = useRef(false)
 
   // Limpiar el presupuesto pendiente tras cargarlo para no reutilizarlo
   useEffect(() => {
@@ -87,6 +90,42 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: Doc
       limpiarPresupuestoPendiente()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (tipo !== 'factura' || initialData || numeroPrevisualizadoRef.current) return
+
+    let active = true
+
+    async function preloadFacturaNumero() {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const userId = sessionData.session?.user?.id
+      if (!userId) return
+
+      const anio = new Date().getFullYear()
+      const { data, error } = await supabase
+        .from('document_sequences')
+        .select('last_value')
+        .eq('user_id', userId)
+        .eq('tipo', 'factura')
+        .eq('anio', anio)
+        .maybeSingle()
+
+      if (!active || error) return
+
+      const siguiente = (data?.last_value ?? 0) + 1
+      numeroPrevisualizadoRef.current = true
+      form.setValue('numero', generarNumeroDocumento(PREFIJOS.factura, siguiente), {
+        shouldDirty: false,
+        shouldValidate: false,
+      })
+    }
+
+    void preloadFacturaNumero()
+
+    return () => {
+      active = false
+    }
+  }, [form, initialData, tipo])
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

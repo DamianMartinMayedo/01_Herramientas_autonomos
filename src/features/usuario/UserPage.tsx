@@ -125,7 +125,8 @@ export function UserPage() {
     if (result.data?.id) {
       setEditor((current) => (current ? { ...current, id: result.data?.id } : current))
     }
-    setFlashMessage(`${table === 'facturas' ? 'Factura' : table === 'presupuestos' ? 'Presupuesto' : 'Albarán'} guardado${document.numero ? `: ${document.numero}` : ''}.`)
+    const numeroGuardado = table === 'facturas' ? result.numero : document.numero
+    setFlashMessage(`${table === 'facturas' ? 'Factura' : table === 'presupuestos' ? 'Presupuesto' : 'Albarán'} guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     setTimeout(() => setFlashMessage(null), 3000)
     closeEditor()
     bumpRefresh()

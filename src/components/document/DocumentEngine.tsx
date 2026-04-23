@@ -272,8 +272,18 @@ export function DocumentEngine({
               <div className="form-row">
                 <FormField
                   label="Número *"
-                  {...register('numero', { required: 'El número es obligatorio' })}
+                  {...register('numero', tipo === 'factura' ? {} : { required: 'El número es obligatorio' })}
                   error={errors.numero}
+                  readOnly={tipo === 'factura'}
+                  disabled={tipo === 'factura'}
+                  style={tipo === 'factura'
+                    ? {
+                        background: 'var(--color-surface-offset)',
+                        color: 'var(--color-text-faint)',
+                        cursor: 'not-allowed',
+                        opacity: 0.9,
+                      }
+                    : undefined}
                 />
                 <FormField
                   label="Fecha *"

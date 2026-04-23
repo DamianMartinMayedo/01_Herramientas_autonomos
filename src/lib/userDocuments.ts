@@ -75,6 +75,23 @@ export async function saveBusinessDocument(params: {
   id?: string
 }) {
   const { table, userId, document, totals, id } = params
+  let numeroFinal = document.numero
+
+  if (table === 'facturas' && !id) {
+    const { data: nextData, error: nextError } = await supabase.rpc('next_document_number', {
+      p_tipo: 'factura',
+      p_prefijo: 'FAC',
+      p_user_id: userId,
+    })
+
+    if (nextError) {
+      return { data: null, error: nextError, numero: null as string | null }
+    }
+
+    const row = Array.isArray(nextData) ? nextData[0] : null
+    numeroFinal = (row?.numero as string | undefined) ?? ''
+  }
+
   const payload: Record<string, unknown> =
     table === 'albaranes'
       ? {
@@ -92,7 +109,9 @@ export async function saveBusinessDocument(params: {
         }
       : {
           user_id: userId,
-          numero: document.numero,
+          // Facturas nuevas: numeración asignada en este guardado.
+          // Facturas existentes: no se modifica (inmutabilidad de número).
+          ...(table === 'facturas' && id ? {} : { numero: table === 'facturas' ? numeroFinal : document.numero }),
           fecha: document.fecha,
           cliente_nombre: document.cliente.nombre,
           cliente_nif: document.cliente.nif,
@@ -107,10 +126,11 @@ export async function saveBusinessDocument(params: {
           total: totals.total,
           estado: 'borrador',
           notas: document.notas,
-          datos_json: document,
+          datos_json: { ...document, numero: table === 'facturas' ? numeroFinal : document.numero },
         }
 
-  return writeRowWithRetry({ table, id, payload })
+  const result = await writeRowWithRetry({ table, id, payload })
+  return { ...result, numero: table === 'facturas' ? numeroFinal : document.numero }
 }
 
 export async function saveLegalDocument(params: {
