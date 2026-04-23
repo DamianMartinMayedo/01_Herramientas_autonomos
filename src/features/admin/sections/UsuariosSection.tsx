@@ -3,7 +3,7 @@
  * Sección de administración para gestionar usuarios y sus facturas.
  */
 import { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../../lib/supabaseClient'
 import { 
   Users, Search, ChevronRight, FileText, 
   Trash2, Eye, ArrowLeft, Calendar, 
