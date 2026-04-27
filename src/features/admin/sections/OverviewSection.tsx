@@ -20,21 +20,14 @@ function StatCard({
   const c = colors[accent]
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-      <div style={{
-        width: '36px', height: '36px', borderRadius: 'var(--radius-md)',
-        background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
+    <div className="card flex flex-col gap-4">
+      <div className="icon-box icon-box-md" style={{ background: c.bg }}>
         <Icon size={16} style={{ color: c.color }} />
       </div>
       <div>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-1)' }}>
-          {label}
-        </p>
-        <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
-          {value}
-        </p>
-        {sub && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>{sub}</p>}
+        <p className="stat-label">{label}</p>
+        <p className="stat-value">{value}</p>
+        {sub && <p className="stat-sub">{sub}</p>}
       </div>
     </div>
   )
@@ -42,10 +35,10 @@ function StatCard({
 
 function EventBadge({ tipo }: { tipo: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    pageview:                  { label: 'Visita',           cls: 'badge-muted' },
-    tool_use:                  { label: 'Herramienta',      cls: 'badge-primary' },
-    pdf_export:                { label: 'PDF exportado',    cls: 'badge-success' },
-    presupuesto_to_factura:    { label: '→ Factura',        cls: 'badge-copper' },
+    pageview:               { label: 'Visita',        cls: 'badge-muted' },
+    tool_use:               { label: 'Herramienta',   cls: 'badge-primary' },
+    pdf_export:             { label: 'PDF exportado', cls: 'badge-success' },
+    presupuesto_to_factura: { label: '→ Factura',     cls: 'badge-copper' },
   }
   const { label, cls } = map[tipo] ?? { label: tipo, cls: 'badge-muted' }
   return <span className={`badge ${cls}`}>{label}</span>
@@ -72,21 +65,16 @@ export function OverviewSection() {
   const totalUsos     = herramientas.reduce((acc, h) => acc + h.usosRegistrados, 0)
   const recentEvents  = events.slice(0, 15)
 
-  // Usos últimas 24h
   const h24 = new Date(); h24.setDate(h24.getDate() - 1)
   const eventos24h = events.filter(e => new Date(e.timestamp) > h24).length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+    <div className="section-stack">
 
       {/* Header */}
       <div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--color-text)', marginBottom: 'var(--space-1)' }}>
-          Resumen general
-        </h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-          Estado de la plataforma en tiempo real
-        </p>
+        <h1 className="section-title">Resumen general</h1>
+        <p className="section-sub">Estado de la plataforma en tiempo real</p>
       </div>
 
       {/* KPIs */}
@@ -97,23 +85,15 @@ export function OverviewSection() {
         <StatCard label="Posts publicados" value={published}     sub={`${drafts} en borrador`} icon={FileText}  accent="primary" />
       </div>
 
-      {/* Herramientas — uso por herramienta */}
+      {/* Uso por herramienta */}
       <div>
-        <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--color-text-faint)', marginBottom: 'var(--space-4)' }}>
-          Uso por herramienta
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <p className="section-block-label">Uso por herramienta</p>
+        <div className="flex flex-col gap-2">
           {herramientas.map(h => {
             const pct = totalUsos > 0 ? Math.round((h.usosRegistrados / totalUsos) * 100) : 0
             return (
-              <div key={h.id} style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-                padding: 'var(--space-3) var(--space-4)',
-                background: 'var(--color-surface)',
-                border: '1.5px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', width: '180px', flexShrink: 0 }}>
+              <div key={h.id} className="row-item" style={{ border: '1.5px solid var(--color-border)', padding: 'var(--space-3) var(--space-4)' }}>
+                <div className="flex items-center gap-2" style={{ width: '180px', flexShrink: 0 }}>
                   {h.activa
                     ? <CheckCircle size={13} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
                     : <Circle size={13} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
@@ -122,12 +102,10 @@ export function OverviewSection() {
                     {h.nombre}
                   </span>
                 </div>
-                <div style={{ flex: 1, height: '6px', background: 'var(--color-surface-offset)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${pct}%`, height: '100%',
+                <div className="progress-bar">
+                  <div className="progress-bar-fill" style={{
+                    width: `${pct}%`,
                     background: h.activa ? 'var(--color-primary)' : 'var(--color-border)',
-                    borderRadius: 'var(--radius-full)',
-                    transition: 'width 0.6s ease',
                   }} />
                 </div>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', width: '48px', textAlign: 'right', flexShrink: 0 }}>
@@ -141,33 +119,21 @@ export function OverviewSection() {
 
       {/* Actividad reciente */}
       <div>
-        <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--color-text-faint)', marginBottom: 'var(--space-4)' }}>
-          Actividad reciente
-        </p>
+        <p className="section-block-label">Actividad reciente</p>
 
         {recentEvents.length === 0 ? (
-          <div style={{
-            padding: 'var(--space-10)', textAlign: 'center',
-            background: 'var(--color-surface)', border: '2px dashed var(--color-border)',
-            borderRadius: 'var(--radius-lg)',
-          }}>
-            <Activity size={24} style={{ color: 'var(--color-text-faint)', margin: '0 auto var(--space-3)' }} />
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)' }}>
+          <div className="empty-state">
+            <Activity size={24} style={{ color: 'var(--color-text-faint)', margin: '0 auto var(--space-3)', display: 'block' }} />
+            <p className="empty-state-text">
               Sin eventos registrados aún.<br />
               Los eventos se generan automáticamente cuando los usuarios usan la app.
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+          <div className="flex flex-col gap-1">
             {recentEvents.map(ev => (
-              <div key={ev.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: 'var(--space-2) var(--space-4)',
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-divider)',
-                borderRadius: 'var(--radius-md)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <div key={ev.id} className="row-item" style={{ justifyContent: 'space-between' }}>
+                <div className="flex items-center gap-3">
                   <EventBadge tipo={ev.tipo} />
                   {ev.herramienta && (
                     <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
@@ -175,7 +141,7 @@ export function OverviewSection() {
                     </span>
                   )}
                 </div>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>
+                <span className="flex items-center gap-1" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>
                   <Clock size={11} />
                   {formatRelative(ev.timestamp)}
                 </span>

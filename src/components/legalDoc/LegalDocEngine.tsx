@@ -190,7 +190,7 @@ export function LegalDocEngine<T extends LegalDoc>({
                 aria-label="Volver"
               >
                 <ChevronLeft size={15} />
-                <span className="hidden sm:inline">Volver</span>
+                <span className="show-sm">Volver</span>
               </button>
 
               <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
@@ -271,7 +271,7 @@ export function LegalDocEngine<T extends LegalDoc>({
           {renderForm(helpers)}
         </div>
 
-        <div className="hidden xl:flex" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
+        <div className="show-xl" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
           <p style={sectionLabelStyle}>Vista previa en tiempo real</p>
           <div style={{
             overflow: 'hidden',

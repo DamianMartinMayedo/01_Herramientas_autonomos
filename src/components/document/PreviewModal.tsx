@@ -50,37 +50,32 @@ export function PreviewModal({ documento, totales, clienteEmail, onClose }: Prev
   return (
     <>
       <div
-        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+        className="overlay overlay-darker"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col"
-          style={{ maxHeight: 'calc(100vh - 2rem)' }}
+          className="modal-box modal-lg"
           role="dialog"
           aria-modal="true"
           aria-label="Vista previa del documento"
         >
           {/* Cabecera */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+          <div className="modal-header">
             <div>
-              <h2 className="text-lg font-semibold text-stone-900">Exportar</h2>
-              <p className="text-sm text-stone-500">
+              <h2 className="modal-header-title">Exportar</h2>
+              <p className="modal-header-sub">
                 Al guardar, elige <strong>Guardar como PDF</strong> en el destino de impresión
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
-              aria-label="Cerrar"
-            >
+            <button onClick={onClose} className="modal-close-btn" aria-label="Cerrar">
               <X size={20} />
             </button>
           </div>
 
           {/* Preview escalada y centrada */}
-          <div className="bg-stone-100 flex-1 overflow-auto py-6 flex justify-center" style={{ minHeight: 0 }}>
+          <div className="modal-body-scroll">
             <div style={{ zoom: PREVIEW_ZOOM }}>
-              <div className="shadow-lg">
+              <div className="doc-shadow">
                 <DocumentPreview
                   ref={previewRef}
                   documento={documento}
@@ -92,14 +87,14 @@ export function PreviewModal({ documento, totales, clienteEmail, onClose }: Prev
 
           {/* Error */}
           {error && (
-            <div className="mx-6 mt-4 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <div className="error-box">
+              <AlertTriangle size={16} className="error-box-icon" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Acciones */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-stone-200">
+          <div className="modal-footer">
             <Button variant="secondary" onClick={onClose} disabled={generando}>
               <Pencil size={16} />
               Volver a editar
@@ -116,7 +111,7 @@ export function PreviewModal({ documento, totales, clienteEmail, onClose }: Prev
               </Button>
               <Button variant="primary" onClick={handleDescargar} disabled={generando}>
                 {generando
-                  ? <Loader2 size={16} className="animate-spin" />
+                  ? <Loader2 size={16} className="spin" />
                   : <Printer size={16} />}
                 {generando ? 'Abriendo...' : 'Guardar como PDF'}
               </Button>

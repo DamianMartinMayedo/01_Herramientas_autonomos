@@ -58,7 +58,7 @@ export function BlogPostPage() {
 
   if (!post) {
     return (
-      <div className="page-root" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)' }}>
+      <div className="page-root page-loading">
         <p style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-text)' }}>Artículo no encontrado</p>
         <button className="btn btn-primary btn-sm" onClick={() => navigate('/blog')}>
           <ArrowLeft size={14} /> Volver al blog
@@ -72,7 +72,7 @@ export function BlogPostPage() {
   return (
     
     
-    <div className="page-root" style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="page-root">
 
       <SiteHeader />
 

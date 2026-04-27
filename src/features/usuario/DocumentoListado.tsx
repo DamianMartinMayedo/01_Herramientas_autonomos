@@ -167,7 +167,7 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
             {loading ? 'Cargando…' : `${rows.length} ${rows.length === 1 ? cfg.labelSingular : cfg.label.toLowerCase()}`}
           </p>
         </div>
-        <button onClick={handleCrear} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <button onClick={handleCrear} className="btn btn-primary">
           <Plus size={15} /> Nueva {cfg.labelSingular}
         </button>
       </div>
@@ -203,7 +203,7 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-5)', maxWidth: '36ch' }}>
             Crea tu primer{cfg.labelSingular === 'NDA' || cfg.labelSingular === 'albarán' ? '' : 'a'} {cfg.labelSingular} con el generador de herramientas.
           </p>
-          <button onClick={handleCrear} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <button onClick={handleCrear} className="btn btn-primary">
             <Plus size={15} /> Crear {cfg.labelSingular}
           </button>
         </div>

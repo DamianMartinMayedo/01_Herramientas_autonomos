@@ -125,7 +125,7 @@ export function IvaIrpfPage() {
       <main className="page-main section-pb">
         <div className="tool-page-inner">
           <nav className="post-breadcrumb">
-            <Link to="/" className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Link to="/" className="back-link">
               <ArrowLeft size={13} /> Inicio
             </Link>
           </nav>

@@ -145,7 +145,7 @@ function ToolCard({ h }: { h: Herramienta }) {
       </div>
 
       <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>{h.nombre}</h3>
-      <p className="card-body" style={{ flex: 1 }}>{h.descripcion}</p>
+      <p className="card-body">{h.descripcion}</p>
 
       {isActive && (
         <div className="tool-cta">
@@ -153,22 +153,13 @@ function ToolCard({ h }: { h: Herramienta }) {
             Ir a la herramienta <ArrowRight size={15} />
           </div>
           {h.id === 'factura' && (
-            <div className="relative flex items-center">
-              <div className="peer cursor-default">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
-              </div>
-              <div className="
-                absolute bottom-full right-0 mb-2 w-56 z-20
-                bg-zinc-900 dark:bg-zinc-800 text-white text-xs
-                rounded-lg px-3 py-2.5 leading-relaxed shadow-lg
-                opacity-0 pointer-events-none
-                peer-hover:opacity-100 peer-hover:pointer-events-auto
-                transition-opacity duration-150
-              ">
+            <div className="tooltip-wrap">
+              <AlertTriangle style={{ color: 'var(--color-gold)', width: 20, height: 20 }} />
+              <div className="tooltip-content">
                 Esta herramienta genera facturas en formato PDF pero
                 <strong> no está conectada a Verifactu</strong>. En el futuro
                 se integrará con el sistema oficial de la AEAT.
-                <div className="absolute top-full right-3 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
+                <div className="tooltip-arrow" />
               </div>
             </div>
           )}
@@ -290,7 +281,7 @@ export function HomePage() {
 
           {blogPosts === null ? (
             <div className="blog-empty">
-              <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent', margin: '0 auto var(--space-3)' }} />
+              <div className="spinner spinner-md spinner-primary" style={{ margin: '0 auto var(--space-3)' }} />
               <p>Cargando artículos…</p>
             </div>
           ) : blogPosts.length === 0 ? (

@@ -398,8 +398,7 @@ export const LegalDocPreview = forwardRef<HTMLDivElement, LegalDocPreviewProps>(
     return (
       <div
         ref={ref}
-        className="bg-white w-[210mm] min-h-[297mm] p-10 text-zinc-800 text-sm relative"
-        style={{ fontFamily: "'Figtree', ui-sans-serif, system-ui, sans-serif" }}
+        className="doc-page doc-page-auto"
       >
         {/* CABECERA */}
         <div style={{ borderBottom: '2px solid #111827', paddingBottom: '0.75rem', marginBottom: '1rem' }}>

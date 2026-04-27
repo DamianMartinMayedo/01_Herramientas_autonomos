@@ -30,17 +30,13 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
-      <div style={{
-        background: 'var(--color-bg)', border: '2px solid var(--color-border)',
-        borderRadius: 'var(--radius-xl)', boxShadow: '5px 5px 0 var(--color-border)',
-        width: '100%', maxWidth: '480px', overflow: 'hidden',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-divider)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)' }}>Editar herramienta</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={18} /></button>
+    <div className="overlay overlay-dark overlay-z200">
+      <div className="admin-modal-box admin-modal-md">
+        <div className="admin-modal-header">
+          <h2 className="admin-modal-title">Editar herramienta</h2>
+          <button onClick={onClose} className="modal-close-btn"><X size={18} /></button>
         </div>
-        <div style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div className="admin-modal-body admin-modal-body--gap5">
           <div className="input-group">
             <label className="input-label">Nombre</label>
             <input className="input-v3" value={nombre} onChange={e => setNombre(e.target.value)} />
@@ -58,7 +54,7 @@ function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
             <span>Mostrar como "Mejorando"</span>
           </label>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
+        <div className="admin-modal-footer">
           <button className="btn btn-secondary btn-sm" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary btn-sm" onClick={save}>Guardar</button>
         </div>
@@ -120,7 +116,6 @@ export function HerramientasSection() {
       }
     }
 
-    // activacion
     return {
       title:         h.activa ? `Desactivar "${h.nombre}"` : `Activar "${h.nombre}"`,
       description:   h.activa
@@ -134,11 +129,11 @@ export function HerramientasSection() {
   const modalProps = getModalProps(modalTarget)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+    <div className="section-stack">
 
       <div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--color-text)', marginBottom: 'var(--space-1)' }}>Herramientas</h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>Activa o desactiva herramientas. Los cambios se reflejan en el Home instantáneamente.</p>
+        <h1 className="section-title">Herramientas</h1>
+        <p className="section-sub">Activa o desactiva herramientas. Los cambios se reflejan en el Home instantáneamente.</p>
       </div>
 
       <div style={{
@@ -151,22 +146,11 @@ export function HerramientasSection() {
 
       {Object.entries(byCategoria).map(([cat, items]) => (
         <div key={cat}>
-          <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--color-text-faint)', marginBottom: 'var(--space-4)' }}>
-            {labels[cat] ?? cat}
-          </p>
+          <p className="section-block-label">{labels[cat] ?? cat}</p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div className="flex flex-col gap-3">
             {items.map(h => (
-              <div key={h.id} style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-5)',
-                background: 'var(--color-surface)',
-                border: `2px solid ${h.activa ? 'var(--color-border)' : 'var(--color-divider)'}`,
-                borderRadius: 'var(--radius-lg)',
-                padding: 'var(--space-4) var(--space-5)',
-                boxShadow: h.activa ? '3px 3px 0 var(--color-border)' : 'none',
-                opacity: h.activa ? 1 : 0.65,
-                transition: 'opacity 200ms, box-shadow 200ms',
-              }}>
+              <div key={h.id} className={`h-card${h.activa ? '' : ' h-card--inactive'}`}>
 
                 {/* Status icon */}
                 <div>
@@ -177,8 +161,8 @@ export function HerramientasSection() {
                 </div>
 
                 {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '4px' }}>
+                <div className="min-w-0" style={{ flex: 1 }}>
+                  <div className="flex items-center gap-2 mb-1">
                     <span style={{
                       fontWeight: 600, fontSize: 'var(--text-sm)',
                       color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text)',
@@ -186,34 +170,28 @@ export function HerramientasSection() {
                     }}>
                       {h.nombre}
                     </span>
-                    {h.visible === false && <span className="badge badge-muted" style={{ fontSize: '10px', padding: '1px 7px' }}>Oculta</span>}
-                    {h.proximamente   && <span className="badge badge-copper" style={{ fontSize: '10px', padding: '1px 7px' }}>Próximamente</span>}
-                    {h.mantenimiento  && <span className="badge badge-gold"   style={{ fontSize: '10px', padding: '1px 7px' }}>Mejorando</span>}
+                    {h.visible === false && <span className="badge badge-muted badge-xs">Oculta</span>}
+                    {h.proximamente   && <span className="badge badge-copper badge-xs">Próximamente</span>}
+                    {h.mantenimiento  && <span className="badge badge-gold badge-xs">Mejorando</span>}
                   </div>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                     {h.descripcion}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
+                  <div className="flex items-center gap-4 mt-2">
                     <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', fontFamily: 'var(--font-mono)' }}>{h.ruta}</span>
                     <span style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>{h.usosRegistrados} usos</span>
                   </div>
                 </div>
 
                 {/* Acciones */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
+                <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
 
-                  {/* Ojo: mostrar/ocultar en Home → abre ConfirmModal */}
+                  {/* Ojo: mostrar/ocultar en Home */}
                   <button
                     title={h.visible === false ? 'Mostrar en Home' : 'Ocultar en Home'}
                     onClick={() => setModalTarget({ herramienta: h, accion: 'visibilidad' })}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: '32px', height: '32px',
-                      background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                      color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)',
-                      transition: 'color var(--transition-interactive), border-color var(--transition-interactive)',
-                    }}
+                    className="icon-btn"
+                    style={{ color: h.visible === false ? 'var(--color-text-faint)' : 'var(--color-text-muted)' }}
                     onMouseEnter={e => {
                       e.currentTarget.style.color = h.visible === false ? 'var(--color-success)' : 'var(--color-gold)'
                       e.currentTarget.style.borderColor = h.visible === false ? 'var(--color-success)' : 'var(--color-gold)'
@@ -227,32 +205,15 @@ export function HerramientasSection() {
                   </button>
 
                   {/* Editar */}
-                  <button
-                    onClick={() => setEditing(h)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: '32px', height: '32px',
-                      background: 'var(--color-surface-offset)', border: '1.5px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-text-muted)',
-                    }}
-                  >
+                  <button onClick={() => setEditing(h)} className="icon-btn">
                     <Pencil size={13} />
                   </button>
 
-                  {/* Toggle activa → abre ConfirmModal */}
+                  {/* Toggle activa */}
                   <button
                     onClick={() => setModalTarget({ herramienta: h, accion: 'activacion' })}
                     title={h.activa ? 'Desactivar herramienta' : 'Activar herramienta'}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                      padding: 'var(--space-2) var(--space-3)',
-                      background: h.activa ? 'var(--color-success-highlight)' : 'var(--color-surface-offset)',
-                      border: `1.5px solid ${h.activa ? 'var(--color-success)' : 'var(--color-border)'}`,
-                      borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                      color: h.activa ? 'var(--color-success)' : 'var(--color-text-muted)',
-                      fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-body)',
-                      transition: 'all 150ms',
-                    }}
+                    className={`toggle-btn ${h.activa ? 'toggle-btn--active' : 'toggle-btn--inactive'}`}
                   >
                     {h.activa
                       ? <><ToggleRight size={15} /> Activa</>
@@ -267,10 +228,8 @@ export function HerramientasSection() {
         </div>
       ))}
 
-      {/* Modal editar */}
       {editing && <HerramientaEditor herramienta={editing} onClose={() => setEditing(null)} />}
 
-      {/* Modal confirmar (visibilidad y activación) */}
       {modalTarget && (
         <ConfirmModal
           {...modalProps}

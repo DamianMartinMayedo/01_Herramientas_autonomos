@@ -183,7 +183,7 @@ export function DocumentEngine({
                 aria-label="Volver"
               >
                 <ChevronLeft size={15} />
-                <span className="hidden sm:inline">Volver</span>
+                <span className="show-sm">Volver</span>
               </button>
 
               <span style={{ color: 'var(--color-divider)', userSelect: 'none' }}>|</span>
@@ -242,14 +242,14 @@ export function DocumentEngine({
       </div>
 
       {tipo === 'factura' && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/30 px-6 py-4">
-          <div className="max-w-[1400px] mx-auto flex gap-5">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-3" />
+        <div className="warning-banner">
+          <div className="warning-banner-inner">
+            <AlertTriangle size={20} className="warning-banner-icon" />
             <div>
-              <p className="text-sm text-amber-900 dark:text-amber-200 font-medium">
-                Por el momento esta factura no esta conectada con el sistema Verifactu
+              <p className="warning-banner-title">
+                Por el momento esta factura no está conectada con el sistema Verifactu
               </p>
-              <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">
+              <p className="warning-banner-desc">
                 Es solo para referencia interna. Para facturación legal, consulta con tu gestor o usa software certificado Verifactu.
               </p>
             </div>
@@ -475,7 +475,6 @@ export function DocumentEngine({
                         min: { value: 0.01, message: 'Debe ser mayor que 0' },
                       })}
                       error={errors.lineas?.[index]?.cantidad}
-                      className="w-24"
                       style={{ width: '6rem' }}
                     />
                     <FormField
@@ -706,7 +705,7 @@ export function DocumentEngine({
           </fieldset>
         </div>
 
-        <div className="hidden xl:flex" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
+        <div className="show-xl" style={{ flexDirection: 'column', position: 'sticky', top: '72px', height: 'fit-content' }}>
           <p style={sectionLabelStyle}>Vista previa en tiempo real</p>
           <div style={{
             overflow: 'hidden',

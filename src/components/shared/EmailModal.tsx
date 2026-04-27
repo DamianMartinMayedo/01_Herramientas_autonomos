@@ -69,22 +69,14 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
 
   return (
     <div
-      className="fixed inset-0 z-60 bg-black/40 flex items-center justify-center p-4"
+      className="overlay overlay-dark overlay-z60"
       onClick={(e) => e.target === e.currentTarget && !enviando && onClose()}
-      style={{ zIndex: 60 }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+        className="modal-box modal-sm"
         role="dialog"
         aria-modal="true"
         aria-label="Enviar documento por correo"
-        style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-lg)',
-          overflow: 'hidden',
-        }}
       >
         {/* ── Cabecera ── */}
         <div style={{
@@ -333,7 +325,7 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
               disabled={!puedeEnviar || enviando}
             >
               {enviando
-                ? <Loader2 size={15} className="animate-spin" />
+                ? <Loader2 size={15} className="spin" />
                 : <Send size={15} />}
               {enviando ? 'Enviando...' : `Enviar${correos.length > 1 ? ` (${correos.length})` : ''}`}
             </Button>
