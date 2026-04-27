@@ -51,8 +51,8 @@ export function ConfirmModal({
   const v = VARIANTS[confirmVariant]
 
   return (
-    <div className="overlay overlay-dark overlay-z200" onClick={onCancel}>
-      <div className="admin-modal-box admin-modal-sm" onClick={e => e.stopPropagation()}>
+    <div className="overlay overlay-dark overlay-z200">
+      <div className="admin-modal-box admin-modal-sm">
 
         <div className="admin-modal-header">
           <AlertTriangle size={18} style={{ color: 'var(--color-gold)', flexShrink: 0 }} />

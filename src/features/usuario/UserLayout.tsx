@@ -10,7 +10,7 @@ import {
   LayoutDashboard, FileText, Receipt, Package,
   FileSignature, ShieldOff, AlertCircle,
   Calculator, TrendingUp, Clock,
-  LogOut, Menu, X, ChevronRight, User, Settings,
+  LogOut, X, ChevronRight, User, Settings,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 

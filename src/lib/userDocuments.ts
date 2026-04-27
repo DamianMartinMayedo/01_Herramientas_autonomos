@@ -59,12 +59,21 @@ async function writeRowWithRetry(params: {
       return { data: null, error }
     }
 
-    // DB schema is missing this column; drop it and retry.
-    // We always keep datos_json as the source of truth.
     delete payload[missing]
   }
 
   return { data: null, error: new Error('No se pudo guardar: demasiados reintentos por columnas inexistentes.') as unknown as { message: string } }
+}
+
+async function getNextFacturaNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
+  const { data: nextData, error } = await supabase.rpc('next_document_number', {
+    p_tipo: 'factura',
+    p_prefijo: 'FAC',
+    p_user_id: userId,
+  })
+  if (error) return { numero: null, error }
+  const row = Array.isArray(nextData) ? nextData[0] : null
+  return { numero: (row?.numero as string | undefined) ?? '', error: null }
 }
 
 export async function saveBusinessDocument(params: {
@@ -73,23 +82,17 @@ export async function saveBusinessDocument(params: {
   document: DocumentoBase
   totals: TotalesDocumento
   id?: string
+  finalizar?: boolean
 }) {
-  const { table, userId, document, totals, id } = params
-  let numeroFinal = document.numero
+  const { table, userId, document, totals, id, finalizar = false } = params
+  let numeroFinal: string | null = table === 'facturas' ? null : document.numero
 
-  if (table === 'facturas' && !id) {
-    const { data: nextData, error: nextError } = await supabase.rpc('next_document_number', {
-      p_tipo: 'factura',
-      p_prefijo: 'FAC',
-      p_user_id: userId,
-    })
-
+  if (table === 'facturas' && finalizar) {
+    const { numero, error: nextError } = await getNextFacturaNumero(userId)
     if (nextError) {
-      return { data: null, error: nextError, numero: null as string | null }
+      return { data: null, error: nextError as { message: string }, numero: null as string | null }
     }
-
-    const row = Array.isArray(nextData) ? nextData[0] : null
-    numeroFinal = (row?.numero as string | undefined) ?? ''
+    numeroFinal = numero
   }
 
   const payload: Record<string, unknown> =
@@ -109,9 +112,9 @@ export async function saveBusinessDocument(params: {
         }
       : {
           user_id: userId,
-          // Facturas nuevas: numeración asignada en este guardado.
-          // Facturas existentes: no se modifica (inmutabilidad de número).
-          ...(table === 'facturas' && id ? {} : { numero: table === 'facturas' ? numeroFinal : document.numero }),
+          ...(table === 'facturas'
+            ? (finalizar ? { numero: numeroFinal } : {})
+            : { numero: document.numero }),
           fecha: document.fecha,
           cliente_nombre: document.cliente.nombre,
           cliente_nif: document.cliente.nif,
@@ -124,13 +127,123 @@ export async function saveBusinessDocument(params: {
             ? firstNumber(document.lineas.map((linea) => linea.irpf), 15)
             : 0,
           total: totals.total,
-          estado: 'borrador',
+          estado: table === 'facturas' ? (finalizar ? 'emitida' : 'borrador') : 'borrador',
           notas: document.notas,
-          datos_json: { ...document, numero: table === 'facturas' ? numeroFinal : document.numero },
+          datos_json: {
+            ...document,
+            numero: table === 'facturas'
+              ? (finalizar ? (numeroFinal ?? '') : (document.numero ?? ''))
+              : document.numero,
+          },
         }
 
   const result = await writeRowWithRetry({ table, id, payload })
-  return { ...result, numero: table === 'facturas' ? numeroFinal : document.numero }
+  return {
+    ...result,
+    numero: table === 'facturas' ? (finalizar ? numeroFinal : null) : document.numero,
+  }
+}
+
+export async function emitirFactura(userId: string, id: string) {
+  const { numero, error: nextError } = await getNextFacturaNumero(userId)
+  if (nextError) return { error: nextError as { message: string }, numero: null }
+
+  const { data: current, error: fetchError } = await supabase
+    .from('facturas')
+    .select('datos_json')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) return { error: fetchError, numero: null }
+
+  const datosJson = current?.datos_json as DocumentoBase | null
+  const updatedDatosJson = datosJson ? { ...datosJson, numero: numero ?? '' } : datosJson
+
+  const { error: updateError } = await supabase
+    .from('facturas')
+    .update({ numero, estado: 'emitida', datos_json: updatedDatosJson })
+    .eq('id', id)
+
+  return { error: updateError, numero }
+}
+
+export async function duplicarFactura(userId: string, id: string) {
+  const { data, error: fetchError } = await supabase
+    .from('facturas')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) return { error: fetchError }
+
+  const datosJson = data?.datos_json as DocumentoBase | null
+  if (!datosJson) return { error: new Error('Documento no encontrado') }
+
+  const { error: insertError } = await supabase
+    .from('facturas')
+    .insert({
+      user_id: userId,
+      fecha: data.fecha,
+      cliente_nombre: data.cliente_nombre,
+      cliente_nif: data.cliente_nif,
+      cliente_email: data.cliente_email,
+      cliente_direccion: data.cliente_direccion,
+      concepto: data.concepto,
+      base_imponible: data.base_imponible,
+      tipo_iva: data.tipo_iva,
+      tipo_irpf: data.tipo_irpf,
+      total: data.total,
+      estado: 'borrador',
+      notas: data.notas,
+      datos_json: { ...datosJson, numero: '' },
+    })
+
+  return { error: insertError }
+}
+
+export async function corregirFactura(userId: string, id: string) {
+  const { data, error: fetchError } = await supabase
+    .from('facturas')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) return { error: fetchError }
+
+  const datosJson = data?.datos_json as DocumentoBase | null
+  if (!datosJson) return { error: new Error('Documento no encontrado') }
+
+  const originalNumero = (data.numero as string | undefined) ?? ''
+  const notasRectificacion = `Factura rectificativa de ${originalNumero}${datosJson.notas ? `\n\n${datosJson.notas}` : ''}`
+
+  const nuevoDatosJson = {
+    ...datosJson,
+    numero: '',
+    notas: notasRectificacion,
+    esRectificativa: true,
+    lineas: datosJson.lineas.map((linea) => ({ ...linea, cantidad: -Math.abs(linea.cantidad) })),
+  }
+
+  const { error: insertError } = await supabase
+    .from('facturas')
+    .insert({
+      user_id: userId,
+      fecha: data.fecha,
+      cliente_nombre: data.cliente_nombre,
+      cliente_nif: data.cliente_nif,
+      cliente_email: data.cliente_email,
+      cliente_direccion: data.cliente_direccion,
+      concepto: data.concepto,
+      base_imponible: data.base_imponible,
+      tipo_iva: data.tipo_iva,
+      tipo_irpf: data.tipo_irpf,
+      total: data.total,
+      estado: 'borrador',
+      notas: notasRectificacion,
+      datos_json: nuevoDatosJson,
+    })
+
+  return { error: insertError }
 }
 
 export async function saveLegalDocument(params: {

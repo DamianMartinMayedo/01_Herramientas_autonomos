@@ -140,7 +140,7 @@ export function UserDashboard({ onNav }: Props) {
       </div>
 
       {/* Accesos rápidos */}
-      <div className="fieldset-v3" style={{ padding: 'var(--space-6)' }}>
+      <div className="card" style={{ padding: 'var(--space-6)' }}>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-4)' }}>
           Crear nuevo documento
         </h2>

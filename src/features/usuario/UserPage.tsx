@@ -10,6 +10,7 @@ import { DocumentoListado, type TipoDocumento } from './DocumentoListado'
 import { ConfiguracionPage } from './ConfiguracionPage'
 import { useAuth } from '../../hooks/useAuth'
 import { RouteLoading } from '../../components/routing/RouteLoading'
+import { AlertModal } from '../../components/shared/AlertModal'
 import { CuotaAutonomosWidget } from '../calculadoras/CuotaAutonomosPage'
 import { PrecioHoraWidget } from '../calculadoras/PrecioHoraPage'
 import { IvaIrpfWidget } from '../calculadoras/IvaIrpfPage'
@@ -19,7 +20,7 @@ import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients } from '../../lib/regularClients'
 import type { DocumentoBase, TotalesDocumento } from '../../types/document.types'
 import type { ContratoServiciosDoc, NdaDoc, ReclamacionPagoDoc } from '../../types/legalDoc.types'
@@ -30,7 +31,7 @@ const DOCUMENT_SECTIONS: UserSection[] = [
 ]
 
 type EditorState =
-  | { section: 'facturas'; id?: string; data?: DocumentoBase | null }
+  | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean }
   | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null }
   | { section: 'albaranes'; id?: string; data?: DocumentoBase | null }
   | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null }
@@ -57,6 +58,7 @@ export function UserPage() {
   const [clientesLoading, setClientesLoading] = useState(true)
   const userId = user?.id
   const [flashMessage, setFlashMessage] = useState<string | null>(null)
+  const [alertState, setAlertState] = useState<{ msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
 
   useEffect(() => {
     if (!userId) {
@@ -108,16 +110,10 @@ export function UserPage() {
     } as EditorState)
   }
 
-  const saveBusiness = async (table: 'facturas' | 'presupuestos' | 'albaranes', document: DocumentoBase, totals: TotalesDocumento, id?: string) => {
+  const saveBusiness = async (table: 'facturas' | 'presupuestos' | 'albaranes', document: DocumentoBase, totals: TotalesDocumento, id?: string, finalizar?: boolean) => {
     if (!userId) throw new Error('No hay sesión activa')
     setSaving(true)
-    const result = await saveBusinessDocument({
-      table,
-      userId,
-      document,
-      totals,
-      id,
-    })
+    const result = await saveBusinessDocument({ table, userId, document, totals, id, finalizar })
     setSaving(false)
     if (result.error) {
       throw new Error('No se pudo guardar el documento')
@@ -126,9 +122,63 @@ export function UserPage() {
       setEditor((current) => (current ? { ...current, id: result.data?.id } : current))
     }
     const numeroGuardado = table === 'facturas' ? result.numero : document.numero
-    setFlashMessage(`${table === 'facturas' ? 'Factura' : table === 'presupuestos' ? 'Presupuesto' : 'Albarán'} guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+    if (table === 'facturas' && finalizar) {
+      setFlashMessage(`Factura emitida${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+    } else if (table === 'facturas') {
+      setFlashMessage('Borrador guardado.')
+    } else {
+      setFlashMessage(`${table === 'presupuestos' ? 'Presupuesto' : 'Albarán'} guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+    }
     setTimeout(() => setFlashMessage(null), 3000)
     closeEditor()
+    bumpRefresh()
+  }
+
+  const handleViewDocument = async (targetSection: TipoDocumento, id: string) => {
+    const result = await getStoredUserDocument(SECTION_TO_TABLE[targetSection], id)
+    if (result.error || !result.data?.datos_json) return
+    setSection(targetSection)
+    setEditor({
+      section: targetSection,
+      id,
+      data: result.data.datos_json as EditorState extends { data: infer T } ? T : never,
+      viewOnly: true,
+    } as EditorState)
+  }
+
+  const handleEmitirFactura = async (id: string) => {
+    if (!userId) return
+    const result = await emitirFactura(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo emitir la factura. Inténtalo de nuevo.', variant: 'danger' })
+      return
+    }
+    setFlashMessage(`Factura emitida${result.numero ? `: ${result.numero}` : ''}.`)
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
+  const handleDuplicarFactura = async (id: string) => {
+    if (!userId) return
+    const result = await duplicarFactura(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo duplicar la factura.', variant: 'danger' })
+      return
+    }
+    setFlashMessage('Borrador duplicado creado.')
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
+  const handleCorregirFactura = async (id: string) => {
+    if (!userId) return
+    const result = await corregirFactura(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo crear la factura rectificativa.', variant: 'danger' })
+      return
+    }
+    setFlashMessage('Factura rectificativa creada como borrador.')
+    setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
 
@@ -162,18 +212,23 @@ export function UserPage() {
           refreshKey={refreshKey}
           onCreate={() => handleCreateDocument(section as TipoDocumento)}
           onOpen={(id) => { void handleOpenDocument(section as TipoDocumento, id) }}
+          onView={(id) => { void handleViewDocument(section as TipoDocumento, id) }}
+          onEmitir={(id) => { void handleEmitirFactura(id) }}
+          onDuplicar={(id) => { void handleDuplicarFactura(id) }}
+          onCorregir={(id) => { void handleCorregirFactura(id) }}
           flashMessage={flashMessage}
         />
       )
     }
 
     if (section === 'facturas') {
+      const isViewOnly = editor.section === 'facturas' && editor.viewOnly === true
       return (
         <FacturaPage
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
-          onSave={(document, totals) => saveBusiness('facturas', document, totals, editor.id)}
+          onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('facturas', document, totals, editor.id, finalizar)}
           saving={saving}
           clientes={clientesDisponibles}
         />
@@ -265,17 +320,27 @@ export function UserPage() {
   }
 
   return (
-    <UserLayout
-      section={section}
-      onNav={(nextSection) => {
-        if (nextSection === section && DOCUMENT_SECTIONS.includes(nextSection)) {
-          closeEditor()
-        }
-        setSection(nextSection)
-        if (nextSection !== section) closeEditor()
-      }}
-    >
-      {renderContent()}
-    </UserLayout>
+    <>
+      <UserLayout
+        section={section}
+        onNav={(nextSection) => {
+          if (nextSection === section && DOCUMENT_SECTIONS.includes(nextSection)) {
+            closeEditor()
+          }
+          setSection(nextSection)
+          if (nextSection !== section) closeEditor()
+        }}
+      >
+        {renderContent()}
+      </UserLayout>
+
+      {alertState && (
+        <AlertModal
+          message={alertState.msg}
+          variant={alertState.variant}
+          onConfirm={() => setAlertState(null)}
+        />
+      )}
+    </>
   )
 }

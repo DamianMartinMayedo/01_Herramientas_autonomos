@@ -6,7 +6,7 @@ interface FacturaPageProps {
   embedded?: boolean
   onBack?: () => void
   initialData?: DocumentoBase | null
-  onSave?: (documento: DocumentoBase, totales: TotalesDocumento) => Promise<void>
+  onSave?: (documento: DocumentoBase, totales: TotalesDocumento, finalizar?: boolean) => Promise<void>
   saving?: boolean
   clientes?: RegularClient[]
 }

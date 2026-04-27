@@ -80,6 +80,7 @@ export interface DocumentoBase {
   notas?: string
   mostrarIrpf: boolean
   formaPago?: FormaPago
+  esRectificativa?: boolean
 }
 
 // Valores por defecto para líneas nuevas

@@ -13,7 +13,7 @@ import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle } from 'lucide-react'
+import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle, X, Loader2 } from 'lucide-react'
 import { useDocumentStore } from '../../store/documentStore'
 import type { RegularClient } from '../../types/regularClient.types'
 import { regularClientToClienteInfo } from '../../types/regularClient.types'
@@ -31,7 +31,7 @@ interface DocumentEngineProps {
   embedded?: boolean
   onBack?: () => void
   initialData?: DocumentoBase | null
-  onSave?: (documento: DocumentoBase, totales: TotalesDocumento) => Promise<void>
+  onSave?: (documento: DocumentoBase, totales: TotalesDocumento, finalizar?: boolean) => Promise<void>
   saving?: boolean
   clientes?: RegularClient[]
 }
@@ -48,6 +48,7 @@ export function DocumentEngine({
   clientes = [],
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState('')
   const navigate = useNavigate()
@@ -89,19 +90,40 @@ export function DocumentEngine({
     showFeedback('Datos guardados')
   }
 
+  const handleGuardarBorrador = form.handleSubmit(async (values) => {
+    if (!onSave) return
+    try {
+      await onSave(values as DocumentoBase, totales, false)
+      showFeedback('Borrador guardado')
+    } catch {
+      showFeedback('No se pudo guardar. Inténtalo de nuevo.')
+    }
+  }, () => showFeedback('Revisa los campos obligatorios antes de guardar.'))
+
+  const handleAbrirFinalizar = form.handleSubmit(() => {
+    setFinalizarModalAbierto(true)
+  }, () => showFeedback('Revisa los campos obligatorios antes de finalizar.'))
+
+  const handleConfirmarFinalizar = async () => {
+    if (!onSave) return
+    try {
+      await onSave(form.getValues() as DocumentoBase, totales, true)
+      setFinalizarModalAbierto(false)
+    } catch {
+      showFeedback('No se pudo finalizar. Inténtalo de nuevo.')
+      setFinalizarModalAbierto(false)
+    }
+  }
+
   const handleGuardarDocumento = form.handleSubmit(async (values) => {
     if (!onSave) return
     try {
       await onSave(values as DocumentoBase, totales)
       showFeedback('Documento guardado')
-    } catch (error) {
-      console.error(error)
+    } catch {
       showFeedback('No se pudo guardar. Inténtalo de nuevo.')
     }
-  }, () => {
-    // Si hay errores de validación, react-hook-form no llama al handler principal.
-    showFeedback('Revisa los campos obligatorios antes de guardar.')
-  })
+  }, () => showFeedback('Revisa los campos obligatorios antes de guardar.'))
 
   const handleConvertirAFactura = () => {
     const datos = form.getValues()
@@ -217,16 +239,22 @@ export function DocumentEngine({
               Guardar mis datos
             </Button>
           )}
-          {onSave && (
+          {onSave && tipo === 'factura' && (
+            <>
+              <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
+                <Save size={14} />
+                {saving ? 'Guardando...' : 'Guardar como borrador'}
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleAbrirFinalizar} type="button" disabled={saving}>
+                <CheckCircle2 size={14} />
+                Finalizar
+              </Button>
+            </>
+          )}
+          {onSave && tipo !== 'factura' && (
             <Button variant="secondary" size="sm" onClick={handleGuardarDocumento} type="button" disabled={saving}>
               <Save size={14} />
-              {saving
-                ? 'Guardando...'
-                : tipo === 'factura'
-                  ? 'Guardar factura'
-                  : tipo === 'presupuesto'
-                    ? 'Guardar presupuesto'
-                    : 'Guardar albarán'}
+              {saving ? 'Guardando...' : tipo === 'presupuesto' ? 'Guardar presupuesto' : 'Guardar albarán'}
             </Button>
           )}
           {tipo === 'presupuesto' && (
@@ -235,9 +263,11 @@ export function DocumentEngine({
               Convertir a factura
             </Button>
           )}
-          <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
-            Exportar
-          </Button>
+          {!(onSave && tipo === 'factura') && (
+            <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
+              Exportar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -254,6 +284,27 @@ export function DocumentEngine({
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {initialData?.esRectificativa && (
+        <div style={{
+          background: 'color-mix(in srgb, var(--color-gold) 10%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-gold) 30%, var(--color-border))',
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-3) var(--space-4)',
+          fontSize: 'var(--text-sm)',
+          color: 'var(--color-text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+          margin: 'var(--space-4) var(--space-6) 0',
+        }}>
+          <AlertTriangle size={14} style={{ color: 'var(--color-gold)', flexShrink: 0 }} />
+          <span>
+            <strong style={{ color: 'var(--color-text)' }}>Factura rectificativa.</strong>{' '}
+            Las cantidades negativas anulan los importes de la factura original. Ajústalas si la corrección es parcial.
+          </span>
         </div>
       )}
 
@@ -276,6 +327,7 @@ export function DocumentEngine({
                   error={errors.numero}
                   readOnly={tipo === 'factura'}
                   disabled={tipo === 'factura'}
+                  placeholder={tipo === 'factura' ? 'Se asignará al finalizar' : undefined}
                   style={tipo === 'factura'
                     ? {
                         background: 'var(--color-surface-offset)',
@@ -472,7 +524,7 @@ export function DocumentEngine({
                       {...register(`lineas.${index}.cantidad`, {
                         valueAsNumber: true,
                         required: true,
-                        min: { value: 0.01, message: 'Debe ser mayor que 0' },
+                        ...(initialData?.esRectificativa ? {} : { min: { value: 0.01, message: 'Debe ser mayor que 0' } }),
                       })}
                       error={errors.lineas?.[index]?.cantidad}
                       style={{ width: '6rem' }}
@@ -484,7 +536,7 @@ export function DocumentEngine({
                       {...register(`lineas.${index}.precioUnitario`, {
                         valueAsNumber: true,
                         required: true,
-                        min: { value: 0, message: 'No puede ser negativo' },
+                        ...(initialData?.esRectificativa ? {} : { min: { value: 0, message: 'No puede ser negativo' } }),
                       })}
                       error={errors.lineas?.[index]?.precioUnitario}
                       style={{ width: '7rem' }}
@@ -729,6 +781,52 @@ export function DocumentEngine({
           clienteEmail={clienteEmail}
           onClose={() => setModalAbierto(false)}
         />
+      )}
+
+      {finalizarModalAbierto && (
+        <div
+          className="overlay overlay-dark overlay-z60"
+        >
+          <div className="modal-box modal-sm" role="dialog" aria-modal="true" aria-label="Finalizar factura">
+            <div className="modal-header">
+              <div className="flex items-center gap-3">
+                <div
+                  className="icon-box icon-box-md"
+                  style={{ background: 'var(--color-gold-highlight)', color: 'var(--color-gold)' }}
+                >
+                  <AlertTriangle size={18} />
+                </div>
+                <h3 className="modal-header-title">Finalizar factura</h3>
+              </div>
+              <button
+                onClick={() => setFinalizarModalAbierto(false)}
+                disabled={saving}
+                className="modal-close-btn"
+                aria-label="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding: 'var(--space-6)' }}>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+                Si finalizas la factura, se guardará de forma permanente y{' '}
+                <strong style={{ color: 'var(--color-text)' }}>no se podrá editar</strong>.
+                Los errores se corrigen a través de una{' '}
+                <strong style={{ color: 'var(--color-text)' }}>factura rectificativa</strong>.
+                Esto evitará problemas con Hacienda.
+              </p>
+            </div>
+            <div className="modal-footer justify-end">
+              <Button variant="secondary" onClick={() => setFinalizarModalAbierto(false)} disabled={saving}>
+                Cancelar
+              </Button>
+              <Button variant="primary" onClick={() => { void handleConfirmarFinalizar() }} disabled={saving}>
+                {saving ? <Loader2 size={15} className="spin" /> : <CheckCircle2 size={15} />}
+                {saving ? 'Finalizando...' : 'Finalizar factura'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

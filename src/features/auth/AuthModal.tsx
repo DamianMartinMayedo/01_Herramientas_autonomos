@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { X } from 'lucide-react'
 import { LoginForm } from './LoginForm'
 import { RegisterForm } from './RegisterForm'
 
@@ -31,7 +32,6 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
   return (
     <div
       className="auth-modal-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
       role="dialog"
       aria-modal="true"
       aria-label={view === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
@@ -42,7 +42,7 @@ export function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalP
           onClick={onClose}
           aria-label="Cerrar"
         >
-          ✕
+          <X size={18} />
         </button>
         {view === 'login' ? (
           <LoginForm

@@ -33,27 +33,16 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: none;
-  border: 1.5px solid var(--color-border);
+  background: transparent;
+  border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  font-family: var(--font-body);
-  transition: background var(--transition), color var(--transition),
-    transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 90ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 2px 2px 0px 0px var(--color-border);
+  transition: background var(--transition), color var(--transition);
 }
 .auth-modal__close:hover {
   background: var(--color-surface-offset);
   color: var(--color-text);
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0px 0px var(--color-border);
-}
-.auth-modal__close:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0px 0px var(--color-border);
 }
 
 /* ============================================
