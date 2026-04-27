@@ -159,9 +159,9 @@ export function UserLayout({ section, onNav, children }: UserLayoutProps) {
       {/* Contenido */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <div className="admin-topbar">
-          <button onClick={() => setMobileOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+          {/* <button onClick={() => setMobileOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
             <Menu size={22} />
-          </button>
+          </button> */}
           <ThemeToggle />
         </div>
         <main style={{ flex: 1, padding: 'var(--space-6)', overflowY: 'auto' }}>

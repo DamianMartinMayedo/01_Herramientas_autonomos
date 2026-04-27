@@ -161,7 +161,7 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
         </section>
 
         {/* Lista de clientes guardados */}
-        <section className="card card-raised-sm" style={{ padding: 'var(--space-5)' }}>
+        <section className="fieldset-v3" style={{ padding: 'var(--space-5)' }}>
           <div className="flex items-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)' }}>

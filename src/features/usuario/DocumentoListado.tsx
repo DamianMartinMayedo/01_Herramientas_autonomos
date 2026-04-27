@@ -174,12 +174,10 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
           >
             <FileText size={24} style={{ color: 'var(--color-text-faint)' }} />
           </div>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-8)' }}>
             Todavía no tienes {cfg.label.toLowerCase()}
           </p>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-5)', maxWidth: '36ch' }}>
-            Crea tu primer{cfg.labelSingular === 'NDA' || cfg.labelSingular === 'albarán' ? '' : 'a'} {cfg.labelSingular} con el generador de herramientas.
-          </p>
+         
           <button onClick={handleCrear} className="btn btn-primary">
             <Plus size={15} /> Crear {cfg.labelSingular}
           </button>
