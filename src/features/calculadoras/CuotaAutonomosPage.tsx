@@ -25,23 +25,20 @@ const TRAMOS_2024 = [
 
 function CuotaCalculator() {
   const [ingresos, setIngresos] = useState<number | ''>('')
-  const [gastos, setGastos] = useState<number | ''>('')
+  const [gastos,   setGastos]   = useState<number | ''>('')
   const pushEvent = useAdminStore(s => s.pushEvent)
   const [tracked, setTracked] = useState(false)
 
   const handleInput = (val: string, setter: (v: number | '') => void) => {
     setter(val === '' ? '' : Number(val))
-    if (!tracked) {
-      pushEvent('tool_use', 'cuota-autonomos')
-      setTracked(true)
-    }
+    if (!tracked) { pushEvent('tool_use', 'cuota-autonomos'); setTracked(true) }
   }
 
   const vIngresos = Number(ingresos) || 0
-  const vGastos = Number(gastos) || 0
+  const vGastos   = Number(gastos) || 0
   const rendimientoNetoPrevio = Math.max(0, vIngresos - vGastos)
-  const deduccion = rendimientoNetoPrevio * 0.07
-  const rendimientoNeto = Math.max(0, rendimientoNetoPrevio - deduccion)
+  const deduccion             = rendimientoNetoPrevio * 0.07
+  const rendimientoNeto       = Math.max(0, rendimientoNetoPrevio - deduccion)
   const tramo = TRAMOS_2024.find(t => rendimientoNeto <= t.max) || TRAMOS_2024[TRAMOS_2024.length - 1]
 
   return (
@@ -51,8 +48,8 @@ function CuotaCalculator() {
           <Calculator size={24} />
         </div>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800 }}>Cuota de autónomos</h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>Calcula tu cuota mensual estimada según el nuevo sistema de tramos.</p>
+          <h1 className="tool-title">Cuota de autónomos</h1>
+          <p className="tool-sub">Calcula tu cuota mensual estimada según el nuevo sistema de tramos.</p>
         </div>
       </div>
 
@@ -68,31 +65,21 @@ function CuotaCalculator() {
           </div>
         </div>
 
-        <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--color-surface-offset)', borderRadius: 'var(--radius-md)' }}>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-1)' }}>
-            Rendimiento neto computable (incl. 7% deduc.):
-          </p>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', fontWeight: 600 }}>
-            {rendimientoNeto.toFixed(2)} € / mes
-          </p>
+        <div className="calc-precompute">
+          <p className="calc-precompute-label">Rendimiento neto computable (incl. 7% deduc.):</p>
+          <p className="calc-precompute-value">{rendimientoNeto.toFixed(2)} € / mes</p>
         </div>
 
-        <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--color-divider)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)' }}>Tu cuota estimada (2024)</h3>
-          <div style={{
+        <div className="calc-summary">
+          <h3 className="calc-summary-title">Tu cuota estimada (2024)</h3>
+          <div className="calc-result" style={{
             background: 'var(--color-copper-highlight)',
             border: '2px solid var(--color-copper)',
-            padding: 'var(--space-5)',
-            borderRadius: 'var(--radius-lg)',
-            color: 'var(--color-text)',
-            textAlign: 'center'
           }}>
-            <span style={{ fontSize: '3rem', fontWeight: 800, fontFamily: 'var(--font-display)', lineHeight: 1 }}>
-              {tramo.cuota}€
-            </span>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-copper)', marginLeft: 'var(--space-2)', fontWeight: 600 }}>/ mes</span>
+            <span className="calc-result-value">{tramo.cuota}€</span>
+            <span className="calc-result-unit" style={{ color: 'var(--color-copper)' }}>/ mes</span>
           </div>
-          <p style={{ marginTop: 'var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
+          <p className="calc-result-note">
             Estimación basada en los tramos de rendimiento neto vigentes. La cuota final puede variar según circunstancias personales.
           </p>
         </div>
@@ -101,7 +88,6 @@ function CuotaCalculator() {
   )
 }
 
-/** Widget reutilizable sin header/footer — para usar dentro del panel de usuario */
 export function CuotaAutonomosWidget() {
   return (
     <div className="tool-page-inner">
@@ -110,7 +96,6 @@ export function CuotaAutonomosWidget() {
   )
 }
 
-/** Página completa con header/footer — para usar como ruta standalone */
 export function CuotaAutonomosPage() {
   return (
     <div className="page-root">
@@ -118,9 +103,7 @@ export function CuotaAutonomosPage() {
       <main className="page-main section-pb">
         <div className="tool-page-inner">
           <nav className="post-breadcrumb">
-            <Link to="/" className="back-link">
-              <ArrowLeft size={13} /> Inicio
-            </Link>
+            <Link to="/" className="back-link"><ArrowLeft size={13} /> Inicio</Link>
           </nav>
           <CuotaCalculator />
         </div>

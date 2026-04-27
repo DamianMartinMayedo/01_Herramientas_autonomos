@@ -88,24 +88,11 @@ export function BlogPostPage() {
 
         {/* Breadcrumb / Volver */}
         <nav className="post-breadcrumb">
-          <Link
-            to="/"
-            className="back-link"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
-          >
+          <Link to="/" className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <ArrowLeft size={13} /> Inicio
           </Link>
           <span className="breadcrumb-sep">/</span>
-          <Link
-            to="/blog"
-            className="back-link"
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
-          >
-            Blog
-          </Link>
+          <Link to="/blog" className="back-link">Blog</Link>
         </nav>
 
         {/* Tags */}
@@ -160,19 +147,9 @@ export function BlogPostPage() {
                 <Link
                   key={rel.id}
                   to={`/blog/${rel.slug}`}
-                  style={{ textDecoration: 'none', display: 'block' }}
+                  className="link-block"
                 >
-                  <article
-                    className="blog-card blog-card--sm"
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.transform = 'translate(-2px,-2px)'
-                      ;(e.currentTarget as HTMLElement).style.boxShadow = '5px 5px 0 var(--color-border)'
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.transform = 'none'
-                      ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
-                    }}
-                  >
+                  <article className="blog-card blog-card--sm">
                     {rel.tags.length > 0 && (
                       <div className="blog-card-tags" style={{ gap: 'var(--space-1)', marginBottom: 'var(--space-3)' }}>
                         {rel.tags.slice(0, 2).map((t) => (

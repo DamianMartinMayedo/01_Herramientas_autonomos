@@ -17,9 +17,9 @@ interface EditorProps {
 function HerramientaEditor({ herramienta: h, onClose }: EditorProps) {
   const updateHerramienta = useAdminStore(s => s.updateHerramienta)
   const [nombre, setNombre] = useState(h.nombre)
-  const [desc,   setDesc]   = useState(h.descripcion)
-  const [prox,   setProx]   = useState(h.proximamente)
-  const [mant,   setMant]   = useState(h.mantenimiento || false)
+  const [desc, setDesc] = useState(h.descripcion)
+  const [prox, setProx] = useState(h.proximamente)
+  const [mant, setMant] = useState(h.mantenimiento || false)
 
   const handleProxChange = (val: boolean) => { setProx(val); if (val) setMant(false) }
   const handleMantChange = (val: boolean) => { setMant(val); if (val) setProx(false) }
@@ -68,11 +68,11 @@ type ModalTarget = { herramienta: Herramienta; accion: 'visibilidad' | 'activaci
 
 // ── HerramientasSection ──────────────────────────────────────────────────
 export function HerramientasSection() {
-  const herramientas      = useAdminStore(s => s.herramientas)
+  const herramientas = useAdminStore(s => s.herramientas)
   const toggleHerramienta = useAdminStore(s => s.toggleHerramienta)
   const updateHerramienta = useAdminStore(s => s.updateHerramienta)
 
-  const [editing,     setEditing]     = useState<Herramienta | null>(null)
+  const [editing, setEditing] = useState<Herramienta | null>(null)
   const [modalTarget, setModalTarget] = useState<ModalTarget>(null)
 
   const byCategoria = herramientas.reduce<Record<string, Herramienta[]>>((acc, h) => {
@@ -82,8 +82,8 @@ export function HerramientasSection() {
   }, {})
 
   const labels: Record<string, string> = {
-    documentos:   'Documentos',
-    contratos:    'Contratos y acuerdos',
+    documentos: 'Documentos',
+    contratos: 'Contratos y acuerdos',
     calculadoras: 'Calculadoras',
   }
 
@@ -107,21 +107,21 @@ export function HerramientasSection() {
     if (accion === 'visibilidad') {
       const oculta = h.visible === false
       return {
-        title:         oculta ? `Mostrar "${h.nombre}"` : `Ocultar "${h.nombre}"`,
-        description:   oculta
+        title: oculta ? `Mostrar "${h.nombre}"` : `Ocultar "${h.nombre}"`,
+        description: oculta
           ? 'La herramienta volverá a aparecer en el Home para todos los usuarios.'
           : 'La herramienta dejará de mostrarse en el Home. Seguirá siendo accesible por URL directa.',
-        confirmLabel:  oculta ? 'Sí, mostrar' : 'Sí, ocultar',
+        confirmLabel: oculta ? 'Sí, mostrar' : 'Sí, ocultar',
         confirmVariant: oculta ? 'success' as const : 'warning' as const,
       }
     }
 
     return {
-      title:         h.activa ? `Desactivar "${h.nombre}"` : `Activar "${h.nombre}"`,
-      description:   h.activa
+      title: h.activa ? `Desactivar "${h.nombre}"` : `Activar "${h.nombre}"`,
+      description: h.activa
         ? 'La herramienta quedará inaccesible para los usuarios y se mostrará como "Mejorando".'
         : 'La herramienta pasará a estar disponible para todos los usuarios.',
-      confirmLabel:  h.activa ? 'Sí, desactivar' : 'Sí, activar',
+      confirmLabel: h.activa ? 'Sí, desactivar' : 'Sí, activar',
       confirmVariant: h.activa ? 'danger' as const : 'success' as const,
     }
   }
@@ -171,8 +171,8 @@ export function HerramientasSection() {
                       {h.nombre}
                     </span>
                     {h.visible === false && <span className="badge badge-muted badge-xs">Oculta</span>}
-                    {h.proximamente   && <span className="badge badge-copper badge-xs">Próximamente</span>}
-                    {h.mantenimiento  && <span className="badge badge-gold badge-xs">Mejorando</span>}
+                    {h.proximamente && <span className="badge badge-copper badge-xs">Próximamente</span>}
+                    {h.mantenimiento && <span className="badge badge-gold badge-xs">Mejorando</span>}
                   </div>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                     {h.descripcion}
@@ -217,7 +217,7 @@ export function HerramientasSection() {
                   >
                     {h.activa
                       ? <><ToggleRight size={15} /> Activa</>
-                      : <><ToggleLeft  size={15} /> Inactiva</>
+                      : <><ToggleLeft size={15} /> Inactiva</>
                     }
                   </button>
 

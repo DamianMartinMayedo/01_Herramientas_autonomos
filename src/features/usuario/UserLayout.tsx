@@ -1,7 +1,6 @@
 /**
  * UserLayout.tsx
  * Shell del panel de usuario: sidebar + contenido principal.
- * Misma estructura visual que AdminLayout pero orientada al usuario.
  */
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -32,19 +31,19 @@ const NAV_GROUPS = [
   {
     label: 'General',
     items: [
-      { id: 'dashboard' as UserSection, label: 'Dashboard', Icon: LayoutDashboard },
-      { id: 'clientes' as UserSection, label: 'Cliente', Icon: Settings },
+      { id: 'dashboard' as UserSection,  label: 'Dashboard', Icon: LayoutDashboard },
+      { id: 'clientes' as UserSection,   label: 'Cliente',   Icon: Settings },
     ],
   },
   {
     label: 'Documentos',
     items: [
-      { id: 'facturas' as UserSection,      label: 'Facturas',       Icon: Receipt },
-      { id: 'presupuestos' as UserSection,  label: 'Presupuestos',   Icon: FileText },
-      { id: 'albaranes' as UserSection,     label: 'Albaranes',      Icon: Package },
-      { id: 'contratos' as UserSection,     label: 'Contratos',      Icon: FileSignature },
-      { id: 'ndas' as UserSection,          label: 'NDAs',           Icon: ShieldOff },
-      { id: 'reclamaciones' as UserSection, label: 'Reclamaciones',  Icon: AlertCircle },
+      { id: 'facturas' as UserSection,      label: 'Facturas',      Icon: Receipt },
+      { id: 'presupuestos' as UserSection,  label: 'Presupuestos',  Icon: FileText },
+      { id: 'albaranes' as UserSection,     label: 'Albaranes',     Icon: Package },
+      { id: 'contratos' as UserSection,     label: 'Contratos',     Icon: FileSignature },
+      { id: 'ndas' as UserSection,          label: 'NDAs',          Icon: ShieldOff },
+      { id: 'reclamaciones' as UserSection, label: 'Reclamaciones', Icon: AlertCircle },
     ],
   },
   {
@@ -75,53 +74,19 @@ function UserSidebar({
   }
 
   return (
-    <aside style={{
-      width: 240,
-      minHeight: '100vh',
-      background: 'var(--color-surface)',
-      borderRight: '2px solid var(--color-border)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: 'var(--space-4) 0',
-      flexShrink: 0,
-    }}>
-      {/* Cabecera */}
-      <div style={{
-        padding: '0 var(--space-4) var(--space-4)',
-        borderBottom: '1px solid var(--color-border)',
-        marginBottom: 'var(--space-4)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-3)',
-      }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: '50%',
-          background: 'var(--color-primary)',
-          color: '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontWeight: 700, fontSize: 'var(--text-sm)',
-          fontFamily: 'var(--font-display)',
-          flexShrink: 0,
-        }}>{initials}</div>
-        <div style={{ minWidth: 0 }}>
-          <p style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: 'var(--text-sm)',
-            fontWeight: 600,
-            color: 'var(--color-text)',
-            margin: 0,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{profile?.display_name ?? profile?.email?.split('@')[0] ?? 'Usuario'}</p>
-          <span style={{
-            fontSize: 'var(--text-xs)',
-            color: 'var(--color-text-muted)',
-            fontFamily: 'var(--font-body)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}>{profile?.plan ?? 'free'}</span>
+    <aside className="sidebar user-sidebar-wrap">
+
+      {/* Cabecera con avatar */}
+      <div className="user-sidebar-header">
+        <div className="user-avatar">{initials}</div>
+        <div className="min-w-0">
+          <p className="user-avatar-name">
+            {profile?.display_name ?? profile?.email?.split('@')[0] ?? 'Usuario'}
+          </p>
+          <span className="user-avatar-plan">{profile?.plan ?? 'free'}</span>
         </div>
         {onClose && (
-          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+          <button onClick={onClose} className="modal-close-btn" style={{ marginLeft: 'auto' }}>
             <X size={18} />
           </button>
         )}
@@ -131,43 +96,18 @@ function UserSidebar({
       <nav style={{ flex: 1, padding: '0 var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {NAV_GROUPS.map(group => (
           <div key={group.label}>
-            <p style={{
-              fontSize: 'var(--text-xs)',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--color-text-faint)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              fontWeight: 600,
-              margin: '0 0 var(--space-1) var(--space-1)',
-            }}>{group.label}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <p className="nav-group-label">{group.label}</p>
+            <div className="flex flex-col" style={{ gap: 2 }}>
               {group.items.map(({ id, label, Icon }) => {
                 const active = section === id
                 return (
                   <button
                     key={id}
                     onClick={() => { onNav(id); onClose?.() }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-2)',
-                      padding: 'var(--space-2) var(--space-3)',
-                      borderRadius: 'var(--radius-md)',
-                      border: active ? '1.5px solid var(--color-primary)' : '1.5px solid transparent',
-                      background: active ? 'var(--color-primary-highlight)' : 'transparent',
-                      color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                      fontSize: 'var(--text-sm)',
-                      fontWeight: active ? 600 : 400,
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-body)',
-                      transition: 'background 100ms, color 100ms',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
-                    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--color-surface-offset)'; e.currentTarget.style.color = 'var(--color-text)' } }}
-                    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-muted)' } }}
+                    className={`sidebar-nav-btn${active ? ' active' : ''}`}
                   >
-                    <Icon size={16} />{label}&nbsp;{active && <ChevronRight size={14} style={{ marginLeft: 'auto' }} />}
+                    <Icon size={16} />{label}
+                    {active && <ChevronRight size={14} className="ml-auto" />}
                   </button>
                 )
               })}
@@ -177,36 +117,15 @@ function UserSidebar({
       </nav>
 
       {/* Footer */}
-      <div style={{ padding: 'var(--space-4) var(--space-3) 0', borderTop: '1px solid var(--color-border)', marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <button
-          onClick={() => onNav('clientes')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-            width: '100%', padding: 'var(--space-2) var(--space-3)',
-            borderRadius: 'var(--radius-md)', border: 'none', background: 'none',
-            color: 'var(--color-text-faint)', fontSize: 'var(--text-sm)',
-            cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'color 100ms, background 100ms',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.background = 'var(--color-surface-offset)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-faint)'; e.currentTarget.style.background = 'none' }}
-        >
+      <div className="sidebar-footer">
+        <button onClick={() => { onNav('clientes'); onClose?.() }} className="sidebar-footer-btn">
           <User size={16} /> Cliente
         </button>
-        <button
-          onClick={handleLogout}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-            width: '100%', padding: 'var(--space-2) var(--space-3)',
-            borderRadius: 'var(--radius-md)', border: 'none', background: 'none',
-            color: 'var(--color-text-faint)', fontSize: 'var(--text-sm)',
-            cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'color 100ms, background 100ms',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-error)'; e.currentTarget.style.background = 'var(--color-surface-offset)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-faint)'; e.currentTarget.style.background = 'none' }}
-        >
+        <button onClick={handleLogout} className="sidebar-footer-btn sidebar-footer-btn--danger">
           <LogOut size={16} /> Cerrar sesión
         </button>
       </div>
+
     </aside>
   )
 }
@@ -216,42 +135,30 @@ export function UserLayout({ section, onNav, children }: UserLayoutProps) {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
 
-  // Guard: si no hay sesión, redirigir al home
   if (!loading && !user) {
     navigate('/')
     return null
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
+    <div className="layout-root">
+
       {/* Sidebar desktop */}
-      <div style={{ display: 'none' }} className="user-sidebar-desktop">
-        <UserSidebar section={section} onNav={onNav} />
-      </div>
       <UserSidebar section={section} onNav={onNav} />
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 50,
-          background: 'rgba(0,0,0,0.4)',
-          display: 'flex',
-        }} onClick={() => setMobileOpen(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ width: 260 }}>
+        <div className="mobile-drawer" onClick={() => setMobileOpen(false)}>
+          <div style={{ width: 260 }} onClick={e => e.stopPropagation()}>
             <UserSidebar section={section} onNav={onNav} onClose={() => setMobileOpen(false)} />
           </div>
+          <div className="mobile-drawer-backdrop" />
         </div>
       )}
 
       {/* Contenido */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* Topbar mobile */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: 'var(--space-3) var(--space-4)',
-          borderBottom: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-        }}>
+        <div className="admin-topbar">
           <button onClick={() => setMobileOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
             <Menu size={22} />
           </button>
@@ -261,6 +168,7 @@ export function UserLayout({ section, onNav, children }: UserLayoutProps) {
           {children}
         </main>
       </div>
+
     </div>
   )
 }

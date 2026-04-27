@@ -169,7 +169,7 @@ function ToolCard({ h }: { h: Herramienta }) {
   )
 
   return isActive ? (
-    <Link to={h.ruta} style={{ display: 'block', textDecoration: 'none' }}>
+    <Link to={h.ruta} className="link-block">
       {cardEl}
     </Link>
   ) : (
@@ -254,12 +254,7 @@ export function HomePage() {
           <p className="section-label">Herramientas disponibles</p>
           {categoriasOrdenadas.map(cat => (
             <div key={cat.id} style={{ marginBottom: 'var(--space-10)' }}>
-              <p style={{
-                fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: '0.10em',
-                textTransform: 'uppercase', color: 'var(--color-text-faint)', marginBottom: 'var(--space-4)',
-              }}>
-                {cat.label}
-              </p>
+              <p className="section-block-label">{cat.label}</p>
               <div className="tools-grid">
                 {cat.items.map(h => <ToolCard key={h.id} h={h} />)}
               </div>

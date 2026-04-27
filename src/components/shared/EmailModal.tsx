@@ -17,12 +17,10 @@ interface EmailModalProps {
   onClose: () => void
 }
 
-/** Valida un email individual */
 function esEmailValido(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 }
 
-/** Parsea el input de correos separados por comas y devuelve lista limpia */
 function parsearCorreos(input: string): string[] {
   return input
     .split(',')
@@ -37,7 +35,6 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Focus automático al abrir
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 50)
   }, [])
@@ -51,14 +48,12 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
     setEnviando(true)
     setError(null)
 
-    // ── Mock: simula llamada async al backend ──
     // TODO: conectar con servicio real de envío de email (SendGrid, Resend, etc.)
     await new Promise((resolve) => setTimeout(resolve, 1200))
 
     setEnviando(false)
     setEnviado(true)
 
-    // Cierra automáticamente tras 2s de confirmación
     setTimeout(() => onClose(), 2000)
   }
 
@@ -79,45 +74,18 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
         aria-label="Enviar documento por correo"
       >
         {/* ── Cabecera ── */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: 'var(--space-5) var(--space-6)',
-          borderBottom: '1px solid var(--color-divider)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--color-primary-highlight)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-primary)',
-              flexShrink: 0,
-            }}>
+        <div className="modal-header">
+          <div className="flex items-center gap-3">
+            <div
+              className="icon-box icon-box-md"
+              style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}
+            >
               <Mail size={18} />
             </div>
             <div>
-              <h3 style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'var(--text-base)',
-                fontWeight: 700,
-                color: 'var(--color-text)',
-                lineHeight: 1.2,
-              }}>
-                Enviar por correo
-              </h3>
+              <h3 className="modal-header-title">Enviar por correo</h3>
               {nombreDocumento && (
-                <p style={{
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--color-text-muted)',
-                  marginTop: 2,
-                }}>
-                  {nombreDocumento}
-                </p>
+                <p className="modal-header-sub">{nombreDocumento}</p>
               )}
             </div>
           </div>
@@ -125,17 +93,7 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
             onClick={onClose}
             disabled={enviando}
             aria-label="Cerrar"
-            style={{
-              padding: 'var(--space-2)',
-              borderRadius: 'var(--radius-md)',
-              background: 'none',
-              border: 'none',
-              cursor: enviando ? 'not-allowed' : 'pointer',
-              color: 'var(--color-text-muted)',
-              transition: 'background var(--transition-interactive)',
-            }}
-            onMouseEnter={e => { if (!enviando) e.currentTarget.style.background = 'var(--color-surface-offset)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+            className="modal-close-btn"
           >
             <X size={18} />
           </button>
@@ -146,16 +104,8 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
 
           {!enviado ? (
             <>
-              {/* Input de correos */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <label
-                  htmlFor="email-destinos"
-                  style={{
-                    fontSize: 'var(--text-sm)',
-                    fontWeight: 600,
-                    color: 'var(--color-text)',
-                  }}
-                >
+              <div className="input-group">
+                <label htmlFor="email-destinos" className="input-label">
                   Destinatarios
                 </label>
                 <input
@@ -171,27 +121,15 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
                   disabled={enviando}
                   placeholder="correo@ejemplo.com, otro@ejemplo.com"
                   className="input-v3"
-                  style={{
-                    width: '100%',
-                    fontFamily: 'var(--font-body)',
-                  }}
                   aria-describedby="email-hint"
                 />
-                <p
-                  id="email-hint"
-                  style={{
-                    fontSize: 'var(--text-xs)',
-                    color: 'var(--color-text-muted)',
-                    lineHeight: 1.5,
-                  }}
-                >
+                <p id="email-hint" className="input-hint">
                   Separa varios correos con <strong>,</strong> (comas). El documento se enviará como PDF adjunto.
                 </p>
               </div>
 
-              {/* Chips de correos parseados */}
               {correos.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                <div className="flex flex-wrap gap-2">
                   {correos.map((correo, i) => {
                     const valido = esEmailValido(correo)
                     return (
@@ -223,20 +161,9 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
                 </div>
               )}
 
-              {/* Error de correos inválidos */}
               {correosInvalidos.length > 0 && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 'var(--space-2)',
-                  padding: 'var(--space-3)',
-                  background: 'var(--color-error-highlight)',
-                  border: '1px solid oklch(from var(--color-error) l c h / 0.2)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--color-error)',
-                }}>
-                  <AlertTriangle size={14} style={{ marginTop: 1, flexShrink: 0 }} />
+                <div className="error-box">
+                  <AlertTriangle size={14} className="error-box-icon" />
                   <span>
                     {correosInvalidos.length === 1
                       ? `El correo "${correosInvalidos[0]}" no es válido.`
@@ -245,60 +172,26 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
                 </div>
               )}
 
-              {/* Error de envío */}
               {error && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 'var(--space-2)',
-                  padding: 'var(--space-3)',
-                  background: 'var(--color-error-highlight)',
-                  border: '1px solid oklch(from var(--color-error) l c h / 0.2)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--color-error)',
-                }}>
-                  <AlertTriangle size={14} style={{ marginTop: 1, flexShrink: 0 }} />
+                <div className="error-box">
+                  <AlertTriangle size={14} className="error-box-icon" />
                   <span>{error}</span>
                 </div>
               )}
             </>
           ) : (
-            /* ── Estado: enviado con éxito ── */
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 'var(--space-4)',
-              padding: 'var(--space-6) 0',
-              textAlign: 'center',
-            }}>
-              <div style={{
-                width: 56,
-                height: 56,
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--color-success-highlight)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--color-success)',
-              }}>
+            <div className="flex flex-col items-center gap-4" style={{ padding: 'var(--space-6) 0', textAlign: 'center' }}>
+              <div
+                className="icon-box"
+                style={{ width: 56, height: 56, borderRadius: 'var(--radius-full)', background: 'var(--color-success-highlight)', color: 'var(--color-success)' }}
+              >
                 <CheckCircle2 size={28} />
               </div>
               <div>
-                <p style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'var(--text-base)',
-                  fontWeight: 700,
-                  color: 'var(--color-text)',
-                }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)' }}>
                   ¡Enviado correctamente!
                 </p>
-                <p style={{
-                  fontSize: 'var(--text-sm)',
-                  color: 'var(--color-text-muted)',
-                  marginTop: 'var(--space-1)',
-                }}>
+                <p className="section-sub" style={{ marginTop: 'var(--space-1)' }}>
                   El documento ha sido enviado a {correos.length === 1 ? correos[0] : `${correos.length} destinatarios`}.
                 </p>
               </div>
@@ -308,14 +201,7 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
 
         {/* ── Footer ── */}
         {!enviado && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 'var(--space-3)',
-            padding: 'var(--space-4) var(--space-6)',
-            borderTop: '1px solid var(--color-divider)',
-          }}>
+          <div className="modal-footer justify-end">
             <Button variant="secondary" onClick={onClose} disabled={enviando}>
               Cancelar
             </Button>

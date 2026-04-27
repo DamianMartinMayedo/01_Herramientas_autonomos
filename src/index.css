@@ -195,6 +195,14 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Preflight — reemplaza Tailwind @tailwind base / Preflight ── */
+h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; margin: 0; }
+p, dl, dd { margin: 0; }
+ul, ol    { list-style: none; margin: 0; padding: 0; }
+a         { color: inherit; text-decoration: inherit; }
+/* Restores link styling within blog article content */
+.blog-content a { color: var(--color-primary); text-decoration: underline; }
+
 body {
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -1212,10 +1220,8 @@ body {
   cursor: pointer;
   transition: background var(--transition), color var(--transition);
 }
-.modal-close-btn:hover {
-  background: var(--color-surface-offset);
-  color: var(--color-text);
-}
+.modal-close-btn:hover    { background: var(--color-surface-offset); color: var(--color-text); }
+.modal-close-btn:disabled { opacity: 0.4; pointer-events: none; }
 
 /* ── Error inline dentro de modal ── */
 .error-box {
@@ -1546,8 +1552,11 @@ body {
   color: var(--color-text-muted);
   transition: color var(--transition), border-color var(--transition);
 }
-.icon-btn:hover          { color: var(--color-text); }
-.icon-btn--danger:hover  { color: var(--color-error); border-color: var(--color-error); }
+.icon-btn:hover             { color: var(--color-text); background: var(--color-surface-offset); }
+.icon-btn--danger:hover    { color: var(--color-error);   border-color: var(--color-error);   background: color-mix(in srgb, var(--color-error) 10%, transparent); }
+.icon-btn--success:hover   { color: var(--color-success); border-color: var(--color-success); background: var(--color-success-highlight); }
+.icon-btn--primary:hover   { color: var(--color-primary); border-color: var(--color-primary); background: var(--color-primary-highlight); }
+.icon-btn--gold:hover      { color: var(--color-gold);    border-color: var(--color-gold);    background: var(--color-gold-highlight); }
 
 /* ══════════════════════════════════════════════════════════════════════════
    BADGE XS — badge muy pequeño (10px, padding mínimo)
@@ -2069,6 +2078,27 @@ body {
 
 .btn-center { justify-content: center; }
 
+/* Botón de confirmación con colores dinámicos via CSS custom props */
+.btn-confirm {
+  background:  var(--confirm-bg);
+  border:      2px solid var(--confirm-border);
+  color:       var(--confirm-color);
+  box-shadow:  3px 3px 0px 0px var(--confirm-shadow);
+  transform:   translate(0, 0);
+  transition:  transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
+               box-shadow 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
+               background 100ms ease;
+}
+.btn-confirm:hover {
+  transform:   translate(-2px, -2px);
+  box-shadow:  5px 5px 0px 0px var(--confirm-shadow);
+  background:  var(--confirm-hover-bg);
+}
+.btn-confirm:active {
+  transform:   translate(2px, 2px);
+  box-shadow:  1px 1px 0px 0px var(--confirm-shadow);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    KPI BOX — caja de indicador principal (UserDashboard)
 ══════════════════════════════════════════════════════════════════════════ */
@@ -2177,3 +2207,69 @@ body {
 .mb-8  { margin-bottom: var(--space-8); }
 .mb-10 { margin-bottom: var(--space-10); }
 .pr-10 { padding-right: var(--space-10); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DOCUMENTO LISTADO — listado genérico de documentos de usuario
+══════════════════════════════════════════════════════════════════════════ */
+.doc-listado-wrap { max-width: 900px; margin: 0 auto; }
+
+.doc-listado-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.doc-flash {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  background: var(--color-primary-highlight);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.doc-list { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.doc-skeleton {
+  height: 64px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+}
+
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: 2px 2px 0px 0px var(--color-border);
+  transition: box-shadow 90ms;
+}
+
+.doc-row-title {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.doc-row-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.doc-row-price {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}

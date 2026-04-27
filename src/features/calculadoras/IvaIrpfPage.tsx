@@ -6,27 +6,23 @@ import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
 
 function IvaIrpfCalculator() {
-  const [baseImponible, setBaseImponible] = useState<number | ''>('')
-  const [tipoIva, setTipoIva] = useState<number | ''>(21)
-  const [retencionIrpf, setRetencionIrpf] = useState<number | ''>(15)
+  const [baseImponible, setBaseImponible]   = useState<number | ''>('')
+  const [tipoIva, setTipoIva]               = useState<number | ''>(21)
+  const [retencionIrpf, setRetencionIrpf]   = useState<number | ''>(15)
   const pushEvent = useAdminStore(s => s.pushEvent)
   const [tracked, setTracked] = useState(false)
 
   const handleInput = (val: string, setter: (v: number | '') => void) => {
     setter(val === '' ? '' : Number(val))
-    if (!tracked) {
-      pushEvent('tool_use', 'iva-irpf')
-      setTracked(true)
-    }
+    if (!tracked) { pushEvent('tool_use', 'iva-irpf'); setTracked(true) }
   }
 
-  const vBase = Number(baseImponible) || 0
-  const vIva = Number(tipoIva) || 0
-  const vIrpf = Number(retencionIrpf) || 0
-
-  const cuotaIva = vBase * (vIva / 100)
-  const retencion = vBase * (vIrpf / 100)
-  const totalFactura = vBase + cuotaIva
+  const vBase    = Number(baseImponible) || 0
+  const vIva     = Number(tipoIva) || 0
+  const vIrpf    = Number(retencionIrpf) || 0
+  const cuotaIva        = vBase * (vIva / 100)
+  const retencion       = vBase * (vIrpf / 100)
+  const totalFactura    = vBase + cuotaIva
   const liquidoPercibir = totalFactura - retencion
 
   return (
@@ -36,8 +32,8 @@ function IvaIrpfCalculator() {
           <Calculator size={24} />
         </div>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 800 }}>Calculadora IVA / IRPF</h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>Calcula el IVA a repercutir y la retención de IRPF de tu factura.</p>
+          <h1 className="tool-title">Calculadora IVA / IRPF</h1>
+          <p className="tool-sub">Calcula el IVA a repercutir y la retención de IRPF de tu factura.</p>
         </div>
       </div>
 
@@ -68,16 +64,17 @@ function IvaIrpfCalculator() {
           </div>
         </div>
 
-        <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--color-divider)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        {/* Desglose */}
+        <div className="calc-summary" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-1)' }}>Desglose de la factura</h3>
 
           {[
-            { label: 'Base imponible',             value: vBase,        muted: true },
-            { label: `IVA (${vIva}%)`,              value: cuotaIva,     muted: true },
-            { label: 'Total factura',               value: totalFactura, bold: true },
-            { label: `Retención IRPF (${vIrpf}%)`, value: -retencion,   muted: true },
+            { label: 'Base imponible',              value: vBase,        muted: true },
+            { label: `IVA (${vIva}%)`,               value: cuotaIva,     muted: true },
+            { label: 'Total factura',                value: totalFactura, bold: true },
+            { label: `Retención IRPF (${vIrpf}%)`,  value: -retencion,   muted: true },
           ].map(({ label, value, muted, bold }) => (
-            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-sm)' }}>
+            <div key={label} className="calc-row">
               <span style={{ color: muted ? 'var(--color-text-muted)' : 'var(--color-text)', fontWeight: bold ? 700 : 400 }}>{label}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontWeight: bold ? 700 : 500 }}>
                 {value >= 0 ? '' : '−'}{Math.abs(value).toFixed(2)} €
@@ -85,21 +82,15 @@ function IvaIrpfCalculator() {
             </div>
           ))}
 
-          <div style={{
+          <div className="calc-result" style={{
             background: 'var(--color-teal-highlight)',
             border: '2px solid var(--color-teal)',
-            padding: 'var(--space-5)',
-            borderRadius: 'var(--radius-lg)',
-            textAlign: 'center',
-            marginTop: 'var(--space-2)'
           }}>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-teal)', fontWeight: 600, marginBottom: 'var(--space-1)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Líquido a percibir</p>
-            <span style={{ fontSize: '3rem', fontWeight: 800, fontFamily: 'var(--font-display)', lineHeight: 1 }}>
-              {liquidoPercibir.toFixed(2)}€
-            </span>
+            <p className="calc-result-label" style={{ color: 'var(--color-teal)' }}>Líquido a percibir</p>
+            <span className="calc-result-value">{liquidoPercibir.toFixed(2)}€</span>
           </div>
 
-          <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', textAlign: 'center', lineHeight: 1.5 }}>
+          <p className="calc-result-note">
             El IVA recaudado deberás ingresarlo en Hacienda trimestralmente (modelo 303). La retención la abonará directamente el cliente.
           </p>
         </div>
@@ -108,7 +99,6 @@ function IvaIrpfCalculator() {
   )
 }
 
-/** Widget reutilizable sin header/footer — para usar dentro del panel de usuario */
 export function IvaIrpfWidget() {
   return (
     <div className="tool-page-inner">
@@ -117,7 +107,6 @@ export function IvaIrpfWidget() {
   )
 }
 
-/** Página completa con header/footer — para usar como ruta standalone */
 export function IvaIrpfPage() {
   return (
     <div className="page-root">
@@ -125,9 +114,7 @@ export function IvaIrpfPage() {
       <main className="page-main section-pb">
         <div className="tool-page-inner">
           <nav className="post-breadcrumb">
-            <Link to="/" className="back-link">
-              <ArrowLeft size={13} /> Inicio
-            </Link>
+            <Link to="/" className="back-link"><ArrowLeft size={13} /> Inicio</Link>
           </nav>
           <IvaIrpfCalculator />
         </div>

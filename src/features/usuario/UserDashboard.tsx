@@ -1,7 +1,6 @@
 /**
  * UserDashboard.tsx
  * Panel principal del usuario registrado.
- * Muestra stats de resumen y accesos rápidos.
  */
 import { useEffect, useState } from 'react'
 import { useProfile } from '../../hooks/useProfile'
@@ -25,12 +24,12 @@ interface StatsState {
 }
 
 const STAT_CARDS = [
-  { key: 'facturas',      label: 'Facturas',      Icon: Receipt,        section: 'facturas' as UserSection,      color: 'var(--color-primary)' },
-  { key: 'presupuestos',  label: 'Presupuestos',  Icon: FileText,       section: 'presupuestos' as UserSection,  color: 'var(--color-blue)' },
-  { key: 'albaranes',     label: 'Albaranes',     Icon: Package,        section: 'albaranes' as UserSection,     color: 'var(--color-gold)' },
-  { key: 'contratos',     label: 'Contratos',     Icon: FileSignature,  section: 'contratos' as UserSection,     color: 'var(--color-success)' },
-  { key: 'ndas',          label: 'NDAs',          Icon: ShieldOff,      section: 'ndas' as UserSection,          color: 'var(--color-warning)' },
-  { key: 'reclamaciones', label: 'Reclamaciones', Icon: AlertCircle,    section: 'reclamaciones' as UserSection, color: 'var(--color-error)' },
+  { key: 'facturas',      label: 'Facturas',      Icon: Receipt,       section: 'facturas' as UserSection,      color: 'var(--color-primary)' },
+  { key: 'presupuestos',  label: 'Presupuestos',  Icon: FileText,      section: 'presupuestos' as UserSection,  color: 'var(--color-blue)' },
+  { key: 'albaranes',     label: 'Albaranes',     Icon: Package,       section: 'albaranes' as UserSection,     color: 'var(--color-gold)' },
+  { key: 'contratos',     label: 'Contratos',     Icon: FileSignature, section: 'contratos' as UserSection,     color: 'var(--color-success)' },
+  { key: 'ndas',          label: 'NDAs',          Icon: ShieldOff,     section: 'ndas' as UserSection,          color: 'var(--color-warning)' },
+  { key: 'reclamaciones', label: 'Reclamaciones', Icon: AlertCircle,   section: 'reclamaciones' as UserSection, color: 'var(--color-error)' },
 ]
 
 interface Props {
@@ -48,10 +47,7 @@ export function UserDashboard({ onNav }: Props) {
   const userId = user?.id
 
   useEffect(() => {
-    if (!userId) {
-      return
-    }
-
+    if (!userId) return
     let active = true
 
     async function fetchStats() {
@@ -64,7 +60,6 @@ export function UserDashboard({ onNav }: Props) {
         supabase.from('ndas').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('reclamaciones').select('id', { count: 'exact' }).eq('user_id', userId),
       ])
-
       if (!active) return
 
       const totalFacturado = (f.data ?? [])
@@ -74,23 +69,16 @@ export function UserDashboard({ onNav }: Props) {
         .filter((row: { estado?: string }) => row.estado === 'emitida')
         .reduce((acc: number, row: { total: number }) => acc + Number(row.total ?? 0), 0)
       setStats({
-        facturas: f.count ?? 0,
-        presupuestos: p.count ?? 0,
-        albaranes: a.count ?? 0,
-        contratos: c.count ?? 0,
-        ndas: n.count ?? 0,
-        reclamaciones: r.count ?? 0,
-        totalFacturado,
-        totalPendienteCobro,
+        facturas: f.count ?? 0, presupuestos: p.count ?? 0,
+        albaranes: a.count ?? 0, contratos: c.count ?? 0,
+        ndas: n.count ?? 0, reclamaciones: r.count ?? 0,
+        totalFacturado, totalPendienteCobro,
       })
       setLoadingStats(false)
     }
 
     void fetchStats()
-
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [userId])
 
   const nombre = profile?.display_name ?? profile?.email?.split('@')[0] ?? 'usuario'
@@ -102,44 +90,30 @@ export function UserDashboard({ onNav }: Props) {
 
       {/* Saludo */}
       <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-1)' }}>
-          {saludo}, {nombre} 👋
-        </h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-          Aquí tienes un resumen de tu actividad
-        </p>
+        <h1 className="section-title">{saludo}, {nombre} 👋</h1>
+        <p className="section-sub">Aquí tienes un resumen de tu actividad</p>
       </div>
 
       {/* KPI total facturado */}
-      <div style={{
-        background: 'var(--color-surface)',
-        border: '2px solid var(--color-border)',
-        borderRadius: 'var(--radius-xl)',
-        padding: 'var(--space-6)',
-        marginBottom: 'var(--space-6)',
-        boxShadow: '4px 4px 0px 0px var(--color-border)',
-        display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-      }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 'var(--radius-lg)',
+      <div className="kpi-box">
+        <div className="icon-box icon-box-lg" style={{
           background: 'var(--color-primary-highlight)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: '1.5px solid var(--color-primary)', flexShrink: 0,
+          border: '1.5px solid var(--color-primary)',
         }}>
           <TrendingUp size={22} style={{ color: 'var(--color-primary)' }} />
         </div>
         <div>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Ingresos cobrados</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-text)', fontVariantNumeric: 'tabular-nums' }}>
+          <p className="stat-label">Ingresos cobrados</p>
+          <p className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {loadingStats ? '—' : `${stats.totalFacturado.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`}
           </p>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
+          <p className="stat-sub">
             Pendiente de cobro: {loadingStats ? '—' : `${stats.totalPendienteCobro.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`}
           </p>
         </div>
       </div>
 
-      {/* Grid stats */}
+      {/* Grid de stat cards — sin JS mouse handlers (CSS :hover/:active) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
@@ -147,29 +121,11 @@ export function UserDashboard({ onNav }: Props) {
         marginBottom: 'var(--space-8)',
       }}>
         {STAT_CARDS.map(({ key, label, Icon, section, color }) => (
-          <button
-            key={key}
-            onClick={() => onNav(section)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-              background: 'var(--color-surface)',
-              border: '2px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 'var(--space-4) var(--space-5)',
-              cursor: 'pointer',
-              boxShadow: '3px 3px 0px 0px var(--color-border)',
-              transition: 'transform 90ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 90ms',
-              textAlign: 'left', fontFamily: 'var(--font-body)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translate(-2px,-2px)'; e.currentTarget.style.boxShadow = '5px 5px 0px 0px var(--color-border)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translate(0,0)'; e.currentTarget.style.boxShadow = '3px 3px 0px 0px var(--color-border)' }}
-            onMouseDown={e => { e.currentTarget.style.transform = 'translate(2px,2px)'; e.currentTarget.style.boxShadow = '1px 1px 0px 0px var(--color-border)' }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'translate(-2px,-2px)'; e.currentTarget.style.boxShadow = '5px 5px 0px 0px var(--color-border)' }}
-          >
-            <div style={{
-              width: 40, height: 40, borderRadius: 'var(--radius-md)',
+          <button key={key} onClick={() => onNav(section)} className="stat-btn">
+            <div className="icon-box" style={{
+              width: 40, height: 40,
+              borderRadius: 'var(--radius-md)',
               background: `color-mix(in oklch, ${color} 12%, var(--color-surface-2))`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
               <Icon size={18} style={{ color }} />
             </div>
@@ -184,36 +140,27 @@ export function UserDashboard({ onNav }: Props) {
       </div>
 
       {/* Accesos rápidos */}
-      <div style={{
-        background: 'var(--color-surface)',
-        border: '2px solid var(--color-border)',
-        borderRadius: 'var(--radius-xl)',
-        padding: 'var(--space-6)',
-        boxShadow: '4px 4px 0px 0px var(--color-border)',
-      }}>
+      <div className="card card-raised" style={{ padding: 'var(--space-6)' }}>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-4)' }}>
           Crear nuevo documento
         </h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           {[
-            { label: 'Factura',      section: 'facturas' as UserSection },
-            { label: 'Presupuesto',  section: 'presupuestos' as UserSection },
-            { label: 'Albarán',      section: 'albaranes' as UserSection },
-            { label: 'Contrato',     section: 'contratos' as UserSection },
-            { label: 'NDA',          section: 'ndas' as UserSection },
-            { label: 'Reclamación',  section: 'reclamaciones' as UserSection },
+            { label: 'Factura',     section: 'facturas' as UserSection },
+            { label: 'Presupuesto', section: 'presupuestos' as UserSection },
+            { label: 'Albarán',     section: 'albaranes' as UserSection },
+            { label: 'Contrato',    section: 'contratos' as UserSection },
+            { label: 'NDA',         section: 'ndas' as UserSection },
+            { label: 'Reclamación', section: 'reclamaciones' as UserSection },
           ].map(({ label, section }) => (
-            <button
-              key={section}
-              onClick={() => onNav(section)}
-              className="btn btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
-            >
+            <button key={section} onClick={() => onNav(section)} className="btn btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
               <Plus size={14} /> {label}
             </button>
           ))}
         </div>
       </div>
+
     </div>
   )
 }

@@ -38,9 +38,9 @@ const TABLA_CONFIG: Record<TipoDocumento, {
 
 const ESTADO_COLORS: Record<string, string> = {
   borrador:    'var(--color-text-faint)',
-  emitida:     'var(--color-blue)',
-  enviada:     'var(--color-blue)',
-  enviado:     'var(--color-blue)',
+  emitida:     'var(--color-primary)',
+  enviada:     'var(--color-primary)',
+  enviado:     'var(--color-primary)',
   cobrada:     'var(--color-success)',
   aceptado:    'var(--color-success)',
   firmado:     'var(--color-success)',
@@ -48,7 +48,7 @@ const ESTADO_COLORS: Record<string, string> = {
   entregado:   'var(--color-success)',
   cancelada:   'var(--color-error)',
   rechazado:   'var(--color-error)',
-  caducado:    'var(--color-warning)',
+  caducado:    'var(--color-gold)',
   pendiente:   'var(--color-gold)',
   resuelta:    'var(--color-success)',
 }
@@ -141,29 +141,15 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      {/* Confirmación de guardado desde el editor embebido */}
+    <div className="doc-listado-wrap">
       {flashMessage && (
-        <div
-          style={{
-            marginBottom: 'var(--space-5)',
-            padding: 'var(--space-4)',
-            background: 'var(--color-primary-highlight)',
-            border: '1.5px solid var(--color-primary)',
-            borderRadius: 'var(--radius-lg)',
-            color: 'var(--color-primary)',
-            fontWeight: 600,
-          }}
-        >
-          {flashMessage}
-        </div>
+        <div className="doc-flash">{flashMessage}</div>
       )}
 
-      {/* Cabecera */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+      <div className="doc-listado-header">
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-text)' }}>{cfg.label}</h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginTop: 2 }}>
+          <h1 className="section-title">{cfg.label}</h1>
+          <p className="section-sub" style={{ marginTop: 2 }}>
             {loading ? 'Cargando…' : `${rows.length} ${rows.length === 1 ? cfg.labelSingular : cfg.label.toLowerCase()}`}
           </p>
         </div>
@@ -172,29 +158,20 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
         </button>
       </div>
 
-      {/* Estado cargando */}
       {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {[1,2,3].map(i => (
-            <div key={i} style={{ height: 64, borderRadius: 'var(--radius-lg)', background: 'var(--color-surface)', border: '2px solid var(--color-border)', animation: 'shimmer 1.5s ease-in-out infinite', backgroundSize: '200% 100%' }} />
+        <div className="doc-list">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="doc-skeleton" />
           ))}
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && rows.length === 0 && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: 'var(--space-16) var(--space-8)',
-          background: 'var(--color-surface)', border: '2px dashed var(--color-border)',
-          borderRadius: 'var(--radius-xl)', textAlign: 'center',
-        }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: 'var(--radius-lg)',
-            background: 'var(--color-surface-offset)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: 'var(--space-4)',
-          }}>
+        <div className="empty-state empty-state--xl">
+          <div
+            className="icon-box icon-box-lg mx-auto"
+            style={{ background: 'var(--color-surface-offset)', marginBottom: 'var(--space-4)' }}
+          >
             <FileText size={24} style={{ color: 'var(--color-text-faint)' }} />
           </div>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
@@ -209,9 +186,8 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
         </div>
       )}
 
-      {/* Listado */}
       {!loading && rows.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <div className="doc-list">
           {rows.map(row => {
             const titulo   = row[cfg.campoTitulo] ?? '—'
             const cliente  = row[cfg.campoSecundario] ?? '—'
@@ -224,32 +200,17 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
               : estado
 
             return (
-              <div
-                key={row.id}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-                  background: 'var(--color-surface)',
-                  border: '2px solid var(--color-border)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: 'var(--space-4)',
-                  boxShadow: '2px 2px 0px 0px var(--color-border)',
-                  transition: 'box-shadow 90ms',
-                }}
-              >
-                {/* Icono */}
-                <div style={{
-                  width: 36, height: 36, flexShrink: 0,
-                  background: 'var(--color-surface-offset)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
+              <div key={row.id} className="doc-row">
+                <div
+                  className="icon-box icon-box-md"
+                  style={{ background: 'var(--color-surface-offset)' }}
+                >
                   <FileText size={16} style={{ color: 'var(--color-text-muted)' }} />
                 </div>
 
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{titulo}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                    <span className="doc-row-title">{titulo}</span>
                     {estado && (
                       <span style={{
                         fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -260,33 +221,22 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                       }}>{estadoLabel}</span>
                     )}
                   </div>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                  <p className="doc-row-meta">
                     {cliente}{fecha ? ` · ${fecha}` : ''}
                   </p>
                 </div>
 
-                {/* Precio */}
                 {precio !== null && precio !== undefined && (
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-text)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                  <span className="doc-row-price">
                     {Number(precio).toLocaleString('es-ES', { minimumFractionDigits: 2 })} €
                   </span>
                 )}
 
-                {/* Acciones */}
-                <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
+                <div className="flex gap-2 shrink-0">
                   <button
                     type="button"
                     title={onOpen ? 'Abrir documento' : 'Abrir herramienta'}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 32, height: 32, borderRadius: 'var(--radius-md)',
-                      border: '1.5px solid var(--color-border)',
-                      background: 'var(--color-surface-2)',
-                      color: 'var(--color-text-muted)',
-                      transition: 'background 100ms, color 100ms',
-                      textDecoration: 'none',
-                      cursor: 'pointer',
-                    }}
+                    className="icon-btn"
                     onClick={() => {
                       if (onOpen) {
                         onOpen(row.id)
@@ -294,8 +244,6 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                       }
                       window.open(cfg.routeCrear, '_blank')
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-offset)'; e.currentTarget.style.color = 'var(--color-text)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
                   >
                     <ExternalLink size={13} />
                   </button>
@@ -303,17 +251,7 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                     onClick={() => handleDelete(row.id)}
                     disabled={deleting === row.id}
                     title="Eliminar"
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 32, height: 32, borderRadius: 'var(--radius-md)',
-                      border: '1.5px solid var(--color-border)',
-                      background: 'var(--color-surface-2)',
-                      color: 'var(--color-text-muted)',
-                      cursor: 'pointer',
-                      transition: 'background 100ms, color 100ms',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-error-highlight)'; e.currentTarget.style.color = 'var(--color-error)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
+                    className="icon-btn icon-btn--danger"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -321,17 +259,7 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                     <button
                       onClick={() => { void handleFacturaStatus(row.id, 'cobrada') }}
                       title="Marcar como cobrada"
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 32, height: 32, borderRadius: 'var(--radius-md)',
-                        border: '1.5px solid var(--color-border)',
-                        background: 'var(--color-surface-2)',
-                        color: 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        transition: 'background 100ms, color 100ms',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-success-highlight)'; e.currentTarget.style.color = 'var(--color-success)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
+                      className="icon-btn icon-btn--success"
                     >
                       <CheckCircle2 size={13} />
                     </button>
@@ -340,17 +268,7 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                     <button
                       onClick={() => { void handleFacturaStatus(row.id, 'emitida') }}
                       title="Marcar como emitida"
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 32, height: 32, borderRadius: 'var(--radius-md)',
-                        border: '1.5px solid var(--color-border)',
-                        background: 'var(--color-surface-2)',
-                        color: 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        transition: 'background 100ms, color 100ms',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-blue-highlight)'; e.currentTarget.style.color = 'var(--color-blue)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
+                      className="icon-btn icon-btn--primary"
                     >
                       <Send size={13} />
                     </button>
@@ -359,17 +277,7 @@ export function DocumentoListado({ tipo, refreshKey = 0, onCreate, onOpen, flash
                     <button
                       onClick={() => { void handleFacturaStatus(row.id, 'emitida') }}
                       title="Marcar como no cobrada"
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 32, height: 32, borderRadius: 'var(--radius-md)',
-                        border: '1.5px solid var(--color-border)',
-                        background: 'var(--color-surface-2)',
-                        color: 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        transition: 'background 100ms, color 100ms',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-warning-highlight)'; e.currentTarget.style.color = 'var(--color-warning)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-2)'; e.currentTarget.style.color = 'var(--color-text-muted)' }}
+                      className="icon-btn icon-btn--gold"
                     >
                       <Undo2 size={13} />
                     </button>
