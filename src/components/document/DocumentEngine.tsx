@@ -13,10 +13,11 @@ import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle, X, Loader2 } from 'lucide-react'
+import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle, X, Loader2, Building2 } from 'lucide-react'
 import { useDocumentStore } from '../../store/documentStore'
-import type { RegularClient } from '../../types/regularClient.types'
+import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 import { regularClientToClienteInfo } from '../../types/regularClient.types'
+import type { Empresa } from '../../types/empresa.types'
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Encabezado de la factura',
@@ -34,6 +35,9 @@ interface DocumentEngineProps {
   onSave?: (documento: DocumentoBase, totales: TotalesDocumento, finalizar?: boolean) => Promise<void>
   saving?: boolean
   clientes?: RegularClient[]
+  empresa?: Empresa | null
+  onNavPerfil?: () => void
+  onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
 }
 
 export function DocumentEngine({
@@ -46,11 +50,15 @@ export function DocumentEngine({
   onSave,
   saving = false,
   clientes = [],
+  empresa,
+  onNavPerfil,
+  onClienteGuardado,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState('')
+  const [savingCliente, setSavingCliente] = useState(false)
   const navigate = useNavigate()
   const { setPresupuestoPendiente } = useDocumentStore()
 
@@ -63,7 +71,7 @@ export function DocumentEngine({
     eliminarLinea,
     guardarEmisor,
     formatEuro: fmt,
-  } = useDocumentEngine(tipo, initialData)
+  } = useDocumentEngine(tipo, initialData, empresa)
 
   const {
     register,
@@ -151,6 +159,30 @@ export function DocumentEngine({
     setValue('cliente.email', cliente.email ?? '', { shouldDirty: true })
     setValue('cliente.pais', cliente.pais ?? '', { shouldDirty: true })
     setValue('cliente.clienteExterior', Boolean(cliente.clienteExterior), { shouldDirty: true })
+  }
+
+  const handleGuardarClienteHabitual = async () => {
+    if (!onClienteGuardado) return
+    const c = form.getValues('cliente') as DocumentoBase['cliente']
+    setSavingCliente(true)
+    try {
+      await onClienteGuardado({
+        nombre: c.nombre,
+        nif: c.nif,
+        email: c.email || undefined,
+        direccion: c.direccion,
+        cp: c.cp,
+        ciudad: c.ciudad,
+        provincia: c.provincia || '',
+        pais: c.pais || undefined,
+        cliente_exterior: Boolean(c.clienteExterior),
+      })
+      showFeedback('Cliente guardado como habitual')
+    } catch {
+      showFeedback('No se pudo guardar el cliente')
+    } finally {
+      setSavingCliente(false)
+    }
   }
 
   const sectionLabelStyle: React.CSSProperties = {
@@ -318,107 +350,184 @@ export function DocumentEngine({
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <fieldset className="fieldset-v3">
-            <legend className="fieldset-legend">{TITULO_ENCABEZADO[tipo]}</legend>
-            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
-              <div className="form-row">
-                <FormField
-                  label="Número *"
-                  {...register('numero', tipo === 'factura' ? {} : { required: 'El número es obligatorio' })}
-                  error={errors.numero}
-                  readOnly={tipo === 'factura'}
-                  disabled={tipo === 'factura'}
-                  placeholder={tipo === 'factura' ? 'Se asignará al finalizar' : undefined}
-                  style={tipo === 'factura'
-                    ? {
-                        background: 'var(--color-surface-offset)',
-                        color: 'var(--color-text-faint)',
-                        cursor: 'not-allowed',
-                        opacity: 0.9,
-                      }
-                    : undefined}
-                />
-                <FormField
-                  label="Fecha *"
-                  type="date"
-                  {...register('fecha', { required: 'La fecha es obligatoria' })}
-                  error={errors.fecha}
-                />
-              </div>
-              {esFinanciero && (
-                <FormField
-                  label="Vencimiento"
-                  type="date"
-                  {...register('fechaVencimiento', {
-                    validate: (value) => {
-                      if (!value) return true
-                      const fechaDoc = form.getValues('fecha')
-                      if (!fechaDoc) return true
-                      return value >= fechaDoc || 'El vencimiento no puede ser anterior a la fecha del documento'
-                    },
-                  })}
-                  error={errors.fechaVencimiento}
-                />
+            <legend className="fieldset-legend">
+              {empresa && tipo === 'factura' ? (
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: documento.numero ? 'var(--color-text)' : 'var(--color-text-faint)' }}>
+                    {documento.numero || 'FAC-XXXX-XXX'}
+                  </span>
+                  {!documento.numero && (
+                    <span style={{ fontSize: 'var(--text-xs)', fontWeight: 400, color: 'var(--color-text-faint)', fontStyle: 'italic' }}>
+                      · se asignará al emitir
+                    </span>
+                  )}
+                </span>
+              ) : (
+                TITULO_ENCABEZADO[tipo]
+              )}
+            </legend>
+            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-3)' }}>
+              {empresa && tipo === 'factura' ? (
+                <div className="form-row">
+                  <FormField
+                    label="Fecha *"
+                    type="date"
+                    {...register('fecha', { required: 'La fecha es obligatoria' })}
+                    error={errors.fecha}
+                  />
+                  <FormField
+                    label="Vencimiento"
+                    type="date"
+                    {...register('fechaVencimiento', {
+                      validate: (value) => {
+                        if (!value) return true
+                        const fechaDoc = form.getValues('fecha')
+                        if (!fechaDoc) return true
+                        return value >= fechaDoc || 'El vencimiento no puede ser anterior a la fecha del documento'
+                      },
+                    })}
+                    error={errors.fechaVencimiento}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="form-row">
+                    <FormField
+                      label="Número *"
+                      {...register('numero', tipo === 'factura' ? {} : { required: 'El número es obligatorio' })}
+                      error={errors.numero}
+                      readOnly={tipo === 'factura'}
+                      disabled={tipo === 'factura'}
+                      placeholder={tipo === 'factura' ? 'Se asignará al finalizar' : undefined}
+                      style={tipo === 'factura'
+                        ? {
+                            background: 'var(--color-surface-offset)',
+                            color: 'var(--color-text-faint)',
+                            cursor: 'not-allowed',
+                            opacity: 0.9,
+                          }
+                        : undefined}
+                    />
+                    <FormField
+                      label="Fecha *"
+                      type="date"
+                      {...register('fecha', { required: 'La fecha es obligatoria' })}
+                      error={errors.fecha}
+                    />
+                  </div>
+                  {esFinanciero && (
+                    <FormField
+                      label="Vencimiento"
+                      type="date"
+                      {...register('fechaVencimiento', {
+                        validate: (value) => {
+                          if (!value) return true
+                          const fechaDoc = form.getValues('fecha')
+                          if (!fechaDoc) return true
+                          return value >= fechaDoc || 'El vencimiento no puede ser anterior a la fecha del documento'
+                        },
+                      })}
+                      error={errors.fechaVencimiento}
+                    />
+                  )}
+                </>
               )}
             </div>
           </fieldset>
 
-          <fieldset className="fieldset-v3">
-            <legend className="fieldset-legend">Tus datos</legend>
-            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
-              <FormField
-                label="Nombre / Razón social *"
-                {...register('emisor.nombre', { required: 'El nombre es obligatorio' })}
-                error={errors.emisor?.nombre}
-              />
-              <div className="form-row">
-                <FormField
-                  label="NIF / CIF / NIE *"
-                  {...register('emisor.nif', {
-                    required: 'El NIF es obligatorio',
-                    validate: (value) => validarNif(value),
-                  })}
-                  error={errors.emisor?.nif}
-                />
-                <FormField
-                  label="Email *"
-                  type="email"
-                  {...register('emisor.email', {
-                    required: 'El email es obligatorio',
-                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email no válido' },
-                  })}
-                  error={errors.emisor?.email}
-                />
+          {empresa ? (
+            <div style={{
+              background: 'var(--color-primary-highlight)',
+              border: '1px solid var(--color-primary)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 'var(--space-3) var(--space-4)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-3)',
+              fontSize: 'var(--text-sm)',
+            }}>
+              <Building2 size={15} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{empresa.nombre}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}> · {empresa.nif}</span>
+                {empresa.email && (
+                  <span style={{ color: 'var(--color-text-muted)' }}> · {empresa.email}</span>
+                )}
               </div>
-              <FormField
-                label="Dirección *"
-                {...register('emisor.direccion', { required: 'La dirección es obligatoria' })}
-                error={errors.emisor?.direccion}
-              />
-              <div className="form-row">
-                <FormField
-                  label="Código postal *"
-                  {...register('emisor.cp', {
-                    required: 'El CP es obligatorio',
-                    pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
-                  })}
-                  error={errors.emisor?.cp}
-                />
-                <FormField
-                  label="Ciudad *"
-                  {...register('emisor.ciudad', { required: 'La ciudad es obligatoria' })}
-                  error={errors.emisor?.ciudad}
-                />
-              </div>
-              <div className="form-row">
-                <FormField label="Provincia" {...register('emisor.provincia')} />
-                <FormField label="Teléfono" type="tel" {...register('emisor.telefono')} />
-              </div>
+              {onNavPerfil && (
+                <button
+                  type="button"
+                  onClick={onNavPerfil}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 'var(--text-xs)', color: 'var(--color-primary)',
+                    fontWeight: 700, padding: 0, fontFamily: 'var(--font-body)',
+                    flexShrink: 0,
+                  }}
+                >
+                  Editar →
+                </button>
+              )}
             </div>
-          </fieldset>
+          ) : (
+            <fieldset className="fieldset-v3">
+              <legend className="fieldset-legend">Tus datos</legend>
+              <div className="fieldset-v3-body">
+                <FormField
+                  label="Nombre / Razón social *"
+                  {...register('emisor.nombre', { required: 'El nombre es obligatorio' })}
+                  error={errors.emisor?.nombre}
+                />
+                <div className="form-row">
+                  <FormField
+                    label="NIF / CIF / NIE *"
+                    {...register('emisor.nif', {
+                      required: 'El NIF es obligatorio',
+                      validate: (value) => validarNif(value),
+                    })}
+                    error={errors.emisor?.nif}
+                  />
+                  <FormField
+                    label="Email *"
+                    type="email"
+                    {...register('emisor.email', {
+                      required: 'El email es obligatorio',
+                      pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email no válido' },
+                    })}
+                    error={errors.emisor?.email}
+                  />
+                </div>
+                <FormField
+                  label="Dirección *"
+                  {...register('emisor.direccion', { required: 'La dirección es obligatoria' })}
+                  error={errors.emisor?.direccion}
+                />
+                <div className="form-row">
+                  <FormField
+                    label="Código postal *"
+                    {...register('emisor.cp', {
+                      required: 'El CP es obligatorio',
+                      pattern: { value: /^\d{5}$/, message: 'El CP debe tener 5 dígitos' },
+                    })}
+                    error={errors.emisor?.cp}
+                  />
+                  <FormField
+                    label="Ciudad *"
+                    {...register('emisor.ciudad', { required: 'La ciudad es obligatoria' })}
+                    error={errors.emisor?.ciudad}
+                  />
+                </div>
+                <div className="form-row">
+                  <FormField label="Provincia" {...register('emisor.provincia')} />
+                  <FormField label="Teléfono" type="tel" {...register('emisor.telefono')} />
+                </div>
+              </div>
+            </fieldset>
+          )}
 
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Datos del cliente</legend>
-            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+            <div className="fieldset-v3-body">
               {clientes.length > 0 && (
                 <div className="input-group">
                   <label className="input-label">Cliente frecuente</label>
@@ -494,6 +603,21 @@ export function DocumentEngine({
                   />
                 )}
               </div>
+
+              {empresa && onClienteGuardado && !selectedClientId && Boolean(documento.cliente?.nombre) && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    onClick={() => { void handleGuardarClienteHabitual() }}
+                    disabled={savingCliente}
+                  >
+                    <Plus size={13} />
+                    {savingCliente ? 'Guardando...' : 'Guardar como cliente habitual'}
+                  </Button>
+                </div>
+              )}
             </div>
           </fieldset>
 
@@ -507,7 +631,7 @@ export function DocumentEngine({
               </label>
             )}
 
-            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+            <div className="fieldset-v3-body">
               {fields.map((field, index) => (
                 <div key={field.id} className="linea-concepto">
                   <FormField
@@ -688,7 +812,7 @@ export function DocumentEngine({
           {esFinanciero && (
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Forma de pago</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="input-group">
                   <label className="input-label">Método de pago</label>
                   <select {...register('formaPago.metodo')} className="select-v3">

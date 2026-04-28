@@ -86,11 +86,11 @@ export function UserDashboard({ onNav }: Props) {
   const saludo = hora < 14 ? 'Buenos días' : hora < 21 ? 'Buenas tardes' : 'Buenas noches'
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div className="doc-listado-wrap">
 
       {/* Saludo */}
       <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 className="section-title">{saludo}, {nombre} 👋</h1>
+        <h1 className="section-title">{saludo}, {nombre}</h1>
         <p className="section-sub">Aquí tienes un resumen de tu actividad</p>
       </div>
 

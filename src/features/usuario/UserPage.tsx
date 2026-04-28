@@ -7,7 +7,7 @@ import { Navigate } from 'react-router-dom'
 import { UserLayout, type UserSection } from './UserLayout'
 import { UserDashboard } from './UserDashboard'
 import { DocumentoListado, type TipoDocumento } from './DocumentoListado'
-import { ConfiguracionPage } from './ConfiguracionPage'
+import { PerfilPage } from './PerfilPage'
 import { useAuth } from '../../hooks/useAuth'
 import { RouteLoading } from '../../components/routing/RouteLoading'
 import { AlertModal } from '../../components/shared/AlertModal'
@@ -21,10 +21,13 @@ import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
 import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, type UserDocumentTable } from '../../lib/userDocuments'
-import { listRegularClients } from '../../lib/regularClients'
+import { listRegularClients, createRegularClient } from '../../lib/regularClients'
+import { getEmpresa } from '../../lib/empresa'
+import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
+import type { Empresa } from '../../types/empresa.types'
 import type { DocumentoBase, TotalesDocumento } from '../../types/document.types'
 import type { ContratoServiciosDoc, NdaDoc, ReclamacionPagoDoc } from '../../types/legalDoc.types'
-import type { RegularClient } from '../../types/regularClient.types'
+import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 
 const DOCUMENT_SECTIONS: UserSection[] = [
   'facturas', 'presupuestos', 'albaranes', 'contratos', 'ndas', 'reclamaciones',
@@ -59,6 +62,19 @@ export function UserPage() {
   const userId = user?.id
   const [flashMessage, setFlashMessage] = useState<string | null>(null)
   const [alertState, setAlertState] = useState<{ msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
+  const [empresa, setEmpresa] = useState<Empresa | null | undefined>(undefined)
+
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    async function loadEmpresa() {
+      const { data } = await getEmpresa(userId as string)
+      if (!active) return
+      setEmpresa(data)
+    }
+    void loadEmpresa()
+    return () => { active = false }
+  }, [userId])
 
   useEffect(() => {
     if (!userId) {
@@ -84,7 +100,7 @@ export function UserPage() {
 
   const clientesDisponibles = useMemo(() => (clientesLoading ? [] : clientes), [clientes, clientesLoading])
 
-  if (loading) return <RouteLoading />
+  if (loading || empresa === undefined) return <RouteLoading />
   if (!user) return <Navigate to="/" replace />
 
   const closeEditor = () => setEditor(null)
@@ -204,6 +220,15 @@ export function UserPage() {
     bumpRefresh()
   }
 
+  const handleClienteGuardado = async (payload: RegularClientInput) => {
+    if (!userId) throw new Error('No hay sesión activa')
+    const result = await createRegularClient(userId, payload)
+    if (result.error || !result.data) {
+      throw new Error('No se pudo guardar el cliente')
+    }
+    setClientes((prev) => [...prev, result.data!].sort((a, b) => a.nombre.localeCompare(b.nombre)))
+  }
+
   const renderDocumentWorkspace = () => {
     if (!editor || editor.section !== section) {
       return (
@@ -231,6 +256,9 @@ export function UserPage() {
           onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('facturas', document, totals, editor.id, finalizar)}
           saving={saving}
           clientes={clientesDisponibles}
+          empresa={empresa}
+          onNavPerfil={() => { closeEditor(); setSection('perfil') }}
+          onClienteGuardado={handleClienteGuardado}
         />
       )
     }
@@ -244,6 +272,9 @@ export function UserPage() {
           onSave={(document, totals) => saveBusiness('presupuestos', document, totals, editor.id)}
           saving={saving}
           clientes={clientesDisponibles}
+          empresa={empresa}
+          onNavPerfil={() => { closeEditor(); setSection('perfil') }}
+          onClienteGuardado={handleClienteGuardado}
         />
       )
     }
@@ -257,6 +288,9 @@ export function UserPage() {
           onSave={(document, totals) => saveBusiness('albaranes', document, totals, editor.id)}
           saving={saving}
           clientes={clientesDisponibles}
+          empresa={empresa}
+          onNavPerfil={() => { closeEditor(); setSection('perfil') }}
+          onClienteGuardado={handleClienteGuardado}
         />
       )
     }
@@ -307,8 +341,8 @@ export function UserPage() {
     if (section === 'dashboard') {
       return <UserDashboard onNav={setSection} />
     }
-    if (section === 'clientes') {
-      return <ConfiguracionPage clientes={clientes} onClientsChange={setClientes} />
+    if (section === 'perfil') {
+      return <PerfilPage userId={user.id} clientes={clientes} onClientsChange={setClientes} />
     }
     if (DOCUMENT_SECTIONS.includes(section)) {
       return renderDocumentWorkspace()
@@ -333,6 +367,13 @@ export function UserPage() {
       >
         {renderContent()}
       </UserLayout>
+
+      {empresa === null && (
+        <OnboardingEmpresaModal
+          userId={user.id}
+          onComplete={(saved) => setEmpresa(saved)}
+        />
+      )}
 
       {alertState && (
         <AlertModal

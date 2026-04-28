@@ -20,6 +20,15 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
     const { titulo, numero: labelNumero } = ETIQUETAS[documento.tipo]
     const esFinanciero = documento.tipo !== 'albaran'
 
+    const formatDireccion = (
+      direccion?: string, cp?: string, ciudad?: string, provincia?: string, pais?: string,
+    ) => [
+      direccion,
+      [cp, ciudad].filter(Boolean).join(' '),
+      provincia,
+      pais,
+    ].filter(Boolean).join(', ')
+
     return (
       <div ref={ref} className="doc-page doc-page-fixed">
         <div className="doc-inner">
@@ -29,11 +38,11 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             <div className="doc-emisor">
               <p className="doc-emisor-name">{documento.emisor.nombre}</p>
               <p className="doc-text-muted">NIF: {documento.emisor.nif}</p>
-              <p className="doc-text-muted">{documento.emisor.direccion}</p>
-              <p className="doc-text-muted">
-                {documento.emisor.cp} {documento.emisor.ciudad}
-                {documento.emisor.provincia ? `, ${documento.emisor.provincia}` : ''}
-              </p>
+              {(documento.emisor.direccion || documento.emisor.cp || documento.emisor.ciudad) && (
+                <p className="doc-text-muted">
+                  {formatDireccion(documento.emisor.direccion, documento.emisor.cp, documento.emisor.ciudad, documento.emisor.provincia)}
+                </p>
+              )}
               {documento.emisor.email    && <p className="doc-text-muted">{documento.emisor.email}</p>}
               {documento.emisor.telefono && <p className="doc-text-muted">{documento.emisor.telefono}</p>}
             </div>
@@ -56,25 +65,22 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                   </p>
                 )}
               </div>
+
+              {/* CLIENTE — debajo del bloque de referencia */}
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
+                <p className="doc-client-name">{documento.cliente.nombre}</p>
+                {documento.cliente.nif && <p className="doc-text-muted">NIF: {documento.cliente.nif}</p>}
+                {(documento.cliente.direccion || documento.cliente.cp || documento.cliente.ciudad) && (
+                  <p className="doc-text-muted">
+                    {formatDireccion(documento.cliente.direccion, documento.cliente.cp, documento.cliente.ciudad, documento.cliente.provincia, documento.cliente.pais)}
+                  </p>
+                )}
+                {documento.cliente.email && <p className="doc-text-muted">{documento.cliente.email}</p>}
+              </div>
             </div>
           </div>
 
           <hr className="doc-divider" />
-
-          {/* DATOS CLIENTE */}
-          <div className="doc-client-section">
-            <p className="doc-section-label">Facturar a</p>
-            <p className="doc-client-name">{documento.cliente.nombre}</p>
-            {documento.cliente.nif      && <p className="doc-text-muted">NIF: {documento.cliente.nif}</p>}
-            {documento.cliente.direccion && <p className="doc-text-muted">{documento.cliente.direccion}</p>}
-            {(documento.cliente.cp || documento.cliente.ciudad) && (
-              <p className="doc-text-muted">
-                {documento.cliente.cp} {documento.cliente.ciudad}
-                {documento.cliente.provincia ? `, ${documento.cliente.provincia}` : ''}
-              </p>
-            )}
-            {documento.cliente.email && <p className="doc-text-muted">{documento.cliente.email}</p>}
-          </div>
 
           {/* TABLA DE LÍNEAS */}
           <table className="doc-table">

@@ -14,6 +14,7 @@ export interface RegularClient {
   telefono?: string
   pais?: string
   notas?: string
+  cliente_exterior: boolean
   created_at: string
   updated_at: string
 }
@@ -29,6 +30,7 @@ export interface RegularClientInput {
   telefono?: string
   pais?: string
   notas?: string
+  cliente_exterior?: boolean
 }
 
 export function regularClientToClienteInfo(client: RegularClient): ClienteInfo {
@@ -41,7 +43,7 @@ export function regularClientToClienteInfo(client: RegularClient): ClienteInfo {
     provincia: client.provincia,
     email: client.email,
     pais: client.pais,
-    clienteExterior: Boolean(client.pais && client.pais.trim()),
+    clienteExterior: client.cliente_exterior ?? Boolean(client.pais && client.pais.trim()),
   }
 }
 

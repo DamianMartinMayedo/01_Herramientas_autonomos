@@ -121,14 +121,14 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
 
   return (
     <>
-      <div className="section-stack" style={{ maxWidth: 980, margin: '0 auto' }}>
+      <div className="section-stack">
 
         <div>
-          <h1 className="section-title">Cliente</h1>
+          <h1 className="section-title">Clientes habituales</h1>
           <p className="section-sub">Guarda clientes frecuentes para reutilizarlos al crear documentos.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-5)' }}>
+        <div className="clientes-layout">
 
           {/* Formulario */}
           <section className="fieldset-v3">

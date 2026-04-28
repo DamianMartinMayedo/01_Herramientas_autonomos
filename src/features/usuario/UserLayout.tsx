@@ -10,7 +10,7 @@ import {
   LayoutDashboard, FileText, Receipt, Package,
   FileSignature, ShieldOff, AlertCircle,
   Calculator, TrendingUp, Clock,
-  LogOut, X, ChevronRight, User, Settings,
+  LogOut, X, ChevronRight, User,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 
@@ -18,7 +18,7 @@ export type UserSection =
   | 'dashboard'
   | 'facturas' | 'presupuestos' | 'albaranes'
   | 'contratos' | 'ndas' | 'reclamaciones'
-  | 'clientes'
+  | 'perfil'
   | 'cuota-autonomos' | 'precio-hora' | 'iva-irpf'
 
 interface UserLayoutProps {
@@ -32,7 +32,7 @@ const NAV_GROUPS = [
     label: 'General',
     items: [
       { id: 'dashboard' as UserSection,  label: 'Dashboard', Icon: LayoutDashboard },
-      { id: 'clientes' as UserSection,   label: 'Cliente',   Icon: Settings },
+      { id: 'perfil' as UserSection,      label: 'Perfil',    Icon: User },
     ],
   },
   {
@@ -118,8 +118,8 @@ function UserSidebar({
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <button onClick={() => { onNav('clientes'); onClose?.() }} className="sidebar-footer-btn">
-          <User size={16} /> Cliente
+        <button onClick={() => { onNav('perfil'); onClose?.() }} className="sidebar-footer-btn">
+          <User size={16} /> Perfil
         </button>
         <button onClick={handleLogout} className="sidebar-footer-btn sidebar-footer-btn--danger">
           <LogOut size={16} /> Cerrar sesión
