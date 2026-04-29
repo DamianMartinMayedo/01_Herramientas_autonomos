@@ -12,6 +12,7 @@ import { PerfilPage } from './PerfilPage'
 import { useAuth } from '../../hooks/useAuth'
 import { RouteLoading } from '../../components/routing/RouteLoading'
 import { AlertModal } from '../../components/shared/AlertModal'
+import { EmailModal } from '../../components/shared/EmailModal'
 import { CuotaCalculator } from '../calculadoras/CuotaAutonomosPage'
 import { PrecioHoraCalculator } from '../calculadoras/PrecioHoraPage'
 import { IvaIrpfCalculator } from '../calculadoras/IvaIrpfPage'
@@ -21,7 +22,7 @@ import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -36,7 +37,7 @@ const DOCUMENT_SECTIONS: UserSection[] = [
 
 type EditorState =
   | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
-  | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null }
+  | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'albaranes'; id?: string; data?: DocumentoBase | null }
   | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null }
   | { section: 'ndas'; id?: string; data?: NdaDoc | null }
@@ -65,6 +66,10 @@ export function UserPage() {
   const [flashMessage, setFlashMessage] = useState<string | null>(null)
   const [alertState, setAlertState] = useState<{ msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const [empresa, setEmpresa] = useState<Empresa | null | undefined>(undefined)
+  const [emailPresupuestoState, setEmailPresupuestoState] = useState<{
+    email?: string; nombre: string
+    doc: DocumentoBase; totals: TotalesDocumento; id?: string
+  } | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -128,7 +133,7 @@ export function UserPage() {
     } as EditorState)
   }
 
-  const saveBusiness = async (table: 'facturas' | 'presupuestos' | 'albaranes', document: DocumentoBase, totals: TotalesDocumento, id?: string, finalizar?: boolean) => {
+  const saveBusiness = async (table: 'facturas' | 'presupuestos' | 'albaranes', document: DocumentoBase, totals: TotalesDocumento, id?: string, finalizar?: boolean, skipClose?: boolean) => {
     if (!userId) throw new Error('No hay sesión activa')
     setSaving(true)
     const result = await saveBusinessDocument({ table, userId, document, totals, id, finalizar })
@@ -139,16 +144,20 @@ export function UserPage() {
     if (result.data?.id) {
       setEditor((current) => (current ? { ...current, id: result.data?.id } : current))
     }
-    const numeroGuardado = table === 'facturas' ? result.numero : document.numero
+    const numeroGuardado = result.numero
     if (table === 'facturas' && finalizar) {
       setFlashMessage(`Factura emitida${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else if (table === 'facturas') {
       setFlashMessage('Borrador guardado.')
+    } else if (table === 'presupuestos' && finalizar) {
+      setFlashMessage(`Presupuesto enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+    } else if (table === 'presupuestos') {
+      setFlashMessage('Borrador guardado.')
     } else {
-      setFlashMessage(`${table === 'presupuestos' ? 'Presupuesto' : 'Albarán'} guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+      setFlashMessage(`Albarán guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     }
     setTimeout(() => setFlashMessage(null), 3000)
-    closeEditor()
+    if (!skipClose) closeEditor()
     bumpRefresh()
   }
 
@@ -171,6 +180,20 @@ export function UserPage() {
     setSearchParams({ s: 'facturas' })
     setEditor({
       section: 'facturas',
+      id,
+      data: result.data.datos_json as DocumentoBase,
+      viewOnly: true,
+      estado: result.data.estado,
+      autoDownload: true,
+    })
+  }
+
+  const handleDescargarPresupuesto = async (id: string) => {
+    const result = await getStoredUserDocument('presupuestos', id)
+    if (result.error || !result.data?.datos_json) return
+    setSearchParams({ s: 'presupuestos' })
+    setEditor({
+      section: 'presupuestos',
       id,
       data: result.data.datos_json as DocumentoBase,
       viewOnly: true,
@@ -249,6 +272,42 @@ export function UserPage() {
     bumpRefresh()
   }
 
+  const handleEnviarPresupuesto = async (id: string) => {
+    if (!userId) return
+    const result = await enviarPresupuesto(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo enviar el presupuesto. Inténtalo de nuevo.', variant: 'danger' })
+      return
+    }
+    setFlashMessage(`Presupuesto enviado${result.numero ? `: ${result.numero}` : ''}.`)
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
+  const handleAprobarPresupuesto = async (id: string) => {
+    const result = await aprobarPresupuesto(id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo marcar como aprobado.', variant: 'danger' })
+      return
+    }
+    setFlashMessage('Presupuesto aprobado.')
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
+  const handleConvertirAFactura = async (id: string) => {
+    if (!userId) return
+    const result = await convertirPresupuestoAFactura(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo convertir a factura. Inténtalo de nuevo.', variant: 'danger' })
+      return
+    }
+    setFlashMessage('Presupuesto convertido. Borrador de factura creado.')
+    setTimeout(() => setFlashMessage(null), 4000)
+    setSearchParams({ s: 'facturas' })
+    bumpRefresh()
+  }
+
   const handleClienteGuardado = async (payload: RegularClientInput) => {
     if (!userId) throw new Error('No hay sesión activa')
     const result = await createRegularClient(userId, payload)
@@ -267,10 +326,17 @@ export function UserPage() {
           onCreate={() => handleCreateDocument(section as TipoDocumento)}
           onOpen={(id) => { void handleOpenDocument(section as TipoDocumento, id) }}
           onView={(id) => { void handleViewDocument(section as TipoDocumento, id) }}
-          onDescargar={(id) => { void handleDescargarFactura(id) }}
+          onDescargar={(id) => {
+            if (section === 'facturas') void handleDescargarFactura(id)
+            else if (section === 'presupuestos') void handleDescargarPresupuesto(id)
+          }}
           onEmitir={(id) => { void handleEmitirFactura(id) }}
           onDuplicar={(id) => { void handleDuplicarFactura(id) }}
           onCorregir={(id) => { void handleCorregirFactura(id) }}
+          onEnviarPresupuesto={(id) => { void handleEnviarPresupuesto(id) }}
+          onAprobarPresupuesto={(id) => { void handleAprobarPresupuesto(id) }}
+          onConvertirAFactura={(id) => { void handleConvertirAFactura(id) }}
+          onNavCalc={(s) => setSearchParams({ s })}
           flashMessage={flashMessage}
         />
       )
@@ -304,17 +370,32 @@ export function UserPage() {
     }
 
     if (section === 'presupuestos') {
+      const isViewOnly = editor.section === 'presupuestos' && editor.viewOnly === true
+      const editorId = editor.id
+      const editorEstado = editor.section === 'presupuestos' ? (editor.estado ?? null) : null
+      const autoDownload = editor.section === 'presupuestos' ? (editor.autoDownload ?? false) : false
       return (
         <PresupuestoPage
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
-          onSave={(document, totals) => saveBusiness('presupuestos', document, totals, editor.id)}
+          onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('presupuestos', document, totals, editorId, finalizar)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
           onNavPerfil={() => { closeEditor(); setSearchParams({ s: 'perfil' }) }}
           onClienteGuardado={handleClienteGuardado}
+          autoOpenPreview={autoDownload}
+          viewOnlyActions={isViewOnly ? { estadoActual: editorEstado ?? undefined } : undefined}
+          onEmailPresupuesto={isViewOnly ? undefined : (doc, totals) => {
+            const id = editor?.section === 'presupuestos' ? editor.id : undefined
+            setEmailPresupuestoState({
+              email: doc.cliente?.email,
+              nombre: doc.numero ? `Presupuesto ${doc.numero}` : 'Presupuesto',
+              doc, totals, id,
+            })
+            // No cerramos el editor aquí: si el usuario cancela el email, puede seguir editando
+          }}
         />
       )
     }
@@ -435,6 +516,24 @@ export function UserPage() {
           message={alertState.msg}
           variant={alertState.variant}
           onConfirm={() => setAlertState(null)}
+        />
+      )}
+
+      {emailPresupuestoState && (
+        <EmailModal
+          emailCliente={emailPresupuestoState.email}
+          nombreDocumento={emailPresupuestoState.nombre}
+          onSent={async () => {
+            // Guarda como enviado y cierra el editor (el EmailModal sigue visible al ser top-level)
+            await saveBusiness(
+              'presupuestos',
+              emailPresupuestoState.doc,
+              emailPresupuestoState.totals,
+              emailPresupuestoState.id,
+              true,
+            )
+          }}
+          onClose={() => setEmailPresupuestoState(null)}
         />
       )}
     </>

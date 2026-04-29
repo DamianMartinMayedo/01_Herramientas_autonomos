@@ -1,7 +1,7 @@
 /**
  * DocumentoListado.tsx
  * Listado genérico reutilizable para todos los tipos de documento.
- * Para facturas, divide entre Borradores y Facturas emitidas con acciones específicas.
+ * Facturas y presupuestos usan pestañas (Borradores / Emitidas|Enviados).
  */
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabaseClient'
 import {
   Plus, FileText, Trash2, ExternalLink, CheckCircle2, Undo2, Send,
   Pencil, MoreHorizontal, Eye, Download, Copy, PenLine, Mail, X,
+  ArrowRight, Calculator, TrendingUp, Clock,
 } from 'lucide-react'
 import { EmailModal } from '../../components/shared/EmailModal'
 import { AlertModal } from '../../components/shared/AlertModal'
@@ -20,6 +21,10 @@ import {
   FACTURA_STATUS_LABELS,
   isFacturaStatus,
 } from '../../types/facturaStatus'
+import {
+  PRESUPUESTO_STATUS_LABELS,
+  isPresupuestoStatus,
+} from '../../types/presupuestoStatus'
 
 export type TipoDocumento =
   | 'facturas' | 'presupuestos' | 'albaranes'
@@ -49,9 +54,11 @@ const ESTADO_COLORS: Record<string, string> = {
   enviado:    'var(--color-primary)',
   cobrada:    'var(--color-success)',
   aceptado:   'var(--color-success)',
+  aprobado:   'var(--color-success)',
   firmado:    'var(--color-success)',
   finalizado: 'var(--color-success)',
   entregado:  'var(--color-success)',
+  convertido: 'var(--color-teal)',
   cancelada:  'var(--color-error)',
   rechazado:  'var(--color-error)',
   caducado:   'var(--color-gold)',
@@ -69,6 +76,10 @@ interface Props {
   onEmitir?: (id: string) => void
   onDuplicar?: (id: string) => void
   onCorregir?: (id: string) => void
+  onEnviarPresupuesto?: (id: string) => Promise<void> | void
+  onAprobarPresupuesto?: (id: string) => void
+  onConvertirAFactura?: (id: string) => void
+  onNavCalc?: (section: string) => void
   flashMessage?: string | null
 }
 
@@ -76,7 +87,9 @@ interface Props {
 type DocRow = Record<string, any>
 
 export function DocumentoListado({
-  tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir, flashMessage,
+  tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir,
+  onEnviarPresupuesto, onAprobarPresupuesto, onConvertirAFactura, onNavCalc,
+  flashMessage,
 }: Props) {
   const { user } = useAuth()
   const cfg = TABLA_CONFIG[tipo]
@@ -85,6 +98,8 @@ export function DocumentoListado({
   const [deleting, setDeleting] = useState<string | null>(null)
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null)
   const [emitirConfirmId, setEmitirConfirmId] = useState<string | null>(null)
+  const [emailPresupuestoEnviarRow, setEmailPresupuestoEnviarRow] = useState<DocRow | null>(null)
+  const [convertirFacturaConfirmId, setConvertirFacturaConfirmId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [emailModalRow, setEmailModalRow] = useState<DocRow | null>(null)
   const [activeTab, setActiveTab] = useState<'borradores' | 'emitidas'>('borradores')
@@ -163,9 +178,12 @@ export function DocumentoListado({
   const renderStatusBadge = (estado: string) => {
     if (!estado) return null
     const estadoColor = ESTADO_COLORS[estado] ?? 'var(--color-text-muted)'
-    const estadoLabel = tipo === 'facturas' && isFacturaStatus(estado)
-      ? FACTURA_STATUS_LABELS[estado]
-      : estado
+    const estadoLabel =
+      tipo === 'facturas' && isFacturaStatus(estado)
+        ? FACTURA_STATUS_LABELS[estado]
+        : tipo === 'presupuestos' && isPresupuestoStatus(estado)
+          ? PRESUPUESTO_STATUS_LABELS[estado]
+          : estado
     return (
       <span style={{
         fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -220,7 +238,8 @@ export function DocumentoListado({
     }}>Rectificativa</span>
   )
 
-  // Borrador de factura: Editar · Emitir (solo si no es rectificativa) · Eliminar
+  // ── Facturas ─────────────────────────────────────────────────────────────
+
   const renderBorradorRow = (row: DocRow) => renderRowBase(row, (
     <>
       <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
@@ -248,7 +267,6 @@ export function DocumentoListado({
     </>
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
 
-  // Factura emitida: dropdown con múltiples opciones
   const renderEmitidaRow = (row: DocRow) => renderRowBase(row, (
     <div className="dropdown-wrap">
       <button
@@ -300,7 +318,85 @@ export function DocumentoListado({
     </div>
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
 
-  // Fila genérica para tipos distintos a facturas
+  // ── Presupuestos ──────────────────────────────────────────────────────────
+
+  const renderPresupuestoBorradorRow = (row: DocRow) => renderRowBase(row, (
+    <>
+      <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
+        <Pencil size={13} />
+      </button>
+      <button
+        type="button"
+        title="Enviar presupuesto"
+        className="icon-btn icon-btn--primary"
+        onClick={() => setEmailPresupuestoEnviarRow(row)}
+      >
+        <Send size={13} />
+      </button>
+      <button
+        type="button"
+        title="Eliminar"
+        className="icon-btn icon-btn--danger"
+        onClick={() => handleDeleteRequest(row.id)}
+        disabled={deleting === row.id}
+      >
+        <Trash2 size={13} />
+      </button>
+    </>
+  ))
+
+  const renderPresupuestoEnviadoRow = (row: DocRow) => renderRowBase(row, (
+    <>
+      {row.estado !== 'convertido' && (
+        <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
+          <Pencil size={13} />
+        </button>
+      )}
+      <div className="dropdown-wrap">
+      <button
+        type="button"
+        title="Más opciones"
+        className="icon-btn"
+        onClick={(e) => {
+          e.stopPropagation()
+          setDropdownOpenId(dropdownOpenId === row.id ? null : row.id)
+        }}
+      >
+        <MoreHorizontal size={13} />
+      </button>
+      {dropdownOpenId === row.id && (
+        <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onView?.(row.id) }}>
+            <Eye size={13} /> Ver
+          </button>
+          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDescargar?.(row.id) }}>
+            <Download size={13} /> Descargar
+          </button>
+          {row.estado === 'enviado' && (
+            <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onAprobarPresupuesto?.(row.id) }}>
+              <CheckCircle2 size={13} /> Marcar como aprobado
+            </button>
+          )}
+          {(row.estado === 'enviado' || row.estado === 'aprobado') && (
+            <>
+              <div className="dropdown-divider" />
+              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setConvertirFacturaConfirmId(row.id) }}>
+                <ArrowRight size={13} /> Convertir a factura
+              </button>
+            </>
+          )}
+          <div className="dropdown-divider" />
+          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setEmailModalRow(row) }}>
+            <Mail size={13} /> Enviar por correo
+          </button>
+        </div>
+      )}
+      </div>
+    </>
+  ))
+
+  // ── Fila genérica ─────────────────────────────────────────────────────────
+
   const renderGenericRow = (row: DocRow) => renderRowBase(row, (
     <>
       <button
@@ -326,9 +422,12 @@ export function DocumentoListado({
     </>
   ))
 
-  // ── Datos derivados para facturas ─────────────────────────────────────────
-  const borradores = tipo === 'facturas' ? rows.filter(r => r.estado === 'borrador') : []
-  const emitidas   = tipo === 'facturas' ? rows.filter(r => r.estado !== 'borrador') : []
+  // ── Datos derivados ───────────────────────────────────────────────────────
+
+  const borradores     = tipo === 'facturas'     ? rows.filter(r => r.estado === 'borrador') : []
+  const emitidas       = tipo === 'facturas'     ? rows.filter(r => r.estado !== 'borrador') : []
+  const presBorradores = tipo === 'presupuestos' ? rows.filter(r => r.estado === 'borrador') : []
+  const presEnviados   = tipo === 'presupuestos' ? rows.filter(r => r.estado !== 'borrador') : []
 
   const emptyState = (
     <div className="empty-state empty-state--xl">
@@ -362,7 +461,7 @@ export function DocumentoListado({
           </p>
         </div>
         <button onClick={handleCrear} className="btn btn-primary">
-          <Plus size={15} /> Nueva {cfg.labelSingular}
+          <Plus size={15} /> Nuevo {cfg.labelSingular}
         </button>
       </div>
 
@@ -410,8 +509,71 @@ export function DocumentoListado({
         </>
       )}
 
+      {/* Vista con pestañas para presupuestos */}
+      {!loading && tipo === 'presupuestos' && (
+        <>
+          {presBorradores.length === 0 && presEnviados.length === 0 && emptyState}
+
+          {rows.length > 0 && (
+            <>
+              <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)' }}>
+                <button
+                  className={`filter-pill${activeTab === 'borradores' ? ' active' : ''}`}
+                  onClick={() => setActiveTab('borradores')}
+                >
+                  Borradores{presBorradores.length > 0 ? ` (${presBorradores.length})` : ''}
+                </button>
+                <button
+                  className={`filter-pill${activeTab === 'emitidas' ? ' active' : ''}`}
+                  onClick={() => setActiveTab('emitidas')}
+                >
+                  Enviados{presEnviados.length > 0 ? ` (${presEnviados.length})` : ''}
+                </button>
+              </div>
+
+              {activeTab === 'borradores' && (
+                presBorradores.length === 0
+                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No tienes borradores.</p>
+                  : <div className="doc-list">{presBorradores.map(row => renderPresupuestoBorradorRow(row))}</div>
+              )}
+
+              {activeTab === 'emitidas' && (
+                presEnviados.length === 0
+                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No tienes presupuestos enviados.</p>
+                  : <div className="doc-list">{presEnviados.map(row => renderPresupuestoEnviadoRow(row))}</div>
+              )}
+            </>
+          )}
+
+          {/* Calculadoras útiles */}
+          {onNavCalc && (
+            <div style={{ marginTop: 'var(--space-8)', borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-5)' }}>
+              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', marginBottom: 'var(--space-3)' }}>
+                Calculadoras útiles
+              </p>
+              <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Cuota autónomos', section: 'cuota-autonomos', color: 'var(--color-primary)',  Icon: Calculator },
+                  { label: 'Precio / hora',   section: 'precio-hora',     color: 'var(--color-purple)',   Icon: TrendingUp },
+                  { label: 'IVA / IRPF',      section: 'iva-irpf',        color: 'var(--color-teal)',     Icon: Clock },
+                ].map(({ label, section, color, Icon }) => (
+                  <button
+                    key={section}
+                    onClick={() => onNavCalc(section)}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <Icon size={13} style={{ color }} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
       {/* Vista genérica para otros tipos */}
-      {!loading && tipo !== 'facturas' && (
+      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && (
         <>
           {rows.length === 0 && emptyState}
           {rows.length > 0 && (
@@ -430,7 +592,7 @@ export function DocumentoListado({
         />
       )}
 
-      {/* Modal de confirmación de emisión */}
+      {/* Modal confirmación emitir factura */}
       {emitirConfirmId && (
         <div className="overlay overlay-dark overlay-z60">
           <div className="admin-modal-box admin-modal-sm" role="dialog" aria-modal="true" aria-label="Emitir factura">
@@ -470,11 +632,69 @@ export function DocumentoListado({
         </div>
       )}
 
+      {/* EmailModal para enviar presupuesto borrador (asigna número + cambia estado) */}
+      {emailPresupuestoEnviarRow && (
+        <EmailModal
+          emailCliente={emailPresupuestoEnviarRow.cliente_email as string | undefined}
+          nombreDocumento={emailPresupuestoEnviarRow.numero
+            ? `Presupuesto ${emailPresupuestoEnviarRow.numero as string}`
+            : 'Presupuesto'}
+          onSent={async () => {
+            await onEnviarPresupuesto?.(emailPresupuestoEnviarRow.id)
+          }}
+          onClose={() => setEmailPresupuestoEnviarRow(null)}
+        />
+      )}
+
+      {/* Modal confirmación convertir a factura */}
+      {convertirFacturaConfirmId && (
+        <div className="overlay overlay-dark overlay-z60">
+          <div className="admin-modal-box admin-modal-sm" role="dialog" aria-modal="true" aria-label="Convertir a factura">
+            <div className="admin-modal-header">
+              <div
+                className="icon-box icon-box-md"
+                style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}
+              >
+                <ArrowRight size={18} />
+              </div>
+              <h2 className="admin-modal-title">Convertir a factura</h2>
+              <button onClick={() => setConvertirFacturaConfirmId(null)} className="modal-close-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="admin-modal-body">
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+                Se creará una <strong style={{ color: 'var(--color-text)' }}>factura en borrador</strong> con los datos del presupuesto.
+                El presupuesto quedará marcado como convertido.
+              </p>
+            </div>
+            <div className="admin-modal-footer">
+              <button className="btn btn-secondary btn-sm" onClick={() => setConvertirFacturaConfirmId(null)}>
+                Cancelar
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  onConvertirAFactura?.(convertirFacturaConfirmId)
+                  setConvertirFacturaConfirmId(null)
+                }}
+              >
+                <ArrowRight size={15} /> Convertir a factura
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de envío por correo */}
       {emailModalRow && (
         <EmailModal
           emailCliente={emailModalRow.cliente_email as string | undefined}
-          nombreDocumento={emailModalRow.numero ? `Factura ${emailModalRow.numero as string}` : 'Factura'}
+          nombreDocumento={
+            emailModalRow.numero
+              ? `${tipo === 'presupuestos' ? 'Presupuesto' : 'Factura'} ${emailModalRow.numero as string}`
+              : (tipo === 'presupuestos' ? 'Presupuesto' : 'Factura')
+          }
           onClose={() => setEmailModalRow(null)}
         />
       )}
@@ -491,7 +711,7 @@ export function DocumentoListado({
         />
       )}
 
-      {/* Alerta genérica (reemplaza alert() del sistema) */}
+      {/* Alerta genérica */}
       {alertState && (
         <AlertModal
           title={alertState.title}

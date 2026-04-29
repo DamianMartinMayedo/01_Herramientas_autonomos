@@ -10,6 +10,7 @@ interface EmailModalProps {
   emailCliente?: string
   nombreDocumento?: string
   onClose: () => void
+  onSent?: () => Promise<void> | void
 }
 
 function esEmailValido(email: string): boolean {
@@ -20,7 +21,7 @@ function parsearCorreos(input: string): string[] {
   return input.split(',').map((e) => e.trim()).filter(Boolean)
 }
 
-export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModalProps) {
+export function EmailModal({ emailCliente, nombreDocumento, onClose, onSent }: EmailModalProps) {
   const [inputCorreos, setInputCorreos] = useState(emailCliente ?? '')
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
@@ -50,6 +51,7 @@ export function EmailModal({ emailCliente, nombreDocumento, onClose }: EmailModa
 
     setEnviando(false)
     setEnviado(true)
+    if (onSent) await onSent()
     setTimeout(() => onClose(), 2000)
   }
 

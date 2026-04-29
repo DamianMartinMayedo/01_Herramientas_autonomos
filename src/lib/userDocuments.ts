@@ -66,6 +66,17 @@ async function writeRowWithRetry(params: {
   return { data: null, error: new Error('No se pudo guardar: demasiados reintentos por columnas inexistentes.') as unknown as { message: string } }
 }
 
+async function getNextPresupuestoNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
+  const { data: nextData, error } = await supabase.rpc('next_document_number', {
+    p_tipo: 'presupuesto',
+    p_prefijo: 'PRE',
+    p_user_id: userId,
+  })
+  if (error) return { numero: null, error }
+  const row = Array.isArray(nextData) ? nextData[0] : null
+  return { numero: (row?.numero as string | undefined) ?? '', error: null }
+}
+
 async function getNextFacturaNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
   const { data: nextData, error } = await supabase.rpc('next_document_number', {
     p_tipo: 'factura',
@@ -97,12 +108,21 @@ export async function saveBusinessDocument(params: {
   finalizar?: boolean
 }) {
   const { table, userId, document, totals, id, finalizar = false } = params
-  let numeroFinal: string | null = table === 'facturas' ? null : document.numero
+  const isAutoNumbered = table === 'facturas' || table === 'presupuestos'
+  let numeroFinal: string | null = isAutoNumbered ? null : document.numero
 
   if (table === 'facturas' && finalizar) {
     const { numero, error: nextError } = document.esRectificativa
       ? await getNextRectificativaNumero(userId)
       : await getNextFacturaNumero(userId)
+    if (nextError) {
+      return { data: null, error: nextError as { message: string }, numero: null as string | null }
+    }
+    numeroFinal = numero
+  }
+
+  if (table === 'presupuestos' && finalizar) {
+    const { numero, error: nextError } = await getNextPresupuestoNumero(userId)
     if (nextError) {
       return { data: null, error: nextError as { message: string }, numero: null as string | null }
     }
@@ -126,7 +146,7 @@ export async function saveBusinessDocument(params: {
         }
       : {
           user_id: userId,
-          ...(table === 'facturas'
+          ...(isAutoNumbered
             ? (finalizar ? { numero: numeroFinal } : {})
             : { numero: document.numero }),
           fecha: document.fecha,
@@ -141,11 +161,15 @@ export async function saveBusinessDocument(params: {
             ? firstNumber(document.lineas.map((linea) => linea.irpf), 15)
             : 0,
           total: totals.total,
-          estado: table === 'facturas' ? (finalizar ? 'emitida' : 'borrador') : 'borrador',
+          estado: table === 'facturas'
+            ? (finalizar ? 'emitida' : 'borrador')
+            : table === 'presupuestos'
+              ? (finalizar ? 'enviado' : 'borrador')
+              : 'borrador',
           notas: document.notas,
           datos_json: {
             ...document,
-            numero: table === 'facturas'
+            numero: isAutoNumbered
               ? (finalizar ? (numeroFinal ?? '') : (document.numero ?? ''))
               : document.numero,
           },
@@ -154,7 +178,7 @@ export async function saveBusinessDocument(params: {
   const result = await writeRowWithRetry({ table, id, payload })
   return {
     ...result,
-    numero: table === 'facturas' ? (finalizar ? numeroFinal : null) : document.numero,
+    numero: isAutoNumbered ? (finalizar ? numeroFinal : null) : document.numero,
   }
 }
 
@@ -327,6 +351,82 @@ export async function saveLegalDocument(params: {
   }
 
   return writeRowWithRetry({ table, id, payload })
+}
+
+export async function enviarPresupuesto(userId: string, id: string) {
+  const { data: current, error: fetchError } = await supabase
+    .from('presupuestos')
+    .select('datos_json')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) return { error: fetchError, numero: null }
+
+  const { numero, error: nextError } = await getNextPresupuestoNumero(userId)
+  if (nextError) return { error: nextError as { message: string }, numero: null }
+
+  const datosJson = current?.datos_json as DocumentoBase | null
+  const updatedDatosJson = datosJson ? { ...datosJson, numero: numero ?? '' } : datosJson
+
+  const { error: updateError } = await supabase
+    .from('presupuestos')
+    .update({ numero, estado: 'enviado', datos_json: updatedDatosJson })
+    .eq('id', id)
+
+  return { error: updateError, numero }
+}
+
+export async function aprobarPresupuesto(id: string) {
+  const { error } = await supabase
+    .from('presupuestos')
+    .update({ estado: 'aprobado' })
+    .eq('id', id)
+  return { error }
+}
+
+export async function convertirPresupuestoAFactura(userId: string, id: string) {
+  const { data, error: fetchError } = await supabase
+    .from('presupuestos')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) return { error: fetchError, facturaId: null as string | null }
+
+  const datosJson = data?.datos_json as DocumentoBase | null
+  if (!datosJson) return { error: new Error('Documento no encontrado'), facturaId: null as string | null }
+
+  const nuevoDatosJson: DocumentoBase = { ...datosJson, tipo: 'factura', numero: '' }
+
+  const { data: facturaData, error: insertError } = await supabase
+    .from('facturas')
+    .insert({
+      user_id: userId,
+      fecha: data.fecha,
+      cliente_nombre: data.cliente_nombre,
+      cliente_nif: data.cliente_nif,
+      cliente_email: data.cliente_email,
+      cliente_direccion: data.cliente_direccion,
+      concepto: data.concepto,
+      base_imponible: data.base_imponible,
+      tipo_iva: data.tipo_iva,
+      tipo_irpf: data.tipo_irpf,
+      total: data.total,
+      estado: 'borrador',
+      notas: data.notas,
+      datos_json: nuevoDatosJson,
+    })
+    .select('id')
+    .single()
+
+  if (insertError) return { error: insertError, facturaId: null as string | null }
+
+  const { error: updateError } = await supabase
+    .from('presupuestos')
+    .update({ estado: 'convertido', factura_id: facturaData.id })
+    .eq('id', id)
+
+  return { error: updateError, facturaId: facturaData.id as string }
 }
 
 export async function getStoredUserDocument(table: UserDocumentTable, id: string) {

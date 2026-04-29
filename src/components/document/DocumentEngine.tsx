@@ -13,9 +13,8 @@ import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock } from 'lucide-react'
+import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send } from 'lucide-react'
 import { EmailModal } from '../shared/EmailModal'
-import { useDocumentStore } from '../../store/documentStore'
 import { formatFecha } from '../../utils/formatters'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 import { regularClientToClienteInfo } from '../../types/regularClient.types'
@@ -28,9 +27,9 @@ const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
 }
 
 interface ViewOnlyActions {
-  onRectificar: () => void
-  onMarcarCobrada: () => void
-  onDuplicar: () => void
+  onRectificar?: () => void
+  onMarcarCobrada?: () => void
+  onDuplicar?: () => void
   estadoActual?: string
 }
 
@@ -49,6 +48,7 @@ interface DocumentEngineProps {
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
   viewOnlyActions?: ViewOnlyActions
   autoOpenPreview?: boolean
+  onEmailPresupuesto?: (doc: DocumentoBase, totales: TotalesDocumento) => void
 }
 
 export function DocumentEngine({
@@ -66,6 +66,7 @@ export function DocumentEngine({
   onClienteGuardado,
   viewOnlyActions,
   autoOpenPreview = false,
+  onEmailPresupuesto,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
@@ -78,8 +79,6 @@ export function DocumentEngine({
   const [selectedClientId, setSelectedClientId] = useState('')
   const [savingCliente, setSavingCliente] = useState(false)
   const navigate = useNavigate()
-  const { setPresupuestoPendiente } = useDocumentStore()
-
   const {
     form,
     fields,
@@ -141,6 +140,10 @@ export function DocumentEngine({
     }
   }
 
+  const handleEnviarPresupuesto = form.handleSubmit((values) => {
+    onEmailPresupuesto?.(values as DocumentoBase, totales)
+  }, () => showFeedback('Revisa los campos obligatorios antes de enviar.', 'error'))
+
   const handleGuardarDocumento = form.handleSubmit(async (values) => {
     if (!onSave) return
     try {
@@ -150,17 +153,6 @@ export function DocumentEngine({
       showFeedback('No se pudo guardar. Inténtalo de nuevo.')
     }
   }, () => showFeedback('Revisa los campos obligatorios antes de guardar.', 'error'))
-
-  const handleConvertirAFactura = () => {
-    const datos = form.getValues()
-    setPresupuestoPendiente({
-      cliente: datos.cliente,
-      lineas: datos.lineas,
-      notas: datos.notas,
-      mostrarIrpf: datos.mostrarIrpf,
-    })
-    navigate('/factura')
-  }
 
   const handleSeleccionCliente = (clientId: string) => {
     setSelectedClientId(clientId)
@@ -323,6 +315,18 @@ export function DocumentEngine({
               </Button>
             </>
           )}
+          {viewOnlyActions && tipo === 'presupuesto' && (
+            <>
+              <Button variant="secondary" size="sm" type="button" onClick={() => setEmailModalOpen(true)}>
+                <Mail size={14} />
+                Enviar
+              </Button>
+              <Button variant="primary" size="sm" type="button" onClick={handleAbrirPrevia}>
+                <Download size={14} />
+                Descargar
+              </Button>
+            </>
+          )}
           {!viewOnlyActions && onSave && tipo === 'factura' && (
             <>
               <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
@@ -335,19 +339,25 @@ export function DocumentEngine({
               </Button>
             </>
           )}
-          {!viewOnlyActions && onSave && tipo !== 'factura' && (
+          {!viewOnlyActions && (onSave || onEmailPresupuesto) && tipo === 'presupuesto' && (
+            <>
+              <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
+                <Save size={14} />
+                {saving ? 'Guardando...' : 'Guardar como borrador'}
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleEnviarPresupuesto} type="button" disabled={saving}>
+                <Send size={14} />
+                Enviar presupuesto
+              </Button>
+            </>
+          )}
+          {!viewOnlyActions && onSave && tipo !== 'factura' && tipo !== 'presupuesto' && (
             <Button variant="secondary" size="sm" onClick={handleGuardarDocumento} type="button" disabled={saving}>
               <Save size={14} />
-              {saving ? 'Guardando...' : tipo === 'presupuesto' ? 'Guardar presupuesto' : 'Guardar albarán'}
+              {saving ? 'Guardando...' : 'Guardar albarán'}
             </Button>
           )}
-          {tipo === 'presupuesto' && (
-            <Button variant="secondary" size="sm" onClick={handleConvertirAFactura} type="button">
-              <ArrowRight size={14} />
-              Convertir a factura
-            </Button>
-          )}
-          {!viewOnlyActions && !(onSave && tipo === 'factura') && (
+          {!viewOnlyActions && !(onSave && (tipo === 'factura' || tipo === 'presupuesto')) && (
             <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
               Exportar
             </Button>
@@ -386,9 +396,11 @@ export function DocumentEngine({
         }}>
           <Lock size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
           <span>
-            {initialData?.esRectificativa
-              ? <><strong style={{ color: 'var(--color-text)' }}>Factura rectificativa emitida · Solo lectura.</strong> No se puede volver a rectificar.</>
-              : <><strong style={{ color: 'var(--color-text)' }}>Factura emitida · Solo lectura.</strong>{' '}Para modificarla usa <strong style={{ color: 'var(--color-text)' }}>Rectificar</strong>.</>
+            {tipo === 'presupuesto'
+              ? <><strong style={{ color: 'var(--color-text)' }}>Presupuesto {viewOnlyActions.estadoActual ?? 'enviado'} · Solo lectura.</strong>{' '}Gestiona las acciones desde el listado.</>
+              : initialData?.esRectificativa
+                ? <><strong style={{ color: 'var(--color-text)' }}>Factura rectificativa emitida · Solo lectura.</strong> No se puede volver a rectificar.</>
+                : <><strong style={{ color: 'var(--color-text)' }}>Factura emitida · Solo lectura.</strong>{' '}Para modificarla usa <strong style={{ color: 'var(--color-text)' }}>Rectificar</strong>.</>
             }
           </span>
         </div>
