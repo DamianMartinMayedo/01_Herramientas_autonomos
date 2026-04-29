@@ -161,11 +161,16 @@ export async function saveBusinessDocument(params: {
             ? firstNumber(document.lineas.map((linea) => linea.irpf), 15)
             : 0,
           total: totals.total,
-          estado: table === 'facturas'
-            ? (finalizar ? 'emitida' : 'borrador')
-            : table === 'presupuestos'
-              ? (finalizar ? 'enviado' : 'borrador')
-              : 'borrador',
+          // Para presupuestos existentes sin finalizar: no tocar el estado (ya puede ser enviado/aprobado)
+          ...(table === 'presupuestos' && !finalizar && id
+            ? {}
+            : {
+                estado: table === 'facturas'
+                  ? (finalizar ? 'emitida' : 'borrador')
+                  : table === 'presupuestos'
+                    ? (finalizar ? 'enviado' : 'borrador')
+                    : 'borrador',
+              }),
           notas: document.notas,
           datos_json: {
             ...document,
@@ -379,7 +384,7 @@ export async function enviarPresupuesto(userId: string, id: string) {
 export async function aprobarPresupuesto(id: string) {
   const { error } = await supabase
     .from('presupuestos')
-    .update({ estado: 'aprobado' })
+    .update({ estado: 'aprobado', fue_aprobado: true })
     .eq('id', id)
   return { error }
 }

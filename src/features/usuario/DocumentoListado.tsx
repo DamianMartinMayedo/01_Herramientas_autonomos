@@ -102,13 +102,21 @@ export function DocumentoListado({
   const [convertirFacturaConfirmId, setConvertirFacturaConfirmId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [emailModalRow, setEmailModalRow] = useState<DocRow | null>(null)
-  const [activeTab, setActiveTab] = useState<'borradores' | 'emitidas'>('borradores')
+  const [factFilter, setFactFilter] = useState<'todos' | 'borrador' | 'emitida' | 'cobrada' | 'anulada' | 'rectificativa'>('todos')
+  const [presFilter, setPresFilter] = useState<'todos' | 'sin-enviar' | 'enviado' | 'aprobado' | 'convertido'>('todos')
+  const [currentPage, setCurrentPage] = useState(1)
   const [alertState, setAlertState] = useState<{ title?: string; msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const userId = user?.id
 
+  const PAGE_SIZE = 10
+
   useEffect(() => {
-    setActiveTab('borradores')
+    setFactFilter('todos')
+    setPresFilter('todos')
+    setCurrentPage(1)
   }, [tipo])
+
+  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter])
 
   useEffect(() => {
     if (!userId) return
@@ -197,7 +205,7 @@ export function DocumentoListado({
     )
   }
 
-  const renderRowBase = (row: DocRow, actions: React.ReactNode, extraBadge?: React.ReactNode) => {
+  const renderRowBase = (row: DocRow, actions: React.ReactNode, extraBadge?: React.ReactNode, overrideBadge?: React.ReactNode) => {
     const titulo  = row[cfg.campoTitulo] ?? '—'
     const cliente = row[cfg.campoSecundario] ?? '—'
     const precio  = cfg.campoPrecio ? row[cfg.campoPrecio] : null
@@ -211,7 +219,7 @@ export function DocumentoListado({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
             <span className="doc-row-title">{titulo || 'Sin número'}</span>
-            {renderStatusBadge(row.estado ?? '')}
+            {overrideBadge ?? renderStatusBadge(row.estado ?? '')}
             {extraBadge}
           </div>
           <p className="doc-row-meta">{cliente}{fecha ? ` · ${fecha}` : ''}</p>
@@ -320,80 +328,99 @@ export function DocumentoListado({
 
   // ── Presupuestos ──────────────────────────────────────────────────────────
 
-  const renderPresupuestoBorradorRow = (row: DocRow) => renderRowBase(row, (
-    <>
-      <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
-        <Pencil size={13} />
-      </button>
-      <button
-        type="button"
-        title="Enviar presupuesto"
-        className="icon-btn icon-btn--primary"
-        onClick={() => setEmailPresupuestoEnviarRow(row)}
-      >
-        <Send size={13} />
-      </button>
-      <button
-        type="button"
-        title="Eliminar"
-        className="icon-btn icon-btn--danger"
-        onClick={() => handleDeleteRequest(row.id)}
-        disabled={deleting === row.id}
-      >
-        <Trash2 size={13} />
-      </button>
-    </>
-  ))
+  const renderPresupuestoBadges = (row: DocRow) => {
+    const estado: string = row.estado ?? ''
+    const fueAprobado = Boolean(row.fue_aprobado)
 
-  const renderPresupuestoEnviadoRow = (row: DocRow) => renderRowBase(row, (
-    <>
-      {row.estado !== 'convertido' && (
+    if (estado === 'borrador') {
+      return (
+        <span style={{
+          fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+          color: 'var(--color-error)',
+          background: 'color-mix(in oklch, var(--color-error) 12%, var(--color-surface-2))',
+          border: '1px solid color-mix(in oklch, var(--color-error) 30%, var(--color-border))',
+          borderRadius: 'var(--radius-full)', padding: '1px 7px',
+        }}>
+          Sin enviar
+        </span>
+      )
+    }
+
+    return (
+      <>
+        {renderStatusBadge('enviado')}
+        {(estado === 'aprobado' || (estado === 'convertido' && fueAprobado)) && renderStatusBadge('aprobado')}
+        {estado === 'convertido' && renderStatusBadge('convertido')}
+      </>
+    )
+  }
+
+  const renderPresupuestoRow = (row: DocRow) => {
+    const esBorrador = row.estado === 'borrador'
+    const actions = esBorrador ? (
+      <>
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-      )}
-      <div className="dropdown-wrap">
-      <button
-        type="button"
-        title="Más opciones"
-        className="icon-btn"
-        onClick={(e) => {
-          e.stopPropagation()
-          setDropdownOpenId(dropdownOpenId === row.id ? null : row.id)
-        }}
-      >
-        <MoreHorizontal size={13} />
-      </button>
-      {dropdownOpenId === row.id && (
-        <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onView?.(row.id) }}>
-            <Eye size={13} /> Ver
+        <button type="button" title="Enviar presupuesto" className="icon-btn icon-btn--primary" onClick={() => setEmailPresupuestoEnviarRow(row)}>
+          <Send size={13} />
+        </button>
+        <button type="button" title="Eliminar" className="icon-btn icon-btn--danger" onClick={() => handleDeleteRequest(row.id)} disabled={deleting === row.id}>
+          <Trash2 size={13} />
+        </button>
+      </>
+    ) : (
+      <>
+        {row.estado !== 'convertido' && (
+          <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
+            <Pencil size={13} />
           </button>
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDescargar?.(row.id) }}>
-            <Download size={13} /> Descargar
+        )}
+        <div className="dropdown-wrap">
+          <button
+            type="button"
+            title="Más opciones"
+            className="icon-btn"
+            onClick={(e) => { e.stopPropagation(); setDropdownOpenId(dropdownOpenId === row.id ? null : row.id) }}
+          >
+            <MoreHorizontal size={13} />
           </button>
-          {row.estado === 'enviado' && (
-            <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onAprobarPresupuesto?.(row.id) }}>
-              <CheckCircle2 size={13} /> Marcar como aprobado
-            </button>
-          )}
-          {(row.estado === 'enviado' || row.estado === 'aprobado') && (
-            <>
-              <div className="dropdown-divider" />
-              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setConvertirFacturaConfirmId(row.id) }}>
-                <ArrowRight size={13} /> Convertir a factura
+          {dropdownOpenId === row.id && (
+            <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onView?.(row.id) }}>
+                <Eye size={13} /> Ver
               </button>
-            </>
+              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDescargar?.(row.id) }}>
+                <Download size={13} /> Descargar
+              </button>
+              {row.estado === 'enviado' && (
+                <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onAprobarPresupuesto?.(row.id) }}>
+                  <CheckCircle2 size={13} /> Marcar como aprobado
+                </button>
+              )}
+              {(row.estado === 'enviado' || row.estado === 'aprobado') && (
+                <>
+                  <div className="dropdown-divider" />
+                  <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setConvertirFacturaConfirmId(row.id) }}>
+                    <ArrowRight size={13} /> Convertir a factura
+                  </button>
+                </>
+              )}
+              <div className="dropdown-divider" />
+              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setEmailModalRow(row) }}>
+                <Mail size={13} /> Enviar por correo
+              </button>
+              <div className="dropdown-divider" />
+              <button className="dropdown-item dropdown-item--danger" onClick={() => { setDropdownOpenId(null); handleDeleteRequest(row.id) }}>
+                <Trash2 size={13} /> Eliminar
+              </button>
+            </div>
           )}
-          <div className="dropdown-divider" />
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setEmailModalRow(row) }}>
-            <Mail size={13} /> Enviar por correo
-          </button>
         </div>
-      )}
-      </div>
-    </>
-  ))
+      </>
+    )
+    return renderRowBase(row, actions, undefined, renderPresupuestoBadges(row))
+  }
 
   // ── Fila genérica ─────────────────────────────────────────────────────────
 
@@ -424,10 +451,36 @@ export function DocumentoListado({
 
   // ── Datos derivados ───────────────────────────────────────────────────────
 
-  const borradores     = tipo === 'facturas'     ? rows.filter(r => r.estado === 'borrador') : []
-  const emitidas       = tipo === 'facturas'     ? rows.filter(r => r.estado !== 'borrador') : []
-  const presBorradores = tipo === 'presupuestos' ? rows.filter(r => r.estado === 'borrador') : []
-  const presEnviados   = tipo === 'presupuestos' ? rows.filter(r => r.estado !== 'borrador') : []
+  const paginar = <T,>(list: T[]) => ({
+    items: list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    totalPages: Math.ceil(list.length / PAGE_SIZE),
+    total: list.length,
+  })
+
+  const renderPaginacion = (totalPages: number) => {
+    if (totalPages <= 1) return null
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
+        <button
+          className="btn btn-secondary btn-sm"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(p => p - 1)}
+        >
+          ← Anterior
+        </button>
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {currentPage} / {totalPages}
+        </span>
+        <button
+          className="btn btn-secondary btn-sm"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(p => p + 1)}
+        >
+          Siguiente →
+        </button>
+      </div>
+    )
+  }
 
   const emptyState = (
     <div className="empty-state empty-state--xl">
@@ -471,79 +524,107 @@ export function DocumentoListado({
         </div>
       )}
 
-      {/* Vista con pestañas para facturas */}
+      {/* Vista con filtros para facturas */}
       {!loading && tipo === 'facturas' && (
         <>
-          {borradores.length === 0 && emitidas.length === 0 && emptyState}
+          {rows.length === 0 && emptyState}
 
-          {rows.length > 0 && (
-            <>
-              <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)' }}>
-                <button
-                  className={`filter-pill${activeTab === 'borradores' ? ' active' : ''}`}
-                  onClick={() => setActiveTab('borradores')}
-                >
-                  Borradores{borradores.length > 0 ? ` (${borradores.length})` : ''}
-                </button>
-                <button
-                  className={`filter-pill${activeTab === 'emitidas' ? ' active' : ''}`}
-                  onClick={() => setActiveTab('emitidas')}
-                >
-                  Emitidas{emitidas.length > 0 ? ` (${emitidas.length})` : ''}
-                </button>
-              </div>
-
-              {activeTab === 'borradores' && (
-                borradores.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No tienes borradores.</p>
-                  : <div className="doc-list">{borradores.map(row => renderBorradorRow(row))}</div>
-              )}
-
-              {activeTab === 'emitidas' && (
-                emitidas.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No tienes facturas emitidas.</p>
-                  : <div className="doc-list">{emitidas.map(row => renderEmitidaRow(row))}</div>
-              )}
-            </>
-          )}
+          {rows.length > 0 && (() => {
+            const FACT_FILTERS: { key: typeof factFilter; label: string }[] = [
+              { key: 'todos',          label: 'Todas' },
+              { key: 'borrador',       label: 'Borrador' },
+              { key: 'emitida',        label: 'Emitida' },
+              { key: 'cobrada',        label: 'Cobrada' },
+              { key: 'anulada',        label: 'Anulada' },
+              { key: 'rectificativa',  label: 'Rectificativa' },
+            ]
+            const rowsFiltrados = factFilter === 'todos'         ? rows
+              : factFilter === 'rectificativa' ? rows.filter(r => r.datos_json?.esRectificativa)
+              : rows.filter(r => r.estado === factFilter)
+            return (
+              <>
+                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                  {FACT_FILTERS.map(({ key, label }) => {
+                    const n = key === 'todos'         ? rows.length
+                      : key === 'rectificativa' ? rows.filter(r => r.datos_json?.esRectificativa).length
+                      : rows.filter(r => r.estado === key).length
+                    if (key !== 'todos' && n === 0) return null
+                    return (
+                      <button
+                        key={key}
+                        className={`filter-pill${factFilter === key ? ' active' : ''}`}
+                        onClick={() => setFactFilter(key)}
+                      >
+                        {label}{n > 0 && key !== 'todos' ? ` (${n})` : ''}
+                      </button>
+                    )
+                  })}
+                </div>
+                {rowsFiltrados.length === 0
+                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay facturas en este estado.</p>
+                  : (() => {
+                    const { items, totalPages } = paginar(rowsFiltrados)
+                    return (
+                      <>
+                        <div className="doc-list">
+                          {items.map(row => row.estado === 'borrador' ? renderBorradorRow(row) : renderEmitidaRow(row))}
+                        </div>
+                        {renderPaginacion(totalPages)}
+                      </>
+                    )
+                  })()
+                }
+              </>
+            )
+          })()}
         </>
       )}
 
-      {/* Vista con pestañas para presupuestos */}
+      {/* Vista lista única para presupuestos */}
       {!loading && tipo === 'presupuestos' && (
         <>
-          {presBorradores.length === 0 && presEnviados.length === 0 && emptyState}
+          {rows.length === 0 && emptyState}
 
-          {rows.length > 0 && (
-            <>
-              <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)' }}>
-                <button
-                  className={`filter-pill${activeTab === 'borradores' ? ' active' : ''}`}
-                  onClick={() => setActiveTab('borradores')}
-                >
-                  Borradores{presBorradores.length > 0 ? ` (${presBorradores.length})` : ''}
-                </button>
-                <button
-                  className={`filter-pill${activeTab === 'emitidas' ? ' active' : ''}`}
-                  onClick={() => setActiveTab('emitidas')}
-                >
-                  Enviados{presEnviados.length > 0 ? ` (${presEnviados.length})` : ''}
-                </button>
-              </div>
-
-              {activeTab === 'borradores' && (
-                presBorradores.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No tienes borradores.</p>
-                  : <div className="doc-list">{presBorradores.map(row => renderPresupuestoBorradorRow(row))}</div>
-              )}
-
-              {activeTab === 'emitidas' && (
-                presEnviados.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No tienes presupuestos enviados.</p>
-                  : <div className="doc-list">{presEnviados.map(row => renderPresupuestoEnviadoRow(row))}</div>
-              )}
-            </>
-          )}
+          {rows.length > 0 && (() => {
+            const PRES_FILTERS: { key: typeof presFilter; label: string }[] = [
+              { key: 'todos',      label: 'Todos' },
+              { key: 'sin-enviar', label: 'Sin enviar' },
+              { key: 'enviado',    label: 'Enviado' },
+              { key: 'aprobado',   label: 'Aprobado' },
+              { key: 'convertido', label: 'Convertido' },
+            ]
+            const rowsFiltrados = presFilter === 'todos' ? rows
+              : presFilter === 'sin-enviar' ? rows.filter(r => r.estado === 'borrador')
+              : rows.filter(r => r.estado === presFilter)
+            return (
+              <>
+                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                  {PRES_FILTERS.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      className={`filter-pill${presFilter === key ? ' active' : ''}`}
+                      onClick={() => setPresFilter(key)}
+                    >
+                      {label}
+                      {key !== 'todos' && (() => {
+                        const n = key === 'sin-enviar'
+                          ? rows.filter(r => r.estado === 'borrador').length
+                          : rows.filter(r => r.estado === key).length
+                        return n > 0 ? ` (${n})` : ''
+                      })()}
+                    </button>
+                  ))}
+                </div>
+                {rowsFiltrados.length === 0
+                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay presupuestos en este estado.</p>
+                  : (() => {
+                    const { items, totalPages } = paginar(rowsFiltrados)
+                    return <><div className="doc-list">{items.map(row => renderPresupuestoRow(row))}</div>{renderPaginacion(totalPages)}</>
+                  })()
+                }
+              </>
+            )
+          })()}
 
           {/* Calculadoras útiles */}
           {onNavCalc && (

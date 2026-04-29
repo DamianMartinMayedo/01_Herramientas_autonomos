@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Save, Trash2, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, X, Save, Globe } from 'lucide-react'
 import { createRegularClient, deleteRegularClient, updateRegularClient } from '../../lib/regularClients'
 import { useAuth } from '../../hooks/useAuth'
 import { ConfirmModal } from '../admin/components/ConfirmModal'
@@ -21,8 +21,9 @@ const EMPTY_FIELD_ERRORS = { nombre: '', nif: '', direccion: '' }
 export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPageProps) {
   const { user } = useAuth()
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form,      setForm]      = useState<RegularClientInput>(EMPTY_FORM)
-  const [saving,    setSaving]    = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [form, setForm] = useState<RegularClientInput>(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
   const [fieldErrors, setFieldErrors] = useState(EMPTY_FIELD_ERRORS)
   const [serverError, setServerError] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
@@ -32,21 +33,15 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
     [clientes]
   )
 
-  const resetForm = () => {
+  const openCreateModal = () => {
     setEditingId(null)
     setForm(EMPTY_FORM)
     setFieldErrors(EMPTY_FIELD_ERRORS)
     setServerError(null)
+    setModalOpen(true)
   }
 
-  const handleChange = (field: keyof RegularClientInput, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }))
-    if (field in EMPTY_FIELD_ERRORS && fieldErrors[field as keyof typeof EMPTY_FIELD_ERRORS]) {
-      setFieldErrors((prev) => ({ ...prev, [field]: '' }))
-    }
-  }
-
-  const handleEdit = (client: RegularClient) => {
+  const openEditModal = (client: RegularClient) => {
     setEditingId(client.id)
     setForm({
       nombre: client.nombre, nif: client.nif, direccion: client.direccion,
@@ -57,14 +52,30 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
     })
     setFieldErrors(EMPTY_FIELD_ERRORS)
     setServerError(null)
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setFieldErrors(EMPTY_FIELD_ERRORS)
+    setServerError(null)
+  }
+
+  const handleChange = (field: keyof RegularClientInput, value: string | boolean) => {
+    setForm((current) => ({ ...current, [field]: value }))
+    if (field in EMPTY_FIELD_ERRORS && fieldErrors[field as keyof typeof EMPTY_FIELD_ERRORS]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: '' }))
+    }
   }
 
   const handleSubmit = async () => {
     if (!user) return
 
     const errors = {
-      nombre: form.nombre.trim() ? '' : 'El nombre del cliente es obligatorio.',
-      nif: form.nif.trim() ? '' : 'El NIF/CIF/NIE del cliente es obligatorio.',
+      nombre:    form.nombre.trim()    ? '' : 'El nombre del cliente es obligatorio.',
+      nif:       form.nif.trim()       ? '' : 'El NIF/CIF/NIE del cliente es obligatorio.',
       direccion: form.direccion.trim() ? '' : 'La dirección del cliente es obligatoria.',
     }
 
@@ -101,11 +112,7 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
     }
 
     setSaving(false)
-    resetForm()
-  }
-
-  const handleDelete = (id: string) => {
-    setDeleteConfirmId(id)
+    closeModal()
   }
 
   const handleDeleteConfirm = async () => {
@@ -113,163 +120,218 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
     const id = deleteConfirmId
     setDeleteConfirmId(null)
     const result = await deleteRegularClient(id)
-    if (result.error) {
-      setServerError(result.error.message)
-      return
-    }
+    if (result.error) return
     onClientsChange(clientes.filter((c) => c.id !== id))
-    if (editingId === id) resetForm()
   }
 
   return (
     <>
-      <div className="section-stack">
-
-        <div>
-          <h1 className="section-title">Clientes habituales</h1>
-          <p className="section-sub">Guarda clientes frecuentes para reutilizarlos al crear documentos.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        <div className="doc-listado-header">
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)' }}>
+              Clientes habituales
+            </h2>
+            <p className="section-sub">
+              {sortedClients.length} cliente{sortedClients.length !== 1 ? 's' : ''} guardado{sortedClients.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={15} /> Añadir cliente
+          </button>
         </div>
 
-        <div className="clientes-layout">
-
-          {/* Formulario */}
-          <section className="fieldset-v3">
-            <div className="fieldset-v3-body">
-              <label className="input-toggle">
-                <input
-                  type="checkbox"
-                  checked={Boolean(form.cliente_exterior)}
-                  onChange={(e) => setForm((prev) => ({ ...prev, cliente_exterior: e.target.checked }))}
-                />
-                <span>Cliente fuera de España</span>
-              </label>
-              <div className="form-row">
-                <div className="input-group">
-                  <label className="input-label">Nombre / Razón social *</label>
-                  <input
-                    className={`input-v3${fieldErrors.nombre ? ' is-error' : ''}`}
-                    value={form.nombre}
-                    onChange={(e) => handleChange('nombre', e.target.value)}
-                  />
-                  {fieldErrors.nombre && <p className="input-error-msg">{fieldErrors.nombre}</p>}
-                </div>
-                <div className="input-group">
-                  <label className="input-label">NIF / CIF / NIE *</label>
-                  <input
-                    className={`input-v3${fieldErrors.nif ? ' is-error' : ''}`}
-                    value={form.nif}
-                    onChange={(e) => handleChange('nif', e.target.value)}
-                  />
-                  {fieldErrors.nif && <p className="input-error-msg">{fieldErrors.nif}</p>}
-                </div>
+        <div className="card card-no-pad">
+          {sortedClients.length === 0 ? (
+            <div className="empty-state empty-state--xl">
+              <div
+                className="icon-box icon-box-lg mx-auto"
+                style={{ background: 'var(--color-surface-offset)', marginBottom: 'var(--space-4)' }}
+              >
+                <Users size={24} style={{ color: 'var(--color-text-faint)' }} />
               </div>
-              <div className="form-row">
-                <div className="input-group">
-                  <label className="input-label">Email</label>
-                  <input className="input-v3" type="email" value={form.email} onChange={(e) => handleChange('email', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Teléfono</label>
-                  <input className="input-v3" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} />
-                </div>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Dirección *</label>
-                <input
-                  className={`input-v3${fieldErrors.direccion ? ' is-error' : ''}`}
-                  value={form.direccion}
-                  onChange={(e) => handleChange('direccion', e.target.value)}
-                />
-                {fieldErrors.direccion && <p className="input-error-msg">{fieldErrors.direccion}</p>}
-              </div>
-              <div className="form-row">
-                <div className="input-group">
-                  <label className="input-label">Código postal</label>
-                  <input className="input-v3" value={form.cp} onChange={(e) => handleChange('cp', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Ciudad</label>
-                  <input className="input-v3" value={form.ciudad} onChange={(e) => handleChange('ciudad', e.target.value)} />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="input-group">
-                  <label className="input-label">Provincia</label>
-                  <input className="input-v3" value={form.provincia} onChange={(e) => handleChange('provincia', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label">País</label>
-                  <input className="input-v3" value={form.pais} onChange={(e) => handleChange('pais', e.target.value)} />
-                </div>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Notas</label>
-                <textarea className="textarea-v3" rows={3} value={form.notas} onChange={(e) => handleChange('notas', e.target.value)} />
-              </div>
-              {serverError && <p className="input-error-msg">{serverError}</p>}
-              <div className="flex gap-3" style={{ justifyContent: 'flex-end' }}>
-                {editingId && (
-                  <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
-                )}
-                <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
-                  <Save size={14} />
-                  {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Guardar cliente'}
-                </button>
-              </div>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
+                Aún no tienes clientes guardados
+              </p>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-5)', maxWidth: '36ch', margin: '0 auto var(--space-5)' }}>
+                Guarda clientes frecuentes para reutilizarlos al crear documentos.
+              </p>
+              <button className="btn btn-primary" onClick={openCreateModal}>
+                <Plus size={15} /> Añadir cliente
+              </button>
             </div>
-          </section>
-
-          {/* Lista de clientes guardados */}
-          <section className="card" style={{ padding: 'var(--space-5)' }}>
-            <div className="flex items-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-              <div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)' }}>
-                  Clientes frecuentes
-                </h2>
-                <p className="section-sub">
-                  {sortedClients.length} cliente{sortedClients.length === 1 ? '' : 's'} guardado{sortedClients.length === 1 ? '' : 's'}
-                </p>
-              </div>
-            </div>
-
-            {sortedClients.length === 0 ? (
-              <div className="empty-state">
-                <Users size={24} style={{ margin: '0 auto var(--space-3)' }} />
-                <p>Aún no has guardado clientes frecuentes.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr className="data-thead-row">
+                  <th className="data-th">Nombre / Razón social</th>
+                  <th className="data-th">NIF / CIF</th>
+                  <th className="data-th">Email</th>
+                  <th className="data-th">Ciudad</th>
+                  <th className="data-th-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
                 {sortedClients.map((client) => (
-                  <div key={client.id} style={{
-                    background: 'var(--color-surface-2)',
-                    border: '1.5px solid var(--color-border)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: 'var(--space-4)',
-                    display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)',
-                  }}>
-                    <div>
-                      <p style={{ fontWeight: 700, color: 'var(--color-text)' }}>{client.nombre}</p>
-                      <p className="section-sub">
-                        {[client.nif, client.email, client.ciudad].filter(Boolean).join(' · ') || 'Sin datos adicionales'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleEdit(client)}>Editar</button>
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleDelete(client.id)}><Trash2 size={14} /></button>
-                    </div>
-                  </div>
+                  <tr key={client.id} className="data-tr">
+                    <td className="data-td" style={{ fontWeight: 600 }}>
+                      <span>{client.nombre}</span>
+                      {client.cliente_exterior && (
+                        <Globe size={12} style={{ marginLeft: 6, color: 'var(--color-text-muted)', verticalAlign: 'middle' }} />
+                      )}
+                    </td>
+                    <td className="data-td" style={{ color: 'var(--color-text-muted)' }}>{client.nif || '—'}</td>
+                    <td className="data-td" style={{ color: 'var(--color-text-muted)' }}>{client.email || '—'}</td>
+                    <td className="data-td" style={{ color: 'var(--color-text-muted)' }}>{client.ciudad || '—'}</td>
+                    <td className="data-td-right">
+                      <div className="flex gap-2" style={{ justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          title="Editar"
+                          className="icon-btn icon-btn--primary"
+                          onClick={() => openEditModal(client)}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Eliminar"
+                          className="icon-btn icon-btn--danger"
+                          onClick={() => setDeleteConfirmId(client.id)}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            )}
-          </section>
-
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      {/* Modal añadir / editar cliente */}
+      {modalOpen && (
+        <div className="overlay overlay-dark overlay-z200">
+          <div className="admin-modal-box admin-modal-lg" role="dialog" aria-modal="true" aria-label={editingId ? 'Editar cliente' : 'Añadir cliente'}>
+            <div className="admin-modal-header">
+              <div
+                className="icon-box icon-box-md"
+                style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}
+              >
+                <Users size={18} />
+              </div>
+              <h2 className="admin-modal-title">{editingId ? 'Editar cliente' : 'Añadir cliente habitual'}</h2>
+              <button onClick={closeModal} className="modal-close-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="admin-modal-body">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <label className="input-toggle">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.cliente_exterior)}
+                    onChange={(e) => handleChange('cliente_exterior', e.target.checked)}
+                  />
+                  <span>Cliente fuera de España</span>
+                </label>
+
+                <div className="form-row">
+                  <div className="input-group">
+                    <label className="input-label">Nombre / Razón social *</label>
+                    <input
+                      className={`input-v3${fieldErrors.nombre ? ' is-error' : ''}`}
+                      value={form.nombre}
+                      onChange={(e) => handleChange('nombre', e.target.value)}
+                      placeholder="Empresa S.L."
+                    />
+                    {fieldErrors.nombre && <p className="input-error-msg">{fieldErrors.nombre}</p>}
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">NIF / CIF / NIE *</label>
+                    <input
+                      className={`input-v3${fieldErrors.nif ? ' is-error' : ''}`}
+                      value={form.nif}
+                      onChange={(e) => handleChange('nif', e.target.value)}
+                      placeholder="B12345678"
+                    />
+                    {fieldErrors.nif && <p className="input-error-msg">{fieldErrors.nif}</p>}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="input-group">
+                    <label className="input-label">Email</label>
+                    <input className="input-v3" type="email" value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="cliente@ejemplo.com" />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Teléfono</label>
+                    <input className="input-v3" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} placeholder="+34 600 000 000" />
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Dirección *</label>
+                  <input
+                    className={`input-v3${fieldErrors.direccion ? ' is-error' : ''}`}
+                    value={form.direccion}
+                    onChange={(e) => handleChange('direccion', e.target.value)}
+                    placeholder="Calle Mayor 1, 2ºA"
+                  />
+                  {fieldErrors.direccion && <p className="input-error-msg">{fieldErrors.direccion}</p>}
+                </div>
+
+                <div className="form-row">
+                  <div className="input-group">
+                    <label className="input-label">Código postal</label>
+                    <input className="input-v3" value={form.cp} onChange={(e) => handleChange('cp', e.target.value)} placeholder="28001" />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Ciudad</label>
+                    <input className="input-v3" value={form.ciudad} onChange={(e) => handleChange('ciudad', e.target.value)} placeholder="Madrid" />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="input-group">
+                    <label className="input-label">Provincia</label>
+                    <input className="input-v3" value={form.provincia} onChange={(e) => handleChange('provincia', e.target.value)} placeholder="Madrid" />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">País</label>
+                    <input className="input-v3" value={form.pais} onChange={(e) => handleChange('pais', e.target.value)} placeholder="España" />
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Notas <span className="input-label-optional">(opcional)</span></label>
+                  <textarea className="textarea-v3" rows={2} value={form.notas} onChange={(e) => handleChange('notas', e.target.value)} />
+                </div>
+
+                {serverError && <p className="input-error-msg">{serverError}</p>}
+              </div>
+            </div>
+
+            <div className="admin-modal-footer">
+              <button className="btn btn-secondary btn-sm" onClick={closeModal} disabled={saving}>
+                Cancelar
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={() => { void handleSubmit() }} disabled={saving}>
+                <Save size={14} />
+                {saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Añadir cliente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteConfirmId && (
         <ConfirmModal
           title="Eliminar cliente"
-          description="¿Eliminar este cliente frecuente? Esta acción no se puede deshacer."
+          description="¿Eliminar este cliente habitual? Esta acción no se puede deshacer."
           confirmLabel="Sí, eliminar"
           confirmVariant="danger"
           onConfirm={() => { void handleDeleteConfirm() }}

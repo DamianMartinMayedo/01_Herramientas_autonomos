@@ -15,7 +15,10 @@ interface PresupuestoPageProps {
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
   viewOnlyActions?: { estadoActual?: string }
   autoOpenPreview?: boolean
-  onEmailPresupuesto?: (doc: import('../../types/document.types').DocumentoBase, totales: import('../../types/document.types').TotalesDocumento) => void
+  onEmailPresupuesto?: (doc: DocumentoBase, totales: TotalesDocumento) => void
+  estadoPresupuesto?: string
+  onAprobarPresupuesto?: () => void
+  onConvertirAFactura?: () => void
 }
 
 export function PresupuestoPage(props: PresupuestoPageProps) {

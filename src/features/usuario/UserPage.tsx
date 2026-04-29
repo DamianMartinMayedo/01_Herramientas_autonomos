@@ -66,9 +66,10 @@ export function UserPage() {
   const [flashMessage, setFlashMessage] = useState<string | null>(null)
   const [alertState, setAlertState] = useState<{ msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const [empresa, setEmpresa] = useState<Empresa | null | undefined>(undefined)
+  const [calcOrigin, setCalcOrigin] = useState<UserSection | null>(null)
   const [emailPresupuestoState, setEmailPresupuestoState] = useState<{
     email?: string; nombre: string
-    doc: DocumentoBase; totals: TotalesDocumento; id?: string
+    doc: DocumentoBase; totals: TotalesDocumento; id?: string; isReenviar?: boolean
   } | null>(null)
 
   useEffect(() => {
@@ -130,6 +131,7 @@ export function UserPage() {
       section: targetSection,
       id,
       data: result.data.datos_json as EditorState extends { data: infer T } ? T : never,
+      estado: result.data.estado,
     } as EditorState)
   }
 
@@ -336,7 +338,7 @@ export function UserPage() {
           onEnviarPresupuesto={(id) => { void handleEnviarPresupuesto(id) }}
           onAprobarPresupuesto={(id) => { void handleAprobarPresupuesto(id) }}
           onConvertirAFactura={(id) => { void handleConvertirAFactura(id) }}
-          onNavCalc={(s) => setSearchParams({ s })}
+          onNavCalc={(s) => { setCalcOrigin(section as UserSection); setSearchParams({ s }) }}
           flashMessage={flashMessage}
         />
       )
@@ -387,12 +389,21 @@ export function UserPage() {
           onClienteGuardado={handleClienteGuardado}
           autoOpenPreview={autoDownload}
           viewOnlyActions={isViewOnly ? { estadoActual: editorEstado ?? undefined } : undefined}
+          estadoPresupuesto={!isViewOnly ? (editorEstado ?? undefined) : undefined}
+          onAprobarPresupuesto={!isViewOnly && editorId && editorEstado === 'enviado'
+            ? () => { closeEditor(); void handleAprobarPresupuesto(editorId) }
+            : undefined}
+          onConvertirAFactura={!isViewOnly && editorId && (editorEstado === 'enviado' || editorEstado === 'aprobado')
+            ? () => { void handleConvertirAFactura(editorId) }
+            : undefined}
           onEmailPresupuesto={isViewOnly ? undefined : (doc, totals) => {
             const id = editor?.section === 'presupuestos' ? editor.id : undefined
+            const estado = editor?.section === 'presupuestos' ? editor.estado : null
             setEmailPresupuestoState({
               email: doc.cliente?.email,
               nombre: doc.numero ? `Presupuesto ${doc.numero}` : 'Presupuesto',
               doc, totals, id,
+              isReenviar: Boolean(estado && estado !== 'borrador'),
             })
             // No cerramos el editor aquí: si el usuario cancela el email, puede seguir editando
           }}
@@ -474,12 +485,19 @@ export function UserPage() {
         'precio-hora':     PrecioHoraCalculator,
         'iva-irpf':        IvaIrpfCalculator,
       }
+      const BACK_LABELS: Partial<Record<UserSection, string>> = {
+        presupuestos: 'Volver a presupuestos',
+        facturas:     'Volver a facturas',
+        albaranes:    'Volver a albaranes',
+        dashboard:    'Volver al dashboard',
+      }
       const Calc = CalcMap[section]
+      const backSection = calcOrigin ?? 'dashboard'
       return (
         <div className="doc-listado-wrap">
           <nav className="post-breadcrumb" style={{ marginBottom: 'var(--space-5)' }}>
-            <button type="button" onClick={() => setSearchParams({ s: 'dashboard' })} className="back-link">
-              <ArrowLeft size={13} /> Volver al dashboard
+            <button type="button" onClick={() => { setCalcOrigin(null); setSearchParams({ s: backSection }) }} className="back-link">
+              <ArrowLeft size={13} /> {BACK_LABELS[backSection] ?? 'Volver'}
             </button>
           </nav>
           <Calc />
@@ -495,6 +513,9 @@ export function UserPage() {
         section={section}
         nombreEmpresa={empresa?.nombre}
         onNav={(nextSection) => {
+          if (!['cuota-autonomos', 'precio-hora', 'iva-irpf'].includes(nextSection)) {
+            setCalcOrigin(null)
+          }
           if (nextSection === section && DOCUMENT_SECTIONS.includes(nextSection)) {
             closeEditor()
           }
@@ -524,13 +545,12 @@ export function UserPage() {
           emailCliente={emailPresupuestoState.email}
           nombreDocumento={emailPresupuestoState.nombre}
           onSent={async () => {
-            // Guarda como enviado y cierra el editor (el EmailModal sigue visible al ser top-level)
             await saveBusiness(
               'presupuestos',
               emailPresupuestoState.doc,
               emailPresupuestoState.totals,
               emailPresupuestoState.id,
-              true,
+              !emailPresupuestoState.isReenviar,
             )
           }}
           onClose={() => setEmailPresupuestoState(null)}

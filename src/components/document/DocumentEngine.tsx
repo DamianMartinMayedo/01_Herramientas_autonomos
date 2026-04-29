@@ -49,6 +49,9 @@ interface DocumentEngineProps {
   viewOnlyActions?: ViewOnlyActions
   autoOpenPreview?: boolean
   onEmailPresupuesto?: (doc: DocumentoBase, totales: TotalesDocumento) => void
+  estadoPresupuesto?: string
+  onAprobarPresupuesto?: () => void
+  onConvertirAFactura?: () => void
 }
 
 export function DocumentEngine({
@@ -67,12 +70,14 @@ export function DocumentEngine({
   viewOnlyActions,
   autoOpenPreview = false,
   onEmailPresupuesto,
+  estadoPresupuesto,
+  onAprobarPresupuesto,
+  onConvertirAFactura,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
-
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -341,13 +346,26 @@ export function DocumentEngine({
           )}
           {!viewOnlyActions && (onSave || onEmailPresupuesto) && tipo === 'presupuesto' && (
             <>
-              <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
-                <Save size={14} />
-                {saving ? 'Guardando...' : 'Guardar como borrador'}
-              </Button>
+              {onSave && (
+                <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
+                  <Save size={14} />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
+              )}
+              {onAprobarPresupuesto && estadoPresupuesto === 'enviado' && (
+                <Button variant="secondary" size="sm" type="button" onClick={onAprobarPresupuesto}>
+                  <CheckCircle2 size={14} />
+                  Marcar aprobado
+                </Button>
+              )}
+              {onConvertirAFactura && (estadoPresupuesto === 'enviado' || estadoPresupuesto === 'aprobado') && (
+                <Button variant="secondary" size="sm" type="button" onClick={onConvertirAFactura}>
+                  Convertir a factura
+                </Button>
+              )}
               <Button variant="primary" size="sm" onClick={handleEnviarPresupuesto} type="button" disabled={saving}>
                 <Send size={14} />
-                Enviar presupuesto
+                {estadoPresupuesto && estadoPresupuesto !== 'borrador' ? 'Reenviar' : 'Enviar presupuesto'}
               </Button>
             </>
           )}
