@@ -205,6 +205,26 @@ export function DocumentoListado({
     )
   }
 
+  const renderTableHeader = () => {
+    const labelTitulo  = cfg.campoTitulo === 'numero' ? 'Número' : 'Título'
+    const labelCliente = cfg.campoSecundario === 'otra_parte_nombre' ? 'Otra parte'
+      : cfg.campoSecundario === 'deudor_nombre' ? 'Deudor'
+      : 'Cliente'
+    const labelPrecio  = tipo === 'reclamaciones' ? 'Importe' : 'Total'
+    return (
+      <thead>
+        <tr className="data-thead-row">
+          <th className="data-th">{labelTitulo}</th>
+          <th className="data-th">{labelCliente}</th>
+          <th className="data-th">Fecha</th>
+          {cfg.campoPrecio && <th className="data-th-right">{labelPrecio}</th>}
+          <th className="data-th">Estado</th>
+          <th className="data-th-right">Acciones</th>
+        </tr>
+      </thead>
+    )
+  }
+
   const renderRowBase = (row: DocRow, actions: React.ReactNode, extraBadge?: React.ReactNode, overrideBadge?: React.ReactNode) => {
     const titulo  = row[cfg.campoTitulo] ?? '—'
     const cliente = row[cfg.campoSecundario] ?? '—'
@@ -212,27 +232,29 @@ export function DocumentoListado({
     const fecha   = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES') : ''
 
     return (
-      <div key={row.id} className="doc-row">
-        <div className="icon-box icon-box-md" style={{ background: 'var(--color-surface-offset)' }}>
-          <FileText size={16} style={{ color: 'var(--color-text-muted)' }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
-            <span className="doc-row-title">{titulo || 'Sin número'}</span>
+      <tr key={row.id} className="data-tr">
+        <td className="data-td" style={{ fontWeight: 600 }}>{titulo || 'Sin número'}</td>
+        <td className="data-td" style={{ color: 'var(--color-text-muted)' }}>{cliente}</td>
+        <td className="data-td" style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', whiteSpace: 'nowrap' }}>{fecha}</td>
+        {cfg.campoPrecio && (
+          <td className="data-td-right" style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            {precio !== null && precio !== undefined
+              ? `${Number(precio).toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`
+              : '—'}
+          </td>
+        )}
+        <td className="data-td">
+          <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap', alignItems: 'center' }}>
             {overrideBadge ?? renderStatusBadge(row.estado ?? '')}
             {extraBadge}
           </div>
-          <p className="doc-row-meta">{cliente}{fecha ? ` · ${fecha}` : ''}</p>
-        </div>
-        {precio !== null && precio !== undefined && (
-          <span className="doc-row-price">
-            {Number(precio).toLocaleString('es-ES', { minimumFractionDigits: 2 })} €
-          </span>
-        )}
-        <div className="flex gap-2 shrink-0">
-          {actions}
-        </div>
-      </div>
+        </td>
+        <td className="data-td-right">
+          <div className="flex gap-2" style={{ justifyContent: 'flex-end' }}>
+            {actions}
+          </div>
+        </td>
+      </tr>
     )
   }
 
@@ -566,8 +588,13 @@ export function DocumentoListado({
                     const { items, totalPages } = paginar(rowsFiltrados)
                     return (
                       <>
-                        <div className="doc-list">
-                          {items.map(row => row.estado === 'borrador' ? renderBorradorRow(row) : renderEmitidaRow(row))}
+                        <div className="card card-no-pad">
+                          <table className="data-table">
+                            {renderTableHeader()}
+                            <tbody>
+                              {items.map(row => row.estado === 'borrador' ? renderBorradorRow(row) : renderEmitidaRow(row))}
+                            </tbody>
+                          </table>
                         </div>
                         {renderPaginacion(totalPages)}
                       </>
@@ -619,7 +646,17 @@ export function DocumentoListado({
                   ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay presupuestos en este estado.</p>
                   : (() => {
                     const { items, totalPages } = paginar(rowsFiltrados)
-                    return <><div className="doc-list">{items.map(row => renderPresupuestoRow(row))}</div>{renderPaginacion(totalPages)}</>
+                    return (
+                      <>
+                        <div className="card card-no-pad">
+                          <table className="data-table">
+                            {renderTableHeader()}
+                            <tbody>{items.map(row => renderPresupuestoRow(row))}</tbody>
+                          </table>
+                        </div>
+                        {renderPaginacion(totalPages)}
+                      </>
+                    )
                   })()
                 }
               </>
@@ -658,8 +695,11 @@ export function DocumentoListado({
         <>
           {rows.length === 0 && emptyState}
           {rows.length > 0 && (
-            <div className="doc-list">
-              {rows.map(row => renderGenericRow(row))}
+            <div className="card card-no-pad">
+              <table className="data-table">
+                {renderTableHeader()}
+                <tbody>{rows.map(row => renderGenericRow(row))}</tbody>
+              </table>
             </div>
           )}
         </>
