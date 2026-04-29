@@ -167,7 +167,7 @@ export function LegalDocEngine<T extends LegalDoc>({
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {!embedded && (
+          {(!embedded || onBack) && (
             <>
               <button
                 type="button"
@@ -176,7 +176,7 @@ export function LegalDocEngine<T extends LegalDoc>({
                     onBack()
                     return
                   }
-                  navigate('/')
+                  navigate(-1)
                 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
@@ -248,7 +248,7 @@ export function LegalDocEngine<T extends LegalDoc>({
           {clientes.length > 0 && clienteField && (
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Cliente frecuente</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="input-group">
                   <label className="input-label">Selecciona un cliente guardado</label>
                   <select

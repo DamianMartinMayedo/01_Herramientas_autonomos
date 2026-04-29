@@ -6,10 +6,10 @@ import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
+import { ConfirmModal } from '../admin/components/ConfirmModal'
 import {
   LayoutDashboard, FileText, Receipt, Package,
   FileSignature, ShieldOff, AlertCircle,
-  Calculator, TrendingUp, Clock,
   LogOut, X, ChevronRight, User,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
@@ -25,14 +25,14 @@ interface UserLayoutProps {
   section: UserSection
   onNav: (s: UserSection) => void
   children: ReactNode
+  nombreEmpresa?: string | null
 }
 
 const NAV_GROUPS = [
   {
     label: 'General',
     items: [
-      { id: 'dashboard' as UserSection,  label: 'Dashboard', Icon: LayoutDashboard },
-      { id: 'perfil' as UserSection,      label: 'Perfil',    Icon: User },
+      { id: 'dashboard' as UserSection, label: 'Dashboard', Icon: LayoutDashboard },
     ],
   },
   {
@@ -46,27 +46,21 @@ const NAV_GROUPS = [
       { id: 'reclamaciones' as UserSection, label: 'Reclamaciones', Icon: AlertCircle },
     ],
   },
-  {
-    label: 'Calculadoras',
-    items: [
-      { id: 'cuota-autonomos' as UserSection, label: 'Cuota autónomos', Icon: Calculator },
-      { id: 'precio-hora' as UserSection,     label: 'Precio/hora',     Icon: TrendingUp },
-      { id: 'iva-irpf' as UserSection,        label: 'IVA / IRPF',      Icon: Clock },
-    ],
-  },
 ]
 
 function UserSidebar({
-  section, onNav, onClose,
+  section, onNav, onClose, nombreEmpresa,
 }: {
   section: UserSection
   onNav: (s: UserSection) => void
   onClose?: () => void
+  nombreEmpresa?: string | null
 }) {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const initials = (profile?.display_name ?? profile?.email ?? 'U')
-    .slice(0, 2).toUpperCase()
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
+  const displayName = nombreEmpresa ?? profile?.display_name ?? profile?.email?.split('@')[0] ?? 'Usuario'
+  const initials = displayName.slice(0, 2).toUpperCase()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -80,9 +74,7 @@ function UserSidebar({
       <div className="user-sidebar-header">
         <div className="user-avatar">{initials}</div>
         <div className="min-w-0">
-          <p className="user-avatar-name">
-            {profile?.display_name ?? profile?.email?.split('@')[0] ?? 'Usuario'}
-          </p>
+          <p className="user-avatar-name">{displayName}</p>
           <span className="user-avatar-plan">{profile?.plan ?? 'free'}</span>
         </div>
         {onClose && (
@@ -118,39 +110,48 @@ function UserSidebar({
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <button onClick={() => { onNav('perfil'); onClose?.() }} className="sidebar-footer-btn">
-          <User size={16} /> Perfil
+        <button
+          onClick={() => { onNav('perfil'); onClose?.() }}
+          className={`sidebar-nav-btn${section === 'perfil' ? ' active' : ''}`}
+        >
+          <User size={16} />
+          Perfil
+          {section === 'perfil' && <ChevronRight size={14} className="ml-auto" />}
         </button>
-        <button onClick={handleLogout} className="sidebar-footer-btn sidebar-footer-btn--danger">
+        <button onClick={() => setLogoutConfirmOpen(true)} className="sidebar-footer-btn sidebar-footer-btn--danger">
           <LogOut size={16} /> Cerrar sesión
         </button>
       </div>
+
+      {logoutConfirmOpen && (
+        <ConfirmModal
+          title="Cerrar sesión"
+          description="¿Seguro que quieres cerrar sesión?"
+          confirmLabel="Cerrar sesión"
+          confirmVariant="danger"
+          onConfirm={() => { void handleLogout() }}
+          onCancel={() => setLogoutConfirmOpen(false)}
+        />
+      )}
 
     </aside>
   )
 }
 
-export function UserLayout({ section, onNav, children }: UserLayoutProps) {
+export function UserLayout({ section, onNav, children, nombreEmpresa }: UserLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { user, loading } = useAuth()
-  const navigate = useNavigate()
-
-  if (!loading && !user) {
-    navigate('/')
-    return null
-  }
 
   return (
     <div className="layout-root">
 
       {/* Sidebar desktop */}
-      <UserSidebar section={section} onNav={onNav} />
+      <UserSidebar section={section} onNav={onNav} nombreEmpresa={nombreEmpresa} />
 
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="mobile-drawer" onClick={() => setMobileOpen(false)}>
           <div style={{ width: 260 }} onClick={e => e.stopPropagation()}>
-            <UserSidebar section={section} onNav={onNav} onClose={() => setMobileOpen(false)} />
+            <UserSidebar section={section} onNav={onNav} onClose={() => setMobileOpen(false)} nombreEmpresa={nombreEmpresa} />
           </div>
           <div className="mobile-drawer-backdrop" />
         </div>
@@ -164,7 +165,7 @@ export function UserLayout({ section, onNav, children }: UserLayoutProps) {
           </button> */}
           <ThemeToggle />
         </div>
-        <main style={{ flex: 1, padding: 'var(--space-6)', overflowY: 'auto' }}>
+        <main style={{ flex: 1, overflowY: 'auto' }}>
           {children}
         </main>
       </div>

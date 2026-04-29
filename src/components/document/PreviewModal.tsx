@@ -1,26 +1,22 @@
 import { useRef, useState } from 'react'
-import { X, Printer, Pencil, AlertTriangle, Loader2, Mail } from 'lucide-react'
+import { X, Printer, Pencil, AlertTriangle, Loader2 } from 'lucide-react'
 import type { DocumentoBase, TotalesDocumento } from '../../types/document.types'
 import { DocumentPreview } from './DocumentPreview'
 import { Button } from '../ui/Button'
 import { descargarPdf } from '../../utils/downloadPdf'
-import { EmailModal } from '../shared/EmailModal'
 
 interface PreviewModalProps {
   documento: DocumentoBase
   totales: TotalesDocumento
-  /** Email del cliente para autorellenar el modal de correo */
-  clienteEmail?: string
   onClose: () => void
 }
 
 const PREVIEW_ZOOM = 0.88
 
-export function PreviewModal({ documento, totales, clienteEmail, onClose }: PreviewModalProps) {
+export function PreviewModal({ documento, totales, onClose }: PreviewModalProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [emailModalAbierto, setEmailModalAbierto] = useState(false)
 
   const handleDescargar = async () => {
     if (!previewRef.current) return
@@ -40,21 +36,14 @@ export function PreviewModal({ documento, totales, clienteEmail, onClose }: Prev
     }
   }
 
-  /** Nombre legible del documento para mostrarlo en el EmailModal */
-  const nombreDocumento = [
-    documento.tipo === 'factura' ? 'Factura' :
-    documento.tipo === 'presupuesto' ? 'Presupuesto' : 'Albarán',
-    documento.numero?.trim(),
-  ].filter(Boolean).join(' ')
-
   return (
     <>
       <div
-        className="overlay overlay-darker"
+        className="overlay overlay-dark overlay-z60"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="modal-box modal-lg"
+          className="admin-modal-box admin-modal-lg"
           role="dialog"
           aria-modal="true"
           aria-label="Vista previa del documento"
@@ -99,35 +88,15 @@ export function PreviewModal({ documento, totales, clienteEmail, onClose }: Prev
               <Pencil size={16} />
               Volver a editar
             </Button>
-            <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-              <Button
-                variant="secondary"
-                onClick={() => setEmailModalAbierto(true)}
-                disabled={generando}
-                type="button"
-              >
-                <Mail size={16} />
-                Enviar por correo
-              </Button>
-              <Button variant="primary" onClick={handleDescargar} disabled={generando}>
-                {generando
-                  ? <Loader2 size={16} className="spin" />
-                  : <Printer size={16} />}
-                {generando ? 'Abriendo...' : 'Guardar como PDF'}
-              </Button>
-            </div>
+            <Button variant="primary" onClick={handleDescargar} disabled={generando}>
+              {generando
+                ? <Loader2 size={16} className="spin" />
+                : <Printer size={16} />}
+              {generando ? 'Abriendo...' : 'Guardar como PDF'}
+            </Button>
           </div>
         </div>
       </div>
-
-      {/* Email modal — z-60, se superpone al modal principal */}
-      {emailModalAbierto && (
-        <EmailModal
-          emailCliente={clienteEmail}
-          nombreDocumento={nombreDocumento}
-          onClose={() => setEmailModalAbierto(false)}
-        />
-      )}
     </>
   )
 }

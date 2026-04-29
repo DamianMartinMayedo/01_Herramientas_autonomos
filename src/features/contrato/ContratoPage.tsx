@@ -51,7 +51,7 @@ function FormParte({
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
-      <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+      <div className="fieldset-v3-body">
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
@@ -134,7 +134,7 @@ export function ContratoPage({
             {/* Encabezado del documento */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Encabezado del contrato</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="form-row">
                   <FormField
                     label="Referencia / Nº contrato *"
@@ -164,7 +164,7 @@ export function ContratoPage({
             {/* Objeto y condiciones */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Objeto y condiciones económicas</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <TextAreaField
                   label="Objeto del contrato *"
                   placeholder="Describe los servicios que vas a prestar..."
@@ -202,7 +202,7 @@ export function ContratoPage({
             {/* Duración */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Duración</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="form-row">
                   <div className="input-group">
                     <label className="input-label">Tipo de duración</label>
@@ -233,7 +233,7 @@ export function ContratoPage({
             {/* Cláusulas opcionales */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Cláusulas opcionales</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              <div className="fieldset-v3-body" style={{ gap: 'var(--space-3)' }}>
                 <label className="input-toggle">
                   <input type="checkbox" {...reg('clausulaConfidencialidad')} />
                   <span>Incluir cláusula de confidencialidad</span>
@@ -259,7 +259,7 @@ export function ContratoPage({
             {/* Notas */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Notas</legend>
-              <div style={{ marginTop: 'var(--space-4)' }}>
+              <div>
                 <TextAreaField
                   label="Observaciones"
                   placeholder="Cualquier nota adicional..."

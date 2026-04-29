@@ -6,8 +6,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
 import {
   Search, ChevronRight, FileText,
-  Trash2, Eye, ArrowLeft, Calendar,
-  CreditCard, ShieldCheck, Clock
+  Trash2, Eye, EyeOff, ArrowLeft, Calendar,
+  CreditCard, ShieldCheck, Clock,
+  UserPlus, X, AlertTriangle, Loader2,
 } from 'lucide-react'
 import { FACTURA_STATUS_LABELS, isFacturaStatus, type FacturaStatus } from '../../../types/facturaStatus'
 
@@ -38,17 +39,30 @@ export function UsuariosSection() {
   const [search,         setSearch]         = useState('')
   const [selectedFactura, setSelectedFactura] = useState<Factura | null>(null)
 
+  // Crear usuario
+  const [crearOpen,    setCrearOpen]    = useState(false)
+  const [nuevoEmail,   setNuevoEmail]   = useState('')
+  const [nuevoPass,    setNuevoPass]    = useState('')
+  const [nuevoPlan,    setNuevoPlan]    = useState<'free' | 'premium'>('free')
+  const [showPass,     setShowPass]     = useState(false)
+  const [creando,      setCreando]      = useState(false)
+  const [crearError,   setCrearError]   = useState<string | null>(null)
+
   useEffect(() => { fetchUsers() }, [])
 
   async function fetchUsers() {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      setUsers(data || [])
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
+        { headers: { 'x-admin-secret': import.meta.env.VITE_ADMIN_CREATE_SECRET ?? '' } },
+      )
+      const result = await res.json() as { users?: UserProfile[]; error?: string }
+      if (!res.ok) throw new Error(result.error ?? 'Error al cargar usuarios')
+      const sorted = (result.users ?? []).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      setUsers(sorted)
     } catch (err) {
       console.error('Error fetching users:', err)
     } finally {
@@ -94,6 +108,45 @@ export function UsuariosSection() {
       setUserFacturas(prev => prev.filter(f => f.id !== id))
     } catch {
       alert('Error al borrar la factura')
+    }
+  }
+
+  async function handleCrearUsuario() {
+    if (!nuevoEmail.trim() || !nuevoPass.trim()) {
+      setCrearError('El email y la contraseña son obligatorios')
+      return
+    }
+    setCreando(true)
+    setCrearError(null)
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-secret': import.meta.env.VITE_ADMIN_CREATE_SECRET ?? '',
+          },
+          body: JSON.stringify({
+            email: nuevoEmail.trim(),
+            password: nuevoPass,
+            plan: nuevoPlan,
+          }),
+        },
+      )
+      const result = await res.json() as { error?: string }
+      if (!res.ok) throw new Error(result.error ?? 'Error al crear el usuario')
+
+      setCrearOpen(false)
+      setNuevoEmail('')
+      setNuevoPass('')
+      setNuevoPlan('free')
+      await fetchUsers()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al crear el usuario'
+      setCrearError(msg)
+    } finally {
+      setCreando(false)
     }
   }
 
@@ -233,9 +286,15 @@ export function UsuariosSection() {
   return (
     <div className="section-stack">
 
-      <div>
-        <h1 className="section-title">Usuarios y Facturas</h1>
-        <p className="section-sub">Gestión de usuarios registrados y auditoría de documentos fiscales.</p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-4)' }}>
+        <div>
+          <h1 className="section-title">Usuarios y Facturas</h1>
+          <p className="section-sub">Gestión de usuarios registrados y auditoría de documentos fiscales.</p>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={() => { setCrearError(null); setCrearOpen(true) }}>
+          <UserPlus size={15} />
+          Crear usuario
+        </button>
       </div>
 
       {/* Buscador */}
@@ -301,6 +360,101 @@ export function UsuariosSection() {
           </tbody>
         </table>
       </div>
+
+      {/* Modal crear usuario */}
+      {crearOpen && (
+        <div className="overlay overlay-dark overlay-z200">
+          <div className="admin-modal-box admin-modal-sm">
+
+            <div className="admin-modal-header">
+              <UserPlus size={18} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              <h2 className="admin-modal-title">Crear usuario</h2>
+              <button onClick={() => setCrearOpen(false)} className="modal-close-btn" disabled={creando}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="admin-modal-body">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <div className="input-group">
+                  <label className="input-label">Email *</label>
+                  <input
+                    type="email"
+                    className="input-v3"
+                    value={nuevoEmail}
+                    onChange={e => setNuevoEmail(e.target.value)}
+                    placeholder="usuario@ejemplo.com"
+                    disabled={creando}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Contraseña *</label>
+                  <div className="input-password-wrap">
+                    <input
+                      type={showPass ? 'text' : 'password'}
+                      className="input-v3"
+                      value={nuevoPass}
+                      onChange={e => setNuevoPass(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      disabled={creando}
+                      style={{ paddingRight: '2.5rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(p => !p)}
+                      className="input-password-toggle"
+                      disabled={creando}
+                    >
+                      {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Plan</label>
+                  <select
+                    className="select-v3"
+                    value={nuevoPlan}
+                    onChange={e => setNuevoPlan(e.target.value as 'free' | 'premium')}
+                    disabled={creando}
+                  >
+                    <option value="free">Free</option>
+                    <option value="premium">Premium</option>
+                  </select>
+                </div>
+
+                {crearError && (
+                  <div className="error-box">
+                    <AlertTriangle size={15} className="error-box-icon" />
+                    <span>{crearError}</span>
+                  </div>
+                )}
+
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', lineHeight: 1.5 }}>
+                  El usuario recibirá un email de confirmación. Hasta que lo confirme, su cuenta estará pendiente.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-modal-footer">
+              <button className="btn btn-secondary btn-sm" onClick={() => setCrearOpen(false)} disabled={creando}>
+                Cancelar
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => { void handleCrearUsuario() }}
+                disabled={creando}
+              >
+                {creando ? <Loader2 size={14} className="spin" /> : <UserPlus size={14} />}
+                {creando ? 'Creando...' : 'Crear usuario'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   )

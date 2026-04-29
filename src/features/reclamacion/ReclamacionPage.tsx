@@ -45,7 +45,7 @@ function FormParte({
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
-      <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+      <div className="fieldset-v3-body">
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
@@ -125,7 +125,7 @@ export function ReclamacionPage({
             {/* Encabezado */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Encabezado de la carta</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="form-row">
                   <FormField
                     label="Referencia (opcional)"
@@ -155,7 +155,7 @@ export function ReclamacionPage({
             {/* Datos de la deuda */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Datos de la factura impagada</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="form-row">
                   <FormField
                     label="Nº de factura *"
@@ -196,7 +196,7 @@ export function ReclamacionPage({
             {/* Configuración de la carta */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Tono y condiciones</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="input-group">
                   <label className="input-label">Tono de la carta</label>
                   <select {...reg('tono')} className="select-v3">
@@ -228,7 +228,7 @@ export function ReclamacionPage({
             {/* Notas */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Notas adicionales</legend>
-              <div style={{ marginTop: 'var(--space-4)' }}>
+              <div>
                 <TextAreaField
                   label="Observaciones"
                   placeholder="Cualquier nota que quieras añadir a la carta..."

@@ -19,6 +19,7 @@ export type UserDocumentDraft =
 export interface UserDocumentRow {
   id: string
   datos_json?: UserDocumentDraft | null
+  estado?: string | null
 }
 
 function resumenConcepto(lineas: DocumentoBase['lineas']) {
@@ -76,6 +77,17 @@ async function getNextFacturaNumero(userId: string): Promise<{ numero: string | 
   return { numero: (row?.numero as string | undefined) ?? '', error: null }
 }
 
+async function getNextRectificativaNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
+  const { data: nextData, error } = await supabase.rpc('next_document_number', {
+    p_tipo: 'rectificativa',
+    p_prefijo: 'R',
+    p_user_id: userId,
+  })
+  if (error) return { numero: null, error }
+  const row = Array.isArray(nextData) ? nextData[0] : null
+  return { numero: (row?.numero as string | undefined) ?? '', error: null }
+}
+
 export async function saveBusinessDocument(params: {
   table: 'facturas' | 'presupuestos' | 'albaranes'
   userId: string
@@ -88,7 +100,9 @@ export async function saveBusinessDocument(params: {
   let numeroFinal: string | null = table === 'facturas' ? null : document.numero
 
   if (table === 'facturas' && finalizar) {
-    const { numero, error: nextError } = await getNextFacturaNumero(userId)
+    const { numero, error: nextError } = document.esRectificativa
+      ? await getNextRectificativaNumero(userId)
+      : await getNextFacturaNumero(userId)
     if (nextError) {
       return { data: null, error: nextError as { message: string }, numero: null as string | null }
     }
@@ -145,9 +159,6 @@ export async function saveBusinessDocument(params: {
 }
 
 export async function emitirFactura(userId: string, id: string) {
-  const { numero, error: nextError } = await getNextFacturaNumero(userId)
-  if (nextError) return { error: nextError as { message: string }, numero: null }
-
   const { data: current, error: fetchError } = await supabase
     .from('facturas')
     .select('datos_json')
@@ -157,6 +168,14 @@ export async function emitirFactura(userId: string, id: string) {
   if (fetchError) return { error: fetchError, numero: null }
 
   const datosJson = current?.datos_json as DocumentoBase | null
+  const esRectificativa = Boolean(datosJson?.esRectificativa)
+
+  const { numero, error: nextError } = esRectificativa
+    ? await getNextRectificativaNumero(userId)
+    : await getNextFacturaNumero(userId)
+
+  if (nextError) return { error: nextError as { message: string }, numero: null }
+
   const updatedDatosJson = datosJson ? { ...datosJson, numero: numero ?? '' } : datosJson
 
   const { error: updateError } = await supabase
@@ -214,14 +233,17 @@ export async function corregirFactura(userId: string, id: string) {
   if (!datosJson) return { error: new Error('Documento no encontrado') }
 
   const originalNumero = (data.numero as string | undefined) ?? ''
-  const notasRectificacion = `Factura rectificativa de ${originalNumero}${datosJson.notas ? `\n\n${datosJson.notas}` : ''}`
+  const originalFecha = (data.fecha as string | undefined) ?? datosJson.fecha ?? ''
 
-  const nuevoDatosJson = {
+  const nuevoDatosJson: DocumentoBase = {
     ...datosJson,
     numero: '',
-    notas: notasRectificacion,
+    notas: '',
     esRectificativa: true,
-    lineas: datosJson.lineas.map((linea) => ({ ...linea, cantidad: -Math.abs(linea.cantidad) })),
+    facturaOriginalNumero: originalNumero,
+    facturaOriginalFecha: originalFecha,
+    motivoRectificacion: '',
+    lineas: datosJson.lineas,
   }
 
   const { error: insertError } = await supabase
@@ -239,11 +261,16 @@ export async function corregirFactura(userId: string, id: string) {
       tipo_irpf: data.tipo_irpf,
       total: data.total,
       estado: 'borrador',
-      notas: notasRectificacion,
+      notas: '',
       datos_json: nuevoDatosJson,
     })
 
   return { error: insertError }
+}
+
+export async function marcarFacturaCobrada(id: string) {
+  const { error } = await supabase.from('facturas').update({ estado: 'cobrada' }).eq('id', id)
+  return { error }
 }
 
 export async function saveLegalDocument(params: {
@@ -305,7 +332,7 @@ export async function saveLegalDocument(params: {
 export async function getStoredUserDocument(table: UserDocumentTable, id: string) {
   const { data, error } = await supabase
     .from(table)
-    .select('id, datos_json')
+    .select('id, datos_json, estado')
     .eq('id', id)
     .single()
 

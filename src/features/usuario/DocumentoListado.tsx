@@ -65,6 +65,7 @@ interface Props {
   onCreate?: () => void
   onOpen?: (id: string) => void
   onView?: (id: string) => void
+  onDescargar?: (id: string) => void
   onEmitir?: (id: string) => void
   onDuplicar?: (id: string) => void
   onCorregir?: (id: string) => void
@@ -75,7 +76,7 @@ interface Props {
 type DocRow = Record<string, any>
 
 export function DocumentoListado({
-  tipo, refreshKey = 0, onCreate, onOpen, onView, onEmitir, onDuplicar, onCorregir, flashMessage,
+  tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir, flashMessage,
 }: Props) {
   const { user } = useAuth()
   const cfg = TABLA_CONFIG[tipo]
@@ -219,20 +220,22 @@ export function DocumentoListado({
     }}>Rectificativa</span>
   )
 
-  // Borrador de factura: Editar · Emitir · Eliminar
+  // Borrador de factura: Editar · Emitir (solo si no es rectificativa) · Eliminar
   const renderBorradorRow = (row: DocRow) => renderRowBase(row, (
     <>
       <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
         <Pencil size={13} />
       </button>
-      <button
-        type="button"
-        title="Emitir factura"
-        className="icon-btn icon-btn--primary"
-        onClick={() => setEmitirConfirmId(row.id)}
-      >
-        <Send size={13} />
-      </button>
+      {!row.datos_json?.esRectificativa && (
+        <button
+          type="button"
+          title="Emitir factura"
+          className="icon-btn icon-btn--primary"
+          onClick={() => setEmitirConfirmId(row.id)}
+        >
+          <Send size={13} />
+        </button>
+      )}
       <button
         type="button"
         title="Eliminar"
@@ -264,7 +267,7 @@ export function DocumentoListado({
           <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onView?.(row.id) }}>
             <Eye size={13} /> Ver
           </button>
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onView?.(row.id) }}>
+          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDescargar?.(row.id) }}>
             <Download size={13} /> Descargar
           </button>
           {canMarkFacturaAsCobrada(row.estado) && (
@@ -277,13 +280,17 @@ export function DocumentoListado({
               <Undo2 size={13} /> Marcar como no cobrada
             </button>
           )}
-          <div className="dropdown-divider" />
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDuplicar?.(row.id) }}>
-            <Copy size={13} /> Duplicar
-          </button>
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onCorregir?.(row.id) }}>
-            <PenLine size={13} /> Corregir
-          </button>
+          {!row.datos_json?.esRectificativa && (
+            <>
+              <div className="dropdown-divider" />
+              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDuplicar?.(row.id) }}>
+                <Copy size={13} /> Duplicar
+              </button>
+              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onCorregir?.(row.id) }}>
+                <PenLine size={13} /> Corregir
+              </button>
+            </>
+          )}
           <div className="dropdown-divider" />
           <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setEmailModalRow(row) }}>
             <Mail size={13} /> Enviar por correo
@@ -291,7 +298,7 @@ export function DocumentoListado({
         </div>
       )}
     </div>
-  ))
+  ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
 
   // Fila genérica para tipos distintos a facturas
   const renderGenericRow = (row: DocRow) => renderRowBase(row, (

@@ -5,7 +5,7 @@ import { SiteFooter } from '../../components/layout/SiteFooter'
 import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
 
-function IvaIrpfCalculator() {
+export function IvaIrpfCalculator() {
   const [baseImponible, setBaseImponible]   = useState<number | ''>('')
   const [tipoIva, setTipoIva]               = useState<number | ''>(21)
   const [retencionIrpf, setRetencionIrpf]   = useState<number | ''>(15)

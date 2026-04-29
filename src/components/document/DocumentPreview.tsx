@@ -17,7 +17,8 @@ interface DocumentPreviewProps {
 
 export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
   ({ documento, totales }, ref) => {
-    const { titulo, numero: labelNumero } = ETIQUETAS[documento.tipo]
+    const { titulo: tituloBase, numero: labelNumero } = ETIQUETAS[documento.tipo]
+    const titulo = documento.esRectificativa ? 'FACTURA RECTIFICATIVA' : tituloBase
     const esFinanciero = documento.tipo !== 'albaran'
 
     const formatDireccion = (
@@ -64,19 +65,17 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                     <span className="doc-ref-value-m">{formatFecha(documento.fechaVencimiento)}</span>
                   </p>
                 )}
-              </div>
-
-              {/* CLIENTE — debajo del bloque de referencia */}
-              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
-                <p className="doc-client-name">{documento.cliente.nombre}</p>
-                {documento.cliente.nif && <p className="doc-text-muted">NIF: {documento.cliente.nif}</p>}
-                {(documento.cliente.direccion || documento.cliente.cp || documento.cliente.ciudad) && (
-                  <p className="doc-text-muted">
-                    {formatDireccion(documento.cliente.direccion, documento.cliente.cp, documento.cliente.ciudad, documento.cliente.provincia, documento.cliente.pais)}
+                {documento.esRectificativa && documento.facturaOriginalNumero && (
+                  <p>
+                    <span className="doc-ref-label">Rectifica: </span>
+                    <span className="doc-ref-value">{documento.facturaOriginalNumero}</span>
+                    {documento.facturaOriginalFecha && (
+                      <span className="doc-ref-value-m"> · {formatFecha(documento.facturaOriginalFecha)}</span>
+                    )}
                   </p>
                 )}
-                {documento.cliente.email && <p className="doc-text-muted">{documento.cliente.email}</p>}
               </div>
+
             </div>
           </div>
 
@@ -145,30 +144,52 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             </div>
           )}
 
-          {/* FORMA DE PAGO */}
-          {esFinanciero && documento.formaPago && (
+          {/* MOTIVO DE RECTIFICACIÓN */}
+          {documento.esRectificativa && documento.motivoRectificacion && (
             <div className="doc-section">
-              <p className="doc-section-label">Forma de pago</p>
-              <p className="doc-section-value">
-                {ETIQUETAS_METODO_PAGO[documento.formaPago.metodo]}
-              </p>
-              {documento.formaPago.metodo === 'transferencia' && documento.formaPago.cuenta && (
-                <p className="doc-section-detail">{documento.formaPago.cuenta}</p>
-              )}
-              {documento.formaPago.metodo === 'bizum' && documento.formaPago.telefono && (
-                <p className="doc-section-detail">{documento.formaPago.telefono}</p>
-              )}
-              {documento.formaPago.metodo === 'paypal' && (
-                <div className="doc-section-detail-list">
-                  {documento.formaPago.email    && <p>{documento.formaPago.email}</p>}
-                  {documento.formaPago.telefono && <p>{documento.formaPago.telefono}</p>}
-                </div>
-              )}
-              {documento.formaPago.metodo === 'otro' && documento.formaPago.detalle && (
-                <p className="doc-section-detail-wrap">{documento.formaPago.detalle}</p>
-              )}
+              <p className="doc-section-label">Motivo de la rectificación</p>
+              <p className="doc-section-detail-wrap">{documento.motivoRectificacion}</p>
             </div>
           )}
+
+          {/* FORMA DE PAGO + FACTURAR A */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '2rem' }}>
+            {esFinanciero && documento.formaPago && (
+              <div className="doc-section">
+                <p className="doc-section-label">Forma de pago</p>
+                <p className="doc-section-value">
+                  {ETIQUETAS_METODO_PAGO[documento.formaPago.metodo]}
+                </p>
+                {documento.formaPago.metodo === 'transferencia' && documento.formaPago.cuenta && (
+                  <p className="doc-section-detail">{documento.formaPago.cuenta}</p>
+                )}
+                {documento.formaPago.metodo === 'bizum' && documento.formaPago.telefono && (
+                  <p className="doc-section-detail">{documento.formaPago.telefono}</p>
+                )}
+                {documento.formaPago.metodo === 'paypal' && (
+                  <div className="doc-section-detail-list">
+                    {documento.formaPago.email    && <p>{documento.formaPago.email}</p>}
+                    {documento.formaPago.telefono && <p>{documento.formaPago.telefono}</p>}
+                  </div>
+                )}
+                {documento.formaPago.metodo === 'otro' && documento.formaPago.detalle && (
+                  <p className="doc-section-detail-wrap">{documento.formaPago.detalle}</p>
+                )}
+              </div>
+            )}
+
+            <div className="doc-section" style={{ marginLeft: 'auto', textAlign: 'right' }}>
+              <p className="doc-section-label">Facturar a</p>
+              <p className="doc-client-name">{documento.cliente.nombre}</p>
+              {documento.cliente.nif && <p className="doc-text-muted">NIF: {documento.cliente.nif}</p>}
+              {(documento.cliente.direccion || documento.cliente.cp || documento.cliente.ciudad) && (
+                <p className="doc-text-muted">
+                  {formatDireccion(documento.cliente.direccion, documento.cliente.cp, documento.cliente.ciudad, documento.cliente.provincia, documento.cliente.pais)}
+                </p>
+              )}
+              {documento.cliente.email && <p className="doc-text-muted">{documento.cliente.email}</p>}
+            </div>
+          </div>
 
           {/* NOTAS */}
           {documento.notas && (

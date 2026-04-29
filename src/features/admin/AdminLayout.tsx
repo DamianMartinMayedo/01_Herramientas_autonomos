@@ -5,6 +5,7 @@
 import { useState, type ReactNode } from 'react'
 import { useAdminStore } from '../../store/adminStore'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
+import { ConfirmModal } from './components/ConfirmModal'
 import {
   LayoutDashboard, FileText, Wrench, Users, BarChart3,
   LogOut, Menu, X, Lock, Eye, EyeOff, ChevronRight,
@@ -151,6 +152,7 @@ function LoginGate() {
 export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
   const { isAuthenticated, logout } = useAdminStore()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
 
   if (!isAuthenticated) return <LoginGate />
 
@@ -159,7 +161,7 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
 
       {/* Sidebar desktop */}
       <div className="show-lg" style={{ position: 'sticky', top: 0, alignSelf: 'flex-start', height: '100vh' }}>
-        <AdminSidebar section={section} onNav={onNav} onLogout={logout} />
+        <AdminSidebar section={section} onNav={onNav} onLogout={() => setLogoutConfirmOpen(true)} />
       </div>
 
       {/* Mobile drawer */}
@@ -170,7 +172,7 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
               section={section}
               onNav={onNav}
               onClose={() => setMobileOpen(false)}
-              onLogout={logout}
+              onLogout={() => setLogoutConfirmOpen(true)}
             />
           </div>
           <div className="mobile-drawer-backdrop" />
@@ -201,6 +203,17 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
           {children}
         </main>
       </div>
+
+      {logoutConfirmOpen && (
+        <ConfirmModal
+          title="Cerrar sesión"
+          description="¿Seguro que quieres cerrar sesión del panel de administración?"
+          confirmLabel="Cerrar sesión"
+          confirmVariant="danger"
+          onConfirm={() => { logout(); setLogoutConfirmOpen(false) }}
+          onCancel={() => setLogoutConfirmOpen(false)}
+        />
+      )}
     </div>
   )
 }

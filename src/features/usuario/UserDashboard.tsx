@@ -8,7 +8,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabaseClient'
 import {
   Receipt, FileText, Package, FileSignature,
-  ShieldOff, AlertCircle, TrendingUp, Plus,
+  ShieldOff, AlertCircle, TrendingUp, Calculator, Clock,
 } from 'lucide-react'
 import type { UserSection } from './UserLayout'
 
@@ -34,9 +34,10 @@ const STAT_CARDS = [
 
 interface Props {
   onNav: (s: UserSection) => void
+  nombreEmpresa?: string | null
 }
 
-export function UserDashboard({ onNav }: Props) {
+export function UserDashboard({ onNav, nombreEmpresa }: Props) {
   const { user } = useAuth()
   const { profile } = useProfile()
   const [stats, setStats] = useState<StatsState>({
@@ -81,7 +82,7 @@ export function UserDashboard({ onNav }: Props) {
     return () => { active = false }
   }, [userId])
 
-  const nombre = profile?.display_name ?? profile?.email?.split('@')[0] ?? 'usuario'
+  const nombre = nombreEmpresa ?? profile?.display_name ?? profile?.email?.split('@')[0] ?? 'usuario'
   const hora = new Date().getHours()
   const saludo = hora < 14 ? 'Buenos días' : hora < 21 ? 'Buenas tardes' : 'Buenas noches'
 
@@ -139,23 +140,29 @@ export function UserDashboard({ onNav }: Props) {
         ))}
       </div>
 
-      {/* Accesos rápidos */}
-      <div className="card" style={{ padding: 'var(--space-6)' }}>
+      {/* Calculadoras */}
+      <div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-4)' }}>
-          Crear nuevo documento
+          Calculadoras
         </h2>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
           {[
-            { label: 'Factura',     section: 'facturas' as UserSection },
-            { label: 'Presupuesto', section: 'presupuestos' as UserSection },
-            { label: 'Albarán',     section: 'albaranes' as UserSection },
-            { label: 'Contrato',    section: 'contratos' as UserSection },
-            { label: 'NDA',         section: 'ndas' as UserSection },
-            { label: 'Reclamación', section: 'reclamaciones' as UserSection },
-          ].map(({ label, section }) => (
-            <button key={section} onClick={() => onNav(section)} className="btn btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
-              <Plus size={14} /> {label}
+            { label: 'Cuota autónomos', desc: 'Calcula tu cuota según tus ingresos netos', section: 'cuota-autonomos' as UserSection, Icon: Calculator, color: 'var(--color-primary)' },
+            { label: 'Precio / hora',   desc: 'Descubre tu tarifa mínima facturable',       section: 'precio-hora' as UserSection,   Icon: TrendingUp, color: 'var(--color-purple)' },
+            { label: 'IVA / IRPF',      desc: 'Calcula IVA a repercutir y retención',       section: 'iva-irpf' as UserSection,      Icon: Clock,      color: 'var(--color-teal)' },
+          ].map(({ label, desc, section, Icon, color }) => (
+            <button key={section} onClick={() => onNav(section)} className="stat-btn">
+              <div className="icon-box" style={{
+                width: 40, height: 40,
+                borderRadius: 'var(--radius-md)',
+                background: `color-mix(in oklch, ${color} 12%, var(--color-surface-2))`,
+              }}>
+                <Icon size={18} style={{ color }} />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text)', fontWeight: 600 }}>{label}</p>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>{desc}</p>
+              </div>
             </button>
           ))}
         </div>

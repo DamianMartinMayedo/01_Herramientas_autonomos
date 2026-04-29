@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Save, Building2, Users } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { getEmpresa, saveEmpresa } from '../../lib/empresa'
 import { ConfiguracionPage } from './ConfiguracionPage'
 import type { Empresa } from '../../types/empresa.types'
@@ -90,14 +90,12 @@ export function PerfilPage({ userId, clientes, onClientsChange }: Props) {
             className={`filter-pill${tab === 'empresa' ? ' active' : ''}`}
             onClick={() => setTab('empresa')}
           >
-            <Building2 size={13} />
             Mi empresa
           </button>
           <button
             className={`filter-pill${tab === 'clientes' ? ' active' : ''}`}
             onClick={() => setTab('clientes')}
           >
-            <Users size={13} />
             Clientes habituales
           </button>
         </div>

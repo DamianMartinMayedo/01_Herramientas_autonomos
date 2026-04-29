@@ -3,7 +3,7 @@
  * Combina formulario + preview en un layout de dos columnas.
  * Lo usan: FacturaPage, PresupuestoPage, AlbaranPage
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDocumentEngine } from '../../hooks/useDocumentEngine'
 import type { DocumentoBase, MetodoPago, TotalesDocumento } from '../../types/document.types'
@@ -13,8 +13,10 @@ import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle, X, Loader2, Building2 } from 'lucide-react'
+import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, ArrowRight, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock } from 'lucide-react'
+import { EmailModal } from '../shared/EmailModal'
 import { useDocumentStore } from '../../store/documentStore'
+import { formatFecha } from '../../utils/formatters'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 import { regularClientToClienteInfo } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
@@ -23,6 +25,13 @@ const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Encabezado de la factura',
   presupuesto: 'Encabezado del presupuesto',
   albaran: 'Encabezado del albarán',
+}
+
+interface ViewOnlyActions {
+  onRectificar: () => void
+  onMarcarCobrada: () => void
+  onDuplicar: () => void
+  estadoActual?: string
 }
 
 interface DocumentEngineProps {
@@ -38,6 +47,8 @@ interface DocumentEngineProps {
   empresa?: Empresa | null
   onNavPerfil?: () => void
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
+  viewOnlyActions?: ViewOnlyActions
+  autoOpenPreview?: boolean
 }
 
 export function DocumentEngine({
@@ -53,10 +64,17 @@ export function DocumentEngine({
   empresa,
   onNavPerfil,
   onClienteGuardado,
+  viewOnlyActions,
+  autoOpenPreview = false,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+  const [feedbackMessage, setFeedbackMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
+
+  useEffect(() => {
+    if (autoOpenPreview) setModalAbierto(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedClientId, setSelectedClientId] = useState('')
   const [savingCliente, setSavingCliente] = useState(false)
   const navigate = useNavigate()
@@ -84,12 +102,12 @@ export function DocumentEngine({
   const esFinanciero = tipo !== 'albaran'
   const metodoPago = watch('formaPago.metodo') as MetodoPago
   const clienteExterior = watch('cliente.clienteExterior') as boolean
-  const clienteEmail = watch('cliente.email') as string | undefined
+
 
   const handleAbrirPrevia = form.handleSubmit(() => setModalAbierto(true))
 
-  const showFeedback = (message: string) => {
-    setFeedbackMessage(message)
+  const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
+    setFeedbackMessage({ text: message, type })
     setTimeout(() => setFeedbackMessage(null), 2500)
   }
 
@@ -106,11 +124,11 @@ export function DocumentEngine({
     } catch {
       showFeedback('No se pudo guardar. Inténtalo de nuevo.')
     }
-  }, () => showFeedback('Revisa los campos obligatorios antes de guardar.'))
+  }, () => showFeedback('Revisa los campos obligatorios antes de guardar.', 'error'))
 
   const handleAbrirFinalizar = form.handleSubmit(() => {
     setFinalizarModalAbierto(true)
-  }, () => showFeedback('Revisa los campos obligatorios antes de finalizar.'))
+  }, () => showFeedback('Revisa los campos obligatorios antes de finalizar.', 'error'))
 
   const handleConfirmarFinalizar = async () => {
     if (!onSave) return
@@ -131,7 +149,7 @@ export function DocumentEngine({
     } catch {
       showFeedback('No se pudo guardar. Inténtalo de nuevo.')
     }
-  }, () => showFeedback('Revisa los campos obligatorios antes de guardar.'))
+  }, () => showFeedback('Revisa los campos obligatorios antes de guardar.', 'error'))
 
   const handleConvertirAFactura = () => {
     const datos = form.getValues()
@@ -147,7 +165,11 @@ export function DocumentEngine({
   const handleSeleccionCliente = (clientId: string) => {
     setSelectedClientId(clientId)
     const client = clientes.find((item) => item.id === clientId)
-    if (!client) return
+    if (!client) {
+      setValue('cliente.clienteExterior', false, { shouldDirty: true })
+      setValue('cliente.pais', '', { shouldDirty: true })
+      return
+    }
 
     const cliente = regularClientToClienteInfo(client)
     setValue('cliente.nombre', cliente.nombre, { shouldDirty: true })
@@ -207,14 +229,14 @@ export function DocumentEngine({
     >
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
-        background: 'oklch(from var(--color-surface) l c h / 0.95)',
+        background: 'oklch(from var(--color-bg) l c h / 0.97)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--color-divider)',
         padding: 'var(--space-3) var(--space-6)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {!embedded && (
+          {(!embedded || onBack) && (
             <>
               <button
                 type="button"
@@ -223,7 +245,7 @@ export function DocumentEngine({
                     onBack()
                     return
                   }
-                  navigate('/')
+                  navigate(-1)
                 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
@@ -259,19 +281,49 @@ export function DocumentEngine({
             <span style={{
               display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
               fontSize: 'var(--text-sm)', fontWeight: 600,
-              color: 'var(--color-success)',
+              color: feedbackMessage.type === 'error' ? 'var(--color-error)' : 'var(--color-success)',
             }}>
               <CheckCircle2 size={15} />
-              {feedbackMessage}
+              {feedbackMessage.text}
             </span>
           )}
-          {!embedded && (
+          {!embedded && !viewOnlyActions && (
             <Button variant="secondary" size="sm" onClick={handleGuardarEmisor} type="button">
               <Save size={14} />
               Guardar mis datos
             </Button>
           )}
-          {onSave && tipo === 'factura' && (
+          {viewOnlyActions && tipo === 'factura' && (
+            <>
+              {!initialData?.esRectificativa && (
+                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onRectificar}>
+                  <PenLine size={14} />
+                  Rectificar
+                </Button>
+              )}
+              {!initialData?.esRectificativa && viewOnlyActions.estadoActual !== 'cobrada' && (
+                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onMarcarCobrada}>
+                  <CheckCircle2 size={14} />
+                  Cobrada
+                </Button>
+              )}
+              <Button variant="secondary" size="sm" type="button" onClick={() => setEmailModalOpen(true)}>
+                <Mail size={14} />
+                Enviar
+              </Button>
+              {!initialData?.esRectificativa && (
+                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onDuplicar}>
+                  <Copy size={14} />
+                  Duplicar
+                </Button>
+              )}
+              <Button variant="primary" size="sm" type="button" onClick={handleAbrirPrevia}>
+                <Download size={14} />
+                Descargar
+              </Button>
+            </>
+          )}
+          {!viewOnlyActions && onSave && tipo === 'factura' && (
             <>
               <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
                 <Save size={14} />
@@ -283,7 +335,7 @@ export function DocumentEngine({
               </Button>
             </>
           )}
-          {onSave && tipo !== 'factura' && (
+          {!viewOnlyActions && onSave && tipo !== 'factura' && (
             <Button variant="secondary" size="sm" onClick={handleGuardarDocumento} type="button" disabled={saving}>
               <Save size={14} />
               {saving ? 'Guardando...' : tipo === 'presupuesto' ? 'Guardar presupuesto' : 'Guardar albarán'}
@@ -295,7 +347,7 @@ export function DocumentEngine({
               Convertir a factura
             </Button>
           )}
-          {!(onSave && tipo === 'factura') && (
+          {!viewOnlyActions && !(onSave && tipo === 'factura') && (
             <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
               Exportar
             </Button>
@@ -319,6 +371,29 @@ export function DocumentEngine({
         </div>
       )}
 
+      {viewOnlyActions && (
+        <div style={{
+          background: 'color-mix(in srgb, var(--color-primary) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-border))',
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-3) var(--space-4)',
+          fontSize: 'var(--text-sm)',
+          color: 'var(--color-text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+          margin: 'var(--space-4) var(--space-6) 0',
+        }}>
+          <Lock size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+          <span>
+            {initialData?.esRectificativa
+              ? <><strong style={{ color: 'var(--color-text)' }}>Factura rectificativa emitida · Solo lectura.</strong> No se puede volver a rectificar.</>
+              : <><strong style={{ color: 'var(--color-text)' }}>Factura emitida · Solo lectura.</strong>{' '}Para modificarla usa <strong style={{ color: 'var(--color-text)' }}>Rectificar</strong>.</>
+            }
+          </span>
+        </div>
+      )}
+
       {initialData?.esRectificativa && (
         <div style={{
           background: 'color-mix(in srgb, var(--color-gold) 10%, transparent)',
@@ -335,7 +410,9 @@ export function DocumentEngine({
           <AlertTriangle size={14} style={{ color: 'var(--color-gold)', flexShrink: 0 }} />
           <span>
             <strong style={{ color: 'var(--color-text)' }}>Factura rectificativa.</strong>{' '}
-            Las cantidades negativas anulan los importes de la factura original. Ajústalas si la corrección es parcial.
+            {initialData.facturaOriginalNumero
+              ? <>Rectifica la Nº <strong style={{ color: 'var(--color-text)' }}>{initialData.facturaOriginalNumero}</strong>{initialData.facturaOriginalFecha ? ` de fecha ${formatFecha(initialData.facturaOriginalFecha)}` : ''}. Las cantidades negativas anulan los importes de la original.</>
+              : 'Las cantidades negativas anulan los importes de la factura original. Ajústalas si la corrección es parcial.'}
           </span>
         </div>
       )}
@@ -348,13 +425,13 @@ export function DocumentEngine({
         maxWidth: '1400px',
         margin: '0 auto',
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        <div className={viewOnlyActions ? 'form-view-only' : undefined} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">
               {empresa && tipo === 'factura' ? (
                 <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
                   <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: documento.numero ? 'var(--color-text)' : 'var(--color-text-faint)' }}>
-                    {documento.numero || 'FAC-XXXX-XXX'}
+                    {documento.numero || (initialData?.esRectificativa ? 'R-XXXX-XXX' : 'FAC-XXXX-XXX')}
                   </span>
                   {!documento.numero && (
                     <span style={{ fontSize: 'var(--text-xs)', fontWeight: 400, color: 'var(--color-text-faint)', fontStyle: 'italic' }}>
@@ -366,7 +443,7 @@ export function DocumentEngine({
                 TITULO_ENCABEZADO[tipo]
               )}
             </legend>
-            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-3)' }}>
+            <div className="fieldset-v3-body">
               {empresa && tipo === 'factura' ? (
                 <div className="form-row">
                   <FormField
@@ -525,6 +602,21 @@ export function DocumentEngine({
             </fieldset>
           )}
 
+          {initialData?.esRectificativa && (
+            <fieldset className="fieldset-v3">
+              <legend className="fieldset-legend">Motivo de la rectificación</legend>
+              <div className="fieldset-v3-body">
+                <TextAreaField
+                  label="Motivo *"
+                  placeholder="Describe qué se corrige y por qué (p.ej. error en el NIF del cliente, importe incorrecto…)"
+                  {...register('motivoRectificacion', { required: 'El motivo es obligatorio en una factura rectificativa' })}
+                  error={errors.motivoRectificacion}
+                  rows={2}
+                />
+              </div>
+            </fieldset>
+          )}
+
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Datos del cliente</legend>
             <div className="fieldset-v3-body">
@@ -604,7 +696,7 @@ export function DocumentEngine({
                 )}
               </div>
 
-              {empresa && onClienteGuardado && !selectedClientId && Boolean(documento.cliente?.nombre) && (
+              {!viewOnlyActions && empresa && onClienteGuardado && !selectedClientId && Boolean(documento.cliente?.nombre) && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
                   <Button
                     variant="secondary"
@@ -625,7 +717,7 @@ export function DocumentEngine({
             <legend className="fieldset-legend">Conceptos</legend>
 
             {esFinanciero && (
-              <label className="input-toggle" style={{ marginTop: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+              <label className="input-toggle" style={{ marginBottom: 'var(--space-2)' }}>
                 <input type="checkbox" {...register('mostrarIrpf')} />
                 <span>Incluir IRPF</span>
               </label>
@@ -763,50 +855,18 @@ export function DocumentEngine({
               ))}
             </div>
 
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={agregarLinea}
-              style={{ width: '100%', marginTop: 'var(--space-3)', justifyContent: 'center' }}
-            >
-              <Plus size={15} />
-              Añadir concepto
-            </Button>
-
-            {esFinanciero && (
-              <div style={{
-                borderTop: '1px solid var(--color-divider)',
-                marginTop: 'var(--space-4)',
-                paddingTop: 'var(--space-4)',
-                display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
-              }}>
-                <div style={totalRowStyle}>
-                  <span>Base imponible</span>
-                  <span>{fmt(totales.baseImponible)}</span>
-                </div>
-                <div style={totalRowStyle}>
-                  <span>IVA</span>
-                  <span>+ {fmt(totales.totalIva)}</span>
-                </div>
-                {mostrarIrpf && totales.totalIrpf > 0 && (
-                  <div style={totalRowStyle}>
-                    <span>IRPF</span>
-                    <span>− {fmt(totales.totalIrpf)}</span>
-                  </div>
-                )}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  fontSize: 'var(--text-base)', fontWeight: 700,
-                  color: 'var(--color-text)',
-                  paddingTop: 'var(--space-2)',
-                  borderTop: '2px solid var(--color-border)',
-                  marginTop: 'var(--space-1)',
-                }}>
-                  <span>TOTAL</span>
-                  <span>{fmt(totales.total)}</span>
-                </div>
-              </div>
+            {!viewOnlyActions && (
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={agregarLinea}
+                style={{ width: '100%', marginTop: 'var(--space-3)', justifyContent: 'center' }}
+              >
+                <Plus size={15} />
+                Añadir concepto
+              </Button>
             )}
+
           </fieldset>
 
           {esFinanciero && (
@@ -870,7 +930,7 @@ export function DocumentEngine({
 
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">Notas</legend>
-            <div style={{ marginTop: 'var(--space-4)' }}>
+            <div className="fieldset-v3-body">
               <TextAreaField
                 label="Observaciones"
                 placeholder="Condiciones, agradecimiento, notas legales..."
@@ -898,11 +958,18 @@ export function DocumentEngine({
         </div>
       </div>
 
+      {emailModalOpen && (
+        <EmailModal
+          emailCliente={documento.cliente?.email}
+          nombreDocumento={documento.numero ? `Factura ${documento.numero}` : 'Factura'}
+          onClose={() => setEmailModalOpen(false)}
+        />
+      )}
+
       {modalAbierto && (
         <PreviewModal
           documento={documento}
           totales={totales}
-          clienteEmail={clienteEmail}
           onClose={() => setModalAbierto(false)}
         />
       )}

@@ -5,7 +5,7 @@ import { SiteFooter } from '../../components/layout/SiteFooter'
 import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
 
-function PrecioHoraCalculator() {
+export function PrecioHoraCalculator() {
   const [salarioNeto,          setSalarioNeto]          = useState<number | ''>('')
   const [gastosMensuales,      setGastosMensuales]      = useState<number | ''>('')
   const [horasSemanales,       setHorasSemanales]       = useState<number | ''>(40)

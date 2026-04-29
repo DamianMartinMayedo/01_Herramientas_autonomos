@@ -3,7 +3,8 @@
  * Página raíz del panel de usuario.
  */
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { UserLayout, type UserSection } from './UserLayout'
 import { UserDashboard } from './UserDashboard'
 import { DocumentoListado, type TipoDocumento } from './DocumentoListado'
@@ -11,16 +12,16 @@ import { PerfilPage } from './PerfilPage'
 import { useAuth } from '../../hooks/useAuth'
 import { RouteLoading } from '../../components/routing/RouteLoading'
 import { AlertModal } from '../../components/shared/AlertModal'
-import { CuotaAutonomosWidget } from '../calculadoras/CuotaAutonomosPage'
-import { PrecioHoraWidget } from '../calculadoras/PrecioHoraPage'
-import { IvaIrpfWidget } from '../calculadoras/IvaIrpfPage'
+import { CuotaCalculator } from '../calculadoras/CuotaAutonomosPage'
+import { PrecioHoraCalculator } from '../calculadoras/PrecioHoraPage'
+import { IvaIrpfCalculator } from '../calculadoras/IvaIrpfPage'
 import { FacturaPage } from '../factura/FacturaPage'
 import { PresupuestoPage } from '../presupuesto/PresupuestoPage'
 import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -34,7 +35,7 @@ const DOCUMENT_SECTIONS: UserSection[] = [
 ]
 
 type EditorState =
-  | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean }
+  | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null }
   | { section: 'albaranes'; id?: string; data?: DocumentoBase | null }
   | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null }
@@ -53,7 +54,8 @@ const SECTION_TO_TABLE: Record<TipoDocumento, UserDocumentTable> = {
 
 export function UserPage() {
   const { user, loading } = useAuth()
-  const [section, setSection] = useState<UserSection>('dashboard')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const section = (searchParams.get('s') as UserSection) ?? 'dashboard'
   const [refreshKey, setRefreshKey] = useState(0)
   const [editor, setEditor] = useState<EditorState>(null)
   const [saving, setSaving] = useState(false)
@@ -108,7 +110,7 @@ export function UserPage() {
   const bumpRefresh = () => setRefreshKey((value) => value + 1)
 
   const handleCreateDocument = (targetSection: TipoDocumento) => {
-    setSection(targetSection)
+    setSearchParams({ s: targetSection })
     setEditor({ section: targetSection })
   }
 
@@ -118,7 +120,7 @@ export function UserPage() {
       return
     }
 
-    setSection(targetSection)
+    setSearchParams({ s: targetSection })
     setEditor({
       section: targetSection,
       id,
@@ -153,13 +155,28 @@ export function UserPage() {
   const handleViewDocument = async (targetSection: TipoDocumento, id: string) => {
     const result = await getStoredUserDocument(SECTION_TO_TABLE[targetSection], id)
     if (result.error || !result.data?.datos_json) return
-    setSection(targetSection)
+    setSearchParams({ s: targetSection })
     setEditor({
       section: targetSection,
       id,
       data: result.data.datos_json as EditorState extends { data: infer T } ? T : never,
       viewOnly: true,
+      estado: result.data.estado,
     } as EditorState)
+  }
+
+  const handleDescargarFactura = async (id: string) => {
+    const result = await getStoredUserDocument('facturas', id)
+    if (result.error || !result.data?.datos_json) return
+    setSearchParams({ s: 'facturas' })
+    setEditor({
+      section: 'facturas',
+      id,
+      data: result.data.datos_json as DocumentoBase,
+      viewOnly: true,
+      estado: result.data.estado,
+      autoDownload: true,
+    })
   }
 
   const handleEmitirFactura = async (id: string) => {
@@ -220,6 +237,18 @@ export function UserPage() {
     bumpRefresh()
   }
 
+  const handleMarcarCobrada = async (id: string) => {
+    const result = await marcarFacturaCobrada(id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo marcar la factura como cobrada.', variant: 'danger' })
+      return
+    }
+    setFlashMessage('Factura marcada como cobrada.')
+    setTimeout(() => setFlashMessage(null), 3000)
+    closeEditor()
+    bumpRefresh()
+  }
+
   const handleClienteGuardado = async (payload: RegularClientInput) => {
     if (!userId) throw new Error('No hay sesión activa')
     const result = await createRegularClient(userId, payload)
@@ -238,6 +267,7 @@ export function UserPage() {
           onCreate={() => handleCreateDocument(section as TipoDocumento)}
           onOpen={(id) => { void handleOpenDocument(section as TipoDocumento, id) }}
           onView={(id) => { void handleViewDocument(section as TipoDocumento, id) }}
+          onDescargar={(id) => { void handleDescargarFactura(id) }}
           onEmitir={(id) => { void handleEmitirFactura(id) }}
           onDuplicar={(id) => { void handleDuplicarFactura(id) }}
           onCorregir={(id) => { void handleCorregirFactura(id) }}
@@ -248,17 +278,27 @@ export function UserPage() {
 
     if (section === 'facturas') {
       const isViewOnly = editor.section === 'facturas' && editor.viewOnly === true
+      const editorId = editor.id
+      const editorEstado = editor.section === 'facturas' ? (editor.estado ?? null) : null
+      const autoDownload = editor.section === 'facturas' ? (editor.autoDownload ?? false) : false
       return (
         <FacturaPage
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
-          onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('facturas', document, totals, editor.id, finalizar)}
+          onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('facturas', document, totals, editorId, finalizar)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
-          onNavPerfil={() => { closeEditor(); setSection('perfil') }}
+          onNavPerfil={() => { closeEditor(); setSearchParams({ s: 'perfil' }) }}
           onClienteGuardado={handleClienteGuardado}
+          autoOpenPreview={autoDownload}
+          viewOnlyActions={isViewOnly && editorId ? {
+            onRectificar:    () => { closeEditor(); void handleCorregirFactura(editorId) },
+            onMarcarCobrada: () => { void handleMarcarCobrada(editorId) },
+            onDuplicar:      () => { closeEditor(); void handleDuplicarFactura(editorId) },
+            estadoActual:    editorEstado ?? undefined,
+          } : undefined}
         />
       )
     }
@@ -273,7 +313,7 @@ export function UserPage() {
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
-          onNavPerfil={() => { closeEditor(); setSection('perfil') }}
+          onNavPerfil={() => { closeEditor(); setSearchParams({ s: 'perfil' }) }}
           onClienteGuardado={handleClienteGuardado}
         />
       )
@@ -289,7 +329,7 @@ export function UserPage() {
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
-          onNavPerfil={() => { closeEditor(); setSection('perfil') }}
+          onNavPerfil={() => { closeEditor(); setSearchParams({ s: 'perfil' }) }}
           onClienteGuardado={handleClienteGuardado}
         />
       )
@@ -339,7 +379,7 @@ export function UserPage() {
 
   const renderContent = () => {
     if (section === 'dashboard') {
-      return <UserDashboard onNav={setSection} />
+      return <UserDashboard onNav={(s) => setSearchParams({ s })} nombreEmpresa={empresa?.nombre} />
     }
     if (section === 'perfil') {
       return <PerfilPage userId={user.id} clientes={clientes} onClientsChange={setClientes} />
@@ -347,9 +387,24 @@ export function UserPage() {
     if (DOCUMENT_SECTIONS.includes(section)) {
       return renderDocumentWorkspace()
     }
-    if (section === 'cuota-autonomos') return <CuotaAutonomosWidget />
-    if (section === 'precio-hora') return <PrecioHoraWidget />
-    if (section === 'iva-irpf') return <IvaIrpfWidget />
+    if (section === 'cuota-autonomos' || section === 'precio-hora' || section === 'iva-irpf') {
+      const CalcMap = {
+        'cuota-autonomos': CuotaCalculator,
+        'precio-hora':     PrecioHoraCalculator,
+        'iva-irpf':        IvaIrpfCalculator,
+      }
+      const Calc = CalcMap[section]
+      return (
+        <div className="doc-listado-wrap">
+          <nav className="post-breadcrumb" style={{ marginBottom: 'var(--space-5)' }}>
+            <button type="button" onClick={() => setSearchParams({ s: 'dashboard' })} className="back-link">
+              <ArrowLeft size={13} /> Volver al dashboard
+            </button>
+          </nav>
+          <Calc />
+        </div>
+      )
+    }
     return null
   }
 
@@ -357,12 +412,12 @@ export function UserPage() {
     <>
       <UserLayout
         section={section}
+        nombreEmpresa={empresa?.nombre}
         onNav={(nextSection) => {
           if (nextSection === section && DOCUMENT_SECTIONS.includes(nextSection)) {
             closeEditor()
           }
-          setSection(nextSection)
-          if (nextSection !== section) closeEditor()
+          setSearchParams({ s: nextSection })
         }}
       >
         {renderContent()}

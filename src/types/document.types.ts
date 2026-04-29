@@ -81,6 +81,9 @@ export interface DocumentoBase {
   mostrarIrpf: boolean
   formaPago?: FormaPago
   esRectificativa?: boolean
+  facturaOriginalNumero?: string
+  facturaOriginalFecha?: string
+  motivoRectificacion?: string
 }
 
 // Valores por defecto para líneas nuevas

@@ -23,7 +23,7 @@ const TRAMOS_2024 = [
   { min: 6000, max: Infinity, cuota: 500 },
 ]
 
-function CuotaCalculator() {
+export function CuotaCalculator() {
   const [ingresos, setIngresos] = useState<number | ''>('')
   const [gastos,   setGastos]   = useState<number | ''>('')
   const pushEvent = useAdminStore(s => s.pushEvent)

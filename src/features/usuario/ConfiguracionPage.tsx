@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Save, Trash2, Users } from 'lucide-react'
 import { createRegularClient, deleteRegularClient, updateRegularClient } from '../../lib/regularClients'
 import { useAuth } from '../../hooks/useAuth'
-import { AlertModal } from '../../components/shared/AlertModal'
+import { ConfirmModal } from '../admin/components/ConfirmModal'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 
 interface ConfiguracionPageProps {
@@ -13,6 +13,7 @@ interface ConfiguracionPageProps {
 const EMPTY_FORM: RegularClientInput = {
   nombre: '', nif: '', direccion: '', ciudad: '', cp: '',
   provincia: '', email: '', telefono: '', pais: '', notas: '',
+  cliente_exterior: false,
 }
 
 const EMPTY_FIELD_ERRORS = { nombre: '', nif: '', direccion: '' }
@@ -52,6 +53,7 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
       ciudad: client.ciudad, cp: client.cp, provincia: client.provincia,
       email: client.email ?? '', telefono: client.telefono ?? '',
       pais: client.pais ?? '', notas: client.notas ?? '',
+      cliente_exterior: client.cliente_exterior ?? false,
     })
     setFieldErrors(EMPTY_FIELD_ERRORS)
     setServerError(null)
@@ -132,7 +134,15 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
 
           {/* Formulario */}
           <section className="fieldset-v3">
-            <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+            <div className="fieldset-v3-body">
+              <label className="input-toggle">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.cliente_exterior)}
+                  onChange={(e) => setForm((prev) => ({ ...prev, cliente_exterior: e.target.checked }))}
+                />
+                <span>Cliente fuera de España</span>
+              </label>
               <div className="form-row">
                 <div className="input-group">
                   <label className="input-label">Nombre / Razón social *</label>
@@ -257,12 +267,11 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
       </div>
 
       {deleteConfirmId && (
-        <AlertModal
+        <ConfirmModal
           title="Eliminar cliente"
-          message="¿Eliminar este cliente frecuente? Esta acción no se puede deshacer."
-          confirmLabel="Eliminar"
-          cancelLabel="Cancelar"
-          variant="danger"
+          description="¿Eliminar este cliente frecuente? Esta acción no se puede deshacer."
+          confirmLabel="Sí, eliminar"
+          confirmVariant="danger"
           onConfirm={() => { void handleDeleteConfirm() }}
           onCancel={() => setDeleteConfirmId(null)}
         />

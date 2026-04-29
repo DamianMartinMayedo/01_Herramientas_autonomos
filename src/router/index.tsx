@@ -16,10 +16,11 @@ const PrecioHoraPage     = lazy(() => import('../features/calculadoras/PrecioHor
 const IvaIrpfPage        = lazy(() => import('../features/calculadoras/IvaIrpfPage').then(m => ({ default: m.IvaIrpfPage })))
 const UserPage           = lazy(() => import('../features/usuario/UserPage').then(m => ({ default: m.UserPage })))
 
-import { RouteErrorPage } from '../components/routing/RouteErrorPage'
-import { RouteLoading }   from '../components/routing/RouteLoading'
-import { NotFoundPage }   from '../components/routing/NotFoundPage'
-import { HomePage }       from '../features/home/HomePage'
+import { RouteErrorPage }  from '../components/routing/RouteErrorPage'
+import { RouteLoading }    from '../components/routing/RouteLoading'
+import { NotFoundPage }    from '../components/routing/NotFoundPage'
+import { ProtectedRoute }  from '../components/routing/ProtectedRoute'
+import { HomePage }        from '../features/home/HomePage'
 
 function withRouteSuspense(element: ReactNode) {
   return <Suspense fallback={<RouteLoading />}>{element}</Suspense>
@@ -27,7 +28,7 @@ function withRouteSuspense(element: ReactNode) {
 
 export const router = createBrowserRouter([
   { path: '/',                  element: <HomePage />,                               errorElement: <RouteErrorPage /> },
-  { path: '/usuario',           element: withRouteSuspense(<UserPage />),            errorElement: <RouteErrorPage /> },
+  { path: '/usuario',           element: <ProtectedRoute>{withRouteSuspense(<UserPage />)}</ProtectedRoute>, errorElement: <RouteErrorPage /> },
   { path: '/factura',           element: withRouteSuspense(<FacturaPage />),         errorElement: <RouteErrorPage /> },
   { path: '/presupuesto',       element: withRouteSuspense(<PresupuestoPage />),     errorElement: <RouteErrorPage /> },
   { path: '/albaran',           element: withRouteSuspense(<AlbaranPage />),         errorElement: <RouteErrorPage /> },

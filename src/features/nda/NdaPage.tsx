@@ -43,7 +43,7 @@ function FormParte({
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
-      <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+      <div className="fieldset-v3-body">
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
@@ -118,7 +118,7 @@ export function NdaPage({
             {/* Encabezado */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Encabezado del NDA</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <div className="form-row">
                   <FormField
                     label="Referencia *"
@@ -165,7 +165,7 @@ export function NdaPage({
             {/* Contenido del NDA */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Alcance de la confidencialidad</legend>
-              <div className="fieldset-v3-body" style={{ marginTop: 'var(--space-4)' }}>
+              <div className="fieldset-v3-body">
                 <TextAreaField
                   label="Qué información es confidencial *"
                   placeholder="Ej: toda la información técnica, comercial, financiera y estratégica intercambiada entre las partes..."
@@ -204,7 +204,7 @@ export function NdaPage({
             {/* Notas */}
             <fieldset className="fieldset-v3">
               <legend className="fieldset-legend">Notas</legend>
-              <div style={{ marginTop: 'var(--space-4)' }}>
+              <div>
                 <TextAreaField
                   label="Observaciones"
                   placeholder="Cualquier nota adicional..."

@@ -13,6 +13,8 @@ interface FacturaPageProps {
   empresa?: Empresa | null
   onNavPerfil?: () => void
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
+  viewOnlyActions?: { onRectificar: () => void; onMarcarCobrada: () => void; onDuplicar: () => void; estadoActual?: string }
+  autoOpenPreview?: boolean
 }
 
 export function FacturaPage(props: FacturaPageProps) {

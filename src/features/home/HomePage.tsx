@@ -1,5 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth'
+import { RouteLoading } from '../../components/routing/RouteLoading'
 import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock, Scroll, ShieldCheck, BadgeAlert, Truck } from 'lucide-react'
 import type { BlogPost } from '../../store/blogStore'
 import { SiteHeader } from '../../components/layout/SiteHeader'
@@ -179,8 +181,34 @@ function ToolCard({ h }: { h: Herramienta }) {
 
 // ── Página principal ───────────────────────────────────────────────────────────────────
 export function HomePage() {
+  const { user, loading } = useAuth()
   const herramientas = useAdminStore((s) => s.herramientas)
   const [blogPosts, setBlogPosts] = useState<PublicBlogPost[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let unsubscribe: undefined | (() => void)
+    const toPublic = (posts: BlogPost[]): PublicBlogPost[] =>
+      posts
+        .filter(p => p.status === 'published')
+        .map(p => ({ id: p.id, titulo: p.titulo, slug: p.slug, extracto: p.extracto, tags: p.tags, status: p.status, createdAt: p.createdAt, publishedAt: p.publishedAt }))
+    ;(async () => {
+      try {
+        const { useBlogStore } = await import('../../store/blogStore')
+        if (cancelled) return
+        setBlogPosts(toPublic(useBlogStore.getState().posts))
+        unsubscribe = useBlogStore.subscribe(state => {
+          if (!cancelled) setBlogPosts(toPublic(state.posts))
+        })
+      } catch {
+        if (!cancelled) setBlogPosts([])
+      }
+    })()
+    return () => { cancelled = true; unsubscribe?.() }
+  }, [])
+
+  if (loading) return <RouteLoading />
+  if (user) return <Navigate to="/usuario" replace />
 
   const visibles = herramientas.filter(h => h.visible !== false)
 
@@ -210,28 +238,6 @@ export function HomePage() {
       hasActive: info.hasActive,
     }))
     .sort((a, b) => (a.hasActive === b.hasActive ? 0 : a.hasActive ? -1 : 1))
-
-  useEffect(() => {
-    let cancelled = false
-    let unsubscribe: undefined | (() => void)
-    const toPublic = (posts: BlogPost[]): PublicBlogPost[] =>
-      posts
-        .filter(p => p.status === 'published')
-        .map(p => ({ id: p.id, titulo: p.titulo, slug: p.slug, extracto: p.extracto, tags: p.tags, status: p.status, createdAt: p.createdAt, publishedAt: p.publishedAt }))
-    ;(async () => {
-      try {
-        const { useBlogStore } = await import('../../store/blogStore')
-        if (cancelled) return
-        setBlogPosts(toPublic(useBlogStore.getState().posts))
-        unsubscribe = useBlogStore.subscribe(state => {
-          if (!cancelled) setBlogPosts(toPublic(state.posts))
-        })
-      } catch {
-        if (!cancelled) setBlogPosts([])
-      }
-    })()
-    return () => { cancelled = true; unsubscribe?.() }
-  }, [])
 
   return (
     <div className="page-root">
