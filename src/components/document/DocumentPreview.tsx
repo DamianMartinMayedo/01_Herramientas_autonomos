@@ -4,10 +4,10 @@ import { ETIQUETAS_METODO_PAGO } from '../../types/document.types'
 import { calcularLinea } from '../../utils/calculos'
 import { formatEuro, formatFecha } from '../../utils/formatters'
 
-const ETIQUETAS: Record<DocumentoBase['tipo'], { titulo: string; numero: string }> = {
-  factura:      { titulo: 'FACTURA',     numero: 'Nº Factura' },
-  presupuesto:  { titulo: 'PRESUPUESTO', numero: 'Nº Presupuesto' },
-  albaran:      { titulo: 'ALBARÁN',     numero: 'Nº Albarán' },
+const ETIQUETAS: Record<DocumentoBase['tipo'], { titulo: string; numero: string; labelCliente: string }> = {
+  factura:      { titulo: 'FACTURA',     numero: 'Nº Factura',     labelCliente: 'Facturar a' },
+  presupuesto:  { titulo: 'PRESUPUESTO', numero: 'Nº Presupuesto', labelCliente: 'Presupuesto para' },
+  albaran:      { titulo: 'ALBARÁN',     numero: 'Nº Albarán',     labelCliente: 'Entregar a' },
 }
 
 interface DocumentPreviewProps {
@@ -17,7 +17,7 @@ interface DocumentPreviewProps {
 
 export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
   ({ documento, totales }, ref) => {
-    const { titulo: tituloBase, numero: labelNumero } = ETIQUETAS[documento.tipo]
+    const { titulo: tituloBase, numero: labelNumero, labelCliente } = ETIQUETAS[documento.tipo]
     const titulo = documento.esRectificativa ? 'FACTURA RECTIFICATIVA' : tituloBase
     const esFinanciero = documento.tipo !== 'albaran'
 
@@ -179,7 +179,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             )}
 
             <div className="doc-section" style={{ marginLeft: 'auto', textAlign: 'right' }}>
-              <p className="doc-section-label">Facturar a</p>
+              <p className="doc-section-label">{labelCliente}</p>
               <p className="doc-client-name">{documento.cliente.nombre}</p>
               {documento.cliente.nif && <p className="doc-text-muted">NIF: {documento.cliente.nif}</p>}
               {(documento.cliente.direccion || documento.cliente.cp || documento.cliente.ciudad) && (

@@ -22,7 +22,7 @@ import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -268,9 +268,17 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo marcar la factura como cobrada.', variant: 'danger' })
       return
     }
-    setFlashMessage('Factura marcada como cobrada.')
-    setTimeout(() => setFlashMessage(null), 3000)
-    closeEditor()
+    setEditor((current) => current ? { ...current, estado: 'cobrada' } : current)
+    bumpRefresh()
+  }
+
+  const handleMarcarNoCobrada = async (id: string) => {
+    const result = await marcarFacturaEmitida(id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo desmarcar la factura como cobrada.', variant: 'danger' })
+      return
+    }
+    setEditor((current) => current ? { ...current, estado: 'emitida' } : current)
     bumpRefresh()
   }
 
@@ -362,10 +370,11 @@ export function UserPage() {
           onClienteGuardado={handleClienteGuardado}
           autoOpenPreview={autoDownload}
           viewOnlyActions={isViewOnly && editorId ? {
-            onRectificar:    () => { closeEditor(); void handleCorregirFactura(editorId) },
-            onMarcarCobrada: () => { void handleMarcarCobrada(editorId) },
-            onDuplicar:      () => { closeEditor(); void handleDuplicarFactura(editorId) },
-            estadoActual:    editorEstado ?? undefined,
+            onRectificar:     () => { closeEditor(); void handleCorregirFactura(editorId) },
+            onMarcarCobrada:  () => { void handleMarcarCobrada(editorId) },
+            onMarcarNoCobrada: () => { void handleMarcarNoCobrada(editorId) },
+            onDuplicar:       () => { closeEditor(); void handleDuplicarFactura(editorId) },
+            estadoActual:     editorEstado ?? undefined,
           } : undefined}
         />
       )

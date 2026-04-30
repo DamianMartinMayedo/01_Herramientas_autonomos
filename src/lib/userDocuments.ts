@@ -302,6 +302,11 @@ export async function marcarFacturaCobrada(id: string) {
   return { error }
 }
 
+export async function marcarFacturaEmitida(id: string) {
+  const { error } = await supabase.from('facturas').update({ estado: 'emitida' }).eq('id', id)
+  return { error }
+}
+
 export async function saveLegalDocument(params: {
   table: 'contratos' | 'ndas' | 'reclamaciones'
   userId: string

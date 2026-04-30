@@ -13,7 +13,7 @@ import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send } from 'lucide-react'
+import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send, Undo2, Info } from 'lucide-react'
 import { EmailModal } from '../shared/EmailModal'
 import { formatFecha } from '../../utils/formatters'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
@@ -21,14 +21,15 @@ import { regularClientToClienteInfo } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
-  factura: 'Encabezado de la factura',
-  presupuesto: 'Encabezado del presupuesto',
-  albaran: 'Encabezado del albarán',
+  factura: 'Fechas',
+  presupuesto: 'Número y fechas',
+  albaran: 'Número y fechas',
 }
 
 interface ViewOnlyActions {
   onRectificar?: () => void
   onMarcarCobrada?: () => void
+  onMarcarNoCobrada?: () => void
   onDuplicar?: () => void
   estadoActual?: string
 }
@@ -263,14 +264,34 @@ export function DocumentEngine({
             </>
           )}
 
-          <h1 style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'var(--text-lg)',
-            fontWeight: 700,
-            color: 'var(--color-text)',
-          }}>
-            {titulo}
-          </h1>
+          {tipo === 'factura' || tipo === 'presupuesto' ? (
+            <div>
+              <h1 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'var(--text-lg)',
+                fontWeight: 700,
+                color: documento.numero ? 'var(--color-text)' : 'var(--color-text-faint)',
+              }}>
+                {documento.numero || (tipo === 'factura'
+                  ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
+                  : 'PRE-XXX-XXXX')}
+              </h1>
+              {!documento.numero && (
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', marginTop: 2 }}>
+                  {tipo === 'factura' ? 'Se asignará al emitir' : 'Se asignará al enviar'}
+                </p>
+              )}
+            </div>
+          ) : (
+            <h1 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'var(--text-lg)',
+              fontWeight: 700,
+              color: 'var(--color-text)',
+            }}>
+              {titulo}
+            </h1>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
@@ -302,6 +323,12 @@ export function DocumentEngine({
                 <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onMarcarCobrada}>
                   <CheckCircle2 size={14} />
                   Cobrada
+                </Button>
+              )}
+              {!initialData?.esRectificativa && viewOnlyActions.estadoActual === 'cobrada' && (
+                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onMarcarNoCobrada}>
+                  <Undo2 size={14} />
+                  Desmarcar cobrada
                 </Button>
               )}
               <Button variant="secondary" size="sm" type="button" onClick={() => setEmailModalOpen(true)}>
@@ -417,8 +444,28 @@ export function DocumentEngine({
             {tipo === 'presupuesto'
               ? <><strong style={{ color: 'var(--color-text)' }}>Presupuesto {viewOnlyActions.estadoActual ?? 'enviado'} · Solo lectura.</strong>{' '}Gestiona las acciones desde el listado.</>
               : initialData?.esRectificativa
-                ? <><strong style={{ color: 'var(--color-text)' }}>Factura rectificativa emitida · Solo lectura.</strong> No se puede volver a rectificar.</>
-                : <><strong style={{ color: 'var(--color-text)' }}>Factura emitida · Solo lectura.</strong>{' '}Para modificarla usa <strong style={{ color: 'var(--color-text)' }}>Rectificar</strong>.</>
+                ? <>
+                    <strong style={{ color: 'var(--color-text)' }}>Factura rectificativa emitida · Solo lectura.</strong>
+                    {' '}No se puede volver a rectificar.{' '}
+                    <span className="tooltip-wrap" style={{ verticalAlign: 'middle' }}>
+                      <Info size={13} style={{ color: 'var(--color-primary)', cursor: 'help' }} />
+                      <div className="tooltip-content">
+                        Hacienda exige que cada corrección se haga mediante una factura rectificativa independiente. Rectificar una rectificativa crearía una cadena de documentos incorrecta que podría derivar en sanciones fiscales.
+                        <div className="tooltip-arrow" />
+                      </div>
+                    </span>
+                  </>
+                : <>
+                    <strong style={{ color: 'var(--color-text)' }}>Factura emitida · Solo lectura.</strong>
+                    {' '}Para modificarla usa <strong style={{ color: 'var(--color-text)' }}>Rectificar</strong>.{' '}
+                    <span className="tooltip-wrap" style={{ verticalAlign: 'middle' }}>
+                      <Info size={13} style={{ color: 'var(--color-primary)', cursor: 'help' }} />
+                      <div className="tooltip-content">
+                        Por normativa de Hacienda, una factura emitida no puede modificarse directamente. Cualquier corrección debe hacerse mediante una <strong>factura rectificativa</strong>, que anula o corrige la original. Modificar una factura emitida directamente puede derivar en sanciones fiscales.
+                        <div className="tooltip-arrow" />
+                      </div>
+                    </span>
+                  </>
             }
           </span>
         </div>
@@ -458,20 +505,7 @@ export function DocumentEngine({
         <div className={viewOnlyActions ? 'form-view-only' : undefined} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <fieldset className="fieldset-v3">
             <legend className="fieldset-legend">
-              {empresa && tipo === 'factura' ? (
-                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
-                  <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: documento.numero ? 'var(--color-text)' : 'var(--color-text-faint)' }}>
-                    {documento.numero || (initialData?.esRectificativa ? 'R-XXXX-XXX' : 'FAC-XXXX-XXX')}
-                  </span>
-                  {!documento.numero && (
-                    <span style={{ fontSize: 'var(--text-xs)', fontWeight: 400, color: 'var(--color-text-faint)', fontStyle: 'italic' }}>
-                      · se asignará al emitir
-                    </span>
-                  )}
-                </span>
-              ) : (
-                TITULO_ENCABEZADO[tipo]
-              )}
+              {TITULO_ENCABEZADO[tipo]}
             </legend>
             <div className="fieldset-v3-body">
               {empresa && tipo === 'factura' ? (
@@ -562,18 +596,9 @@ export function DocumentEngine({
                 )}
               </div>
               {onNavPerfil && (
-                <button
-                  type="button"
-                  onClick={onNavPerfil}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: 'var(--text-xs)', color: 'var(--color-primary)',
-                    fontWeight: 700, padding: 0, fontFamily: 'var(--font-body)',
-                    flexShrink: 0,
-                  }}
-                >
-                  Editar →
-                </button>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', flexShrink: 0 }}>
+                  Editable en tu perfil
+                </span>
               )}
             </div>
           ) : (

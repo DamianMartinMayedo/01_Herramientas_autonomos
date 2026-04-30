@@ -4,6 +4,7 @@
  * Facturas y presupuestos usan pestañas (Borradores / Emitidas|Enviados).
  */
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabaseClient'
 import {
@@ -97,6 +98,7 @@ export function DocumentoListado({
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null)
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null)
   const [emitirConfirmId, setEmitirConfirmId] = useState<string | null>(null)
   const [emailPresupuestoEnviarRow, setEmailPresupuestoEnviarRow] = useState<DocRow | null>(null)
   const [convertirFacturaConfirmId, setConvertirFacturaConfirmId] = useState<string | null>(null)
@@ -137,6 +139,16 @@ export function DocumentoListado({
     void fetchRows()
     return () => { active = false }
   }, [refreshKey, tipo, userId])
+
+  const closeDropdown = () => { setDropdownOpenId(null); setDropdownPos(null) }
+
+  const openDropdown = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    if (dropdownOpenId === id) { closeDropdown(); return }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    setDropdownOpenId(id)
+  }
 
   const handleDeleteRequest = (id: string) => {
     const row = rows.find((item) => item.id === id)
@@ -298,54 +310,9 @@ export function DocumentoListado({
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
 
   const renderEmitidaRow = (row: DocRow) => renderRowBase(row, (
-    <div className="dropdown-wrap">
-      <button
-        type="button"
-        title="Más opciones"
-        className="icon-btn"
-        onClick={(e) => {
-          e.stopPropagation()
-          setDropdownOpenId(dropdownOpenId === row.id ? null : row.id)
-        }}
-      >
-        <MoreHorizontal size={13} />
-      </button>
-      {dropdownOpenId === row.id && (
-        <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onView?.(row.id) }}>
-            <Eye size={13} /> Ver
-          </button>
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDescargar?.(row.id) }}>
-            <Download size={13} /> Descargar
-          </button>
-          {canMarkFacturaAsCobrada(row.estado) && (
-            <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); void handleFacturaStatus(row.id, 'cobrada') }}>
-              <CheckCircle2 size={13} /> Marcar como cobrada
-            </button>
-          )}
-          {canMarkFacturaAsNoCobrada(row.estado) && (
-            <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); void handleFacturaStatus(row.id, 'emitida') }}>
-              <Undo2 size={13} /> Marcar como no cobrada
-            </button>
-          )}
-          {!row.datos_json?.esRectificativa && (
-            <>
-              <div className="dropdown-divider" />
-              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDuplicar?.(row.id) }}>
-                <Copy size={13} /> Duplicar
-              </button>
-              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onCorregir?.(row.id) }}>
-                <PenLine size={13} /> Corregir
-              </button>
-            </>
-          )}
-          <div className="dropdown-divider" />
-          <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setEmailModalRow(row) }}>
-            <Mail size={13} /> Enviar por correo
-          </button>
-        </div>
-      )}
-    </div>
+    <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+      <MoreHorizontal size={13} />
+    </button>
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
 
   // ── Presupuestos ──────────────────────────────────────────────────────────
@@ -398,47 +365,9 @@ export function DocumentoListado({
             <Pencil size={13} />
           </button>
         )}
-        <div className="dropdown-wrap">
-          <button
-            type="button"
-            title="Más opciones"
-            className="icon-btn"
-            onClick={(e) => { e.stopPropagation(); setDropdownOpenId(dropdownOpenId === row.id ? null : row.id) }}
-          >
-            <MoreHorizontal size={13} />
-          </button>
-          {dropdownOpenId === row.id && (
-            <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onView?.(row.id) }}>
-                <Eye size={13} /> Ver
-              </button>
-              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onDescargar?.(row.id) }}>
-                <Download size={13} /> Descargar
-              </button>
-              {row.estado === 'enviado' && (
-                <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); onAprobarPresupuesto?.(row.id) }}>
-                  <CheckCircle2 size={13} /> Marcar como aprobado
-                </button>
-              )}
-              {(row.estado === 'enviado' || row.estado === 'aprobado') && (
-                <>
-                  <div className="dropdown-divider" />
-                  <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setConvertirFacturaConfirmId(row.id) }}>
-                    <ArrowRight size={13} /> Convertir a factura
-                  </button>
-                </>
-              )}
-              <div className="dropdown-divider" />
-              <button className="dropdown-item" onClick={() => { setDropdownOpenId(null); setEmailModalRow(row) }}>
-                <Mail size={13} /> Enviar por correo
-              </button>
-              <div className="dropdown-divider" />
-              <button className="dropdown-item dropdown-item--danger" onClick={() => { setDropdownOpenId(null); handleDeleteRequest(row.id) }}>
-                <Trash2 size={13} /> Eliminar
-              </button>
-            </div>
-          )}
-        </div>
+        <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+          <MoreHorizontal size={13} />
+        </button>
       </>
     )
     return renderRowBase(row, actions, undefined, renderPresupuestoBadges(row))
@@ -707,11 +636,75 @@ export function DocumentoListado({
 
       {/* Backdrop para cerrar el dropdown al hacer clic fuera */}
       {dropdownOpenId && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 29 }}
-          onClick={() => setDropdownOpenId(null)}
-        />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 29 }} onClick={closeDropdown} />
       )}
+
+      {/* Portal dropdown — fuera del DOM de la tabla para evitar clipping */}
+      {dropdownOpenId && dropdownPos && (() => {
+        const row = rows.find(r => r.id === dropdownOpenId)
+        if (!row) return null
+
+        const menuItems = tipo === 'facturas' ? (
+          <>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            {canMarkFacturaAsCobrada(row.estado) && (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); void handleFacturaStatus(row.id, 'cobrada') }}>
+                <CheckCircle2 size={13} /> Marcar como cobrada
+              </button>
+            )}
+            {canMarkFacturaAsNoCobrada(row.estado) && (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); void handleFacturaStatus(row.id, 'emitida') }}>
+                <Undo2 size={13} /> Marcar como no cobrada
+              </button>
+            )}
+            {!row.datos_json?.esRectificativa && (
+              <>
+                <div className="dropdown-divider" />
+                <button className="dropdown-item" onClick={() => { closeDropdown(); onDuplicar?.(row.id) }}><Copy size={13} /> Duplicar</button>
+                <button className="dropdown-item" onClick={() => { closeDropdown(); onCorregir?.(row.id) }}><PenLine size={13} /> Corregir</button>
+              </>
+            )}
+            <div className="dropdown-divider" />
+            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
+          </>
+        ) : tipo === 'presupuestos' ? (
+          <>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            {row.estado === 'enviado' && (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); onAprobarPresupuesto?.(row.id) }}>
+                <CheckCircle2 size={13} /> Marcar como aprobado
+              </button>
+            )}
+            {(row.estado === 'enviado' || row.estado === 'aprobado') && (
+              <>
+                <div className="dropdown-divider" />
+                <button className="dropdown-item" onClick={() => { closeDropdown(); setConvertirFacturaConfirmId(row.id) }}>
+                  <ArrowRight size={13} /> Convertir a factura
+                </button>
+              </>
+            )}
+            <div className="dropdown-divider" />
+            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
+            <div className="dropdown-divider" />
+            <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+              <Trash2 size={13} /> Eliminar
+            </button>
+          </>
+        ) : null
+
+        return createPortal(
+          <div
+            className="dropdown-menu"
+            style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 500, margin: 0 }}
+            onClick={e => e.stopPropagation()}
+          >
+            {menuItems}
+          </div>,
+          document.body
+        )
+      })()}
 
       {/* Modal confirmación emitir factura */}
       {emitirConfirmId && (
