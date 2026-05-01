@@ -80,6 +80,8 @@ interface Props {
   onEnviarPresupuesto?: (id: string) => Promise<void> | void
   onAprobarPresupuesto?: (id: string) => void
   onConvertirAFactura?: (id: string) => void
+  onMarcarPresupuestoEntregado?: (id: string) => void
+  onEnviarAlbaran?: (id: string) => Promise<void> | void
   onNavCalc?: (section: string) => void
   flashMessage?: string | null
 }
@@ -89,7 +91,8 @@ type DocRow = Record<string, any>
 
 export function DocumentoListado({
   tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir,
-  onEnviarPresupuesto, onAprobarPresupuesto, onConvertirAFactura, onNavCalc,
+  onEnviarPresupuesto, onAprobarPresupuesto, onConvertirAFactura,
+  onMarcarPresupuestoEntregado, onEnviarAlbaran, onNavCalc,
   flashMessage,
 }: Props) {
   const { user } = useAuth()
@@ -101,11 +104,13 @@ export function DocumentoListado({
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null)
   const [emitirConfirmId, setEmitirConfirmId] = useState<string | null>(null)
   const [emailPresupuestoEnviarRow, setEmailPresupuestoEnviarRow] = useState<DocRow | null>(null)
+  const [emailAlbaranListadoRow, setEmailAlbaranListadoRow] = useState<DocRow | null>(null)
   const [convertirFacturaConfirmId, setConvertirFacturaConfirmId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [emailModalRow, setEmailModalRow] = useState<DocRow | null>(null)
   const [factFilter, setFactFilter] = useState<'todos' | 'borrador' | 'emitida' | 'cobrada' | 'anulada' | 'rectificativa'>('todos')
   const [presFilter, setPresFilter] = useState<'todos' | 'sin-enviar' | 'enviado' | 'aprobado' | 'convertido'>('todos')
+  const [albFilter, setAlbFilter] = useState<'todos' | 'pendiente' | 'enviado'>('todos')
   const [currentPage, setCurrentPage] = useState(1)
   const [alertState, setAlertState] = useState<{ title?: string; msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const userId = user?.id
@@ -115,10 +120,11 @@ export function DocumentoListado({
   useEffect(() => {
     setFactFilter('todos')
     setPresFilter('todos')
+    setAlbFilter('todos')
     setCurrentPage(1)
   }, [tipo])
 
-  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter])
+  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter, albFilter])
 
   useEffect(() => {
     if (!userId) return
@@ -351,8 +357,16 @@ export function DocumentoListado({
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        <button type="button" title="Enviar presupuesto" className="icon-btn icon-btn--primary" onClick={() => setEmailPresupuestoEnviarRow(row)}>
-          <Send size={13} />
+        <button
+          type="button"
+          title="Marcar como entregado"
+          className="icon-btn icon-btn--success"
+          onClick={() => onMarcarPresupuestoEntregado?.(row.id)}
+        >
+          <CheckCircle2 size={13} />
+        </button>
+        <button type="button" title="Enviar por correo" className="icon-btn icon-btn--primary" onClick={() => setEmailPresupuestoEnviarRow(row)}>
+          <Mail size={13} />
         </button>
         <button type="button" title="Eliminar" className="icon-btn icon-btn--danger" onClick={() => handleDeleteRequest(row.id)} disabled={deleting === row.id}>
           <Trash2 size={13} />
@@ -371,6 +385,40 @@ export function DocumentoListado({
       </>
     )
     return renderRowBase(row, actions, undefined, renderPresupuestoBadges(row))
+  }
+
+  // ── Albaranes ─────────────────────────────────────────────────────────────
+
+  const renderAlbaranRow = (row: DocRow) => {
+    const enviado = row.estado === 'enviado'
+    return renderRowBase(row, (
+      <>
+        <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
+          <Pencil size={13} />
+        </button>
+        {!enviado && (
+          <button
+            type="button"
+            title="Marcar como entregado"
+            className="icon-btn icon-btn--success"
+            onClick={() => onEnviarAlbaran?.(row.id)}
+          >
+            <CheckCircle2 size={13} />
+          </button>
+        )}
+        <button
+          type="button"
+          title={enviado ? 'Reenviar por correo' : 'Enviar por correo'}
+          className="icon-btn icon-btn--primary"
+          onClick={() => setEmailAlbaranListadoRow(row)}
+        >
+          <Mail size={13} />
+        </button>
+        <button type="button" title="Eliminar" className="icon-btn icon-btn--danger" onClick={() => handleDeleteRequest(row.id)} disabled={deleting === row.id}>
+          <Trash2 size={13} />
+        </button>
+      </>
+    ))
   }
 
   // ── Fila genérica ─────────────────────────────────────────────────────────
@@ -619,8 +667,58 @@ export function DocumentoListado({
         </>
       )}
 
+      {/* Vista con filtros para albaranes */}
+      {!loading && tipo === 'albaranes' && (
+        <>
+          {rows.length === 0 && emptyState}
+          {rows.length > 0 && (() => {
+            const ALB_FILTERS: { key: typeof albFilter; label: string }[] = [
+              { key: 'todos',    label: 'Todos' },
+              { key: 'pendiente', label: 'Sin enviar' },
+              { key: 'enviado',  label: 'Enviados' },
+            ]
+            const rowsFiltrados = albFilter === 'todos' ? rows : rows.filter(r => r.estado === albFilter)
+            return (
+              <>
+                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                  {ALB_FILTERS.map(({ key, label }) => {
+                    const n = key === 'todos' ? rows.length : rows.filter(r => r.estado === key).length
+                    return (
+                      <button
+                        key={key}
+                        className={`filter-pill${albFilter === key ? ' active' : ''}`}
+                        onClick={() => setAlbFilter(key)}
+                      >
+                        {label}{key !== 'todos' && n > 0 ? ` (${n})` : ''}
+                      </button>
+                    )
+                  })}
+                </div>
+                {rowsFiltrados.length === 0
+                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay albaranes en este estado.</p>
+                  : (() => {
+                    const { items, totalPages } = paginar(rowsFiltrados)
+                    return (
+                      <>
+                        <div className="card card-no-pad">
+                          <table className="data-table">
+                            {renderTableHeader()}
+                            <tbody>{items.map(row => renderAlbaranRow(row))}</tbody>
+                          </table>
+                        </div>
+                        {renderPaginacion(totalPages)}
+                      </>
+                    )
+                  })()
+                }
+              </>
+            )
+          })()}
+        </>
+      )}
+
       {/* Vista genérica para otros tipos */}
-      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && (
+      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && tipo !== 'albaranes' && (
         <>
           {rows.length === 0 && emptyState}
           {rows.length > 0 && (
@@ -810,6 +908,20 @@ export function DocumentoListado({
               : (tipo === 'presupuestos' ? 'Presupuesto' : 'Factura')
           }
           onClose={() => setEmailModalRow(null)}
+        />
+      )}
+
+      {/* Email albarán desde listado — marca como entregado al enviar */}
+      {emailAlbaranListadoRow && (
+        <EmailModal
+          emailCliente={emailAlbaranListadoRow.cliente_email as string | undefined}
+          nombreDocumento={
+            emailAlbaranListadoRow.numero
+              ? `Albarán ${emailAlbaranListadoRow.numero as string}`
+              : 'Albarán'
+          }
+          onSent={async () => { await onEnviarAlbaran?.(emailAlbaranListadoRow.id) }}
+          onClose={() => setEmailAlbaranListadoRow(null)}
         />
       )}
 

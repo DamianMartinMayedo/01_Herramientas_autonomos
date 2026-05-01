@@ -88,6 +88,17 @@ async function getNextFacturaNumero(userId: string): Promise<{ numero: string | 
   return { numero: (row?.numero as string | undefined) ?? '', error: null }
 }
 
+async function getNextAlbaranNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
+  const { data: nextData, error } = await supabase.rpc('next_document_number', {
+    p_tipo: 'albaran',
+    p_prefijo: 'ALB',
+    p_user_id: userId,
+  })
+  if (error) return { numero: null, error }
+  const row = Array.isArray(nextData) ? nextData[0] : null
+  return { numero: (row?.numero as string | undefined) ?? '', error: null }
+}
+
 async function getNextRectificativaNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
   const { data: nextData, error } = await supabase.rpc('next_document_number', {
     p_tipo: 'rectificativa',
@@ -131,20 +142,30 @@ export async function saveBusinessDocument(params: {
     numeroFinal = numero
   }
 
+  // Albaranes: asignar número al crear (sin id)
+  let numeroAlb: string | null = document.numero
+  if (table === 'albaranes' && !id) {
+    const { numero, error: nextError } = await getNextAlbaranNumero(userId)
+    if (nextError) {
+      return { data: null, error: nextError as { message: string }, numero: null as string | null }
+    }
+    numeroAlb = numero
+  }
+
   const payload: Record<string, unknown> =
     table === 'albaranes'
       ? {
           user_id: userId,
-          numero: document.numero,
+          numero: numeroAlb,
           fecha: document.fecha,
           cliente_nombre: document.cliente.nombre,
           cliente_nif: document.cliente.nif,
           cliente_email: document.cliente.email,
           cliente_direccion: document.cliente.direccion,
           descripcion: resumenConcepto(document.lineas),
-          estado: 'pendiente',
+          estado: finalizar ? 'enviado' : 'pendiente',
           notas: document.notas,
-          datos_json: document,
+          datos_json: { ...document, numero: numeroAlb ?? '' },
         }
       : {
           user_id: userId,
@@ -185,8 +206,15 @@ export async function saveBusinessDocument(params: {
   const result = await writeRowWithRetry({ table, id, payload })
   return {
     ...result,
-    numero: isAutoNumbered ? ((finalizar || asignarNumPre) ? numeroFinal : null) : document.numero,
+    numero: table === 'albaranes'
+      ? numeroAlb
+      : isAutoNumbered ? ((finalizar || asignarNumPre) ? numeroFinal : null) : document.numero,
   }
+}
+
+export async function enviarAlbaran(id: string) {
+  const { error } = await supabase.from('albaranes').update({ estado: 'enviado' }).eq('id', id)
+  return { error }
 }
 
 export async function emitirFactura(userId: string, id: string) {
@@ -297,6 +325,11 @@ export async function corregirFactura(userId: string, id: string) {
     })
 
   return { error: insertError }
+}
+
+export async function marcarPresupuestoEntregado(id: string) {
+  const { error } = await supabase.from('presupuestos').update({ estado: 'enviado' }).eq('id', id)
+  return { error }
 }
 
 export async function marcarFacturaCobrada(id: string) {

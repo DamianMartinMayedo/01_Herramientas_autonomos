@@ -7,13 +7,6 @@ import type { Empresa } from '../types/empresa.types'
 import { calcularTotales } from '../utils/calculos'
 import { fechaHoy, formatEuro } from '../utils/formatters'
 import { useDocumentStore } from '../store/documentStore'
-import { generarNumeroDocumento } from '../utils/calculos'
-
-const PREFIJOS: Record<DocumentoBase['tipo'], string> = {
-  factura: 'FAC',
-  presupuesto: 'PRE',
-  albaran: 'ALB',
-}
 
 function ensureDocumentDefaults(tipo: DocumentoBase['tipo'], document: DocumentoBase): DocumentoBase {
   return {
@@ -44,8 +37,8 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: Doc
     ? ensureDocumentDefaults(tipo, initialData)
     : ({
     tipo,
-    // En factura y presupuesto el número se asigna al guardar en BD. Albarán lo introduce el usuario.
-    numero: (tipo === 'factura' || tipo === 'presupuesto') ? '' : generarNumeroDocumento(PREFIJOS[tipo], 1),
+    // El número se asigna automáticamente al guardar en BD para todos los tipos.
+    numero: '',
     fecha: fechaHoy(),
     emisor: empresa
       ? {

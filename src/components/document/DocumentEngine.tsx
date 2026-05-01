@@ -23,7 +23,7 @@ import type { Empresa } from '../../types/empresa.types'
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Fechas',
   presupuesto: 'Fechas',
-  albaran: 'Número y fechas',
+  albaran: 'Fechas',
 }
 
 interface ViewOnlyActions {
@@ -53,6 +53,8 @@ interface DocumentEngineProps {
   estadoPresupuesto?: string
   onAprobarPresupuesto?: () => void
   onConvertirAFactura?: () => void
+  onEmailAlbaran?: (doc: DocumentoBase, totales: TotalesDocumento) => void
+  estadoAlbaran?: string
 }
 
 export function DocumentEngine({
@@ -74,6 +76,8 @@ export function DocumentEngine({
   estadoPresupuesto,
   onAprobarPresupuesto,
   onConvertirAFactura,
+  onEmailAlbaran,
+  estadoAlbaran,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
@@ -148,6 +152,10 @@ export function DocumentEngine({
 
   const handleEnviarPresupuesto = form.handleSubmit((values) => {
     onEmailPresupuesto?.(values as DocumentoBase, totales)
+  }, () => showFeedback('Revisa los campos obligatorios antes de enviar.', 'error'))
+
+  const handleEnviarAlbaranClick = form.handleSubmit((values) => {
+    onEmailAlbaran?.(values as DocumentoBase, totales)
   }, () => showFeedback('Revisa los campos obligatorios antes de enviar.', 'error'))
 
   const handleGuardarDocumento = form.handleSubmit(async (values) => {
@@ -264,7 +272,7 @@ export function DocumentEngine({
             </>
           )}
 
-          {tipo === 'factura' || tipo === 'presupuesto' ? (
+          {tipo === 'factura' || tipo === 'presupuesto' || tipo === 'albaran' ? (
             <div>
               <h1 style={{
                 fontFamily: 'var(--font-display)',
@@ -274,11 +282,11 @@ export function DocumentEngine({
               }}>
                 {documento.numero || (tipo === 'factura'
                   ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
-                  : 'PRE-XXX-XXXX')}
+                  : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX')}
               </h1>
               {!documento.numero && (
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)' }}>
-                  {tipo === 'factura' ? 'Se asignará al emitir' : 'Se asignará al guardar o enviar'}
+                  {tipo === 'factura' ? 'Se asignará al emitir' : 'Se asignará al guardar'}
                 </p>
               )}
             </div>
@@ -390,19 +398,37 @@ export function DocumentEngine({
                   Convertir a factura
                 </Button>
               )}
+              <Button variant="secondary" size="sm" onClick={handleAbrirPrevia} type="button">
+                <Download size={14} />
+                Descargar
+              </Button>
               <Button variant="primary" size="sm" onClick={handleEnviarPresupuesto} type="button" disabled={saving}>
                 <Send size={14} />
-                {estadoPresupuesto && estadoPresupuesto !== 'borrador' ? 'Reenviar' : 'Enviar presupuesto'}
+                {estadoPresupuesto && estadoPresupuesto !== 'borrador' ? 'Reenviar' : 'Enviar por correo'}
               </Button>
             </>
           )}
-          {!viewOnlyActions && onSave && tipo !== 'factura' && tipo !== 'presupuesto' && (
-            <Button variant="secondary" size="sm" onClick={handleGuardarDocumento} type="button" disabled={saving}>
-              <Save size={14} />
-              {saving ? 'Guardando...' : 'Guardar albarán'}
-            </Button>
+          {!viewOnlyActions && (onSave || onEmailAlbaran) && tipo === 'albaran' && (
+            <>
+              {onSave && (
+                <Button variant="secondary" size="sm" onClick={handleGuardarDocumento} type="button" disabled={saving}>
+                  <Save size={14} />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
+              )}
+              <Button variant="secondary" size="sm" onClick={handleAbrirPrevia} type="button">
+                <Download size={14} />
+                Descargar
+              </Button>
+              {onEmailAlbaran && (
+                <Button variant="primary" size="sm" onClick={handleEnviarAlbaranClick} type="button" disabled={saving}>
+                  <Send size={14} />
+                  {estadoAlbaran && estadoAlbaran !== 'pendiente' ? 'Reenviar' : 'Enviar por correo'}
+                </Button>
+              )}
+            </>
           )}
-          {!viewOnlyActions && !(onSave && (tipo === 'factura' || tipo === 'presupuesto')) && (
+          {!viewOnlyActions && !(onSave && (tipo === 'factura' || tipo === 'presupuesto' || tipo === 'albaran')) && (
             <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
               Exportar
             </Button>
@@ -530,6 +556,13 @@ export function DocumentEngine({
                     error={errors.fechaVencimiento}
                   />
                 </div>
+              ) : tipo === 'albaran' ? (
+                <FormField
+                  label="Fecha *"
+                  type="date"
+                  {...register('fecha', { required: 'La fecha es obligatoria' })}
+                  error={errors.fecha}
+                />
               ) : (
                 <>
                   <div className="form-row">

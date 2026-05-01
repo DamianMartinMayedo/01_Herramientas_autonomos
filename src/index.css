@@ -78,7 +78,7 @@
   --font-mono:    'SF Mono', 'Fira Code', monospace;
 
   /* ── Escala tipográfica fluid ── */
-  --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+    --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
   --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
   --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
   --text-lg:   clamp(1.125rem, 1rem    + 0.75vw, 1.5rem);
@@ -2007,9 +2007,13 @@ body {
 }
 .user-avatar-plan {
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--color-success);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-success-highlight);
+  padding: var(--space-1) var(--space-3);
+
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

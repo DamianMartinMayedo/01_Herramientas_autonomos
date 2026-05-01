@@ -13,6 +13,8 @@ interface AlbaranPageProps {
   empresa?: Empresa | null
   onNavPerfil?: () => void
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
+  onEmailAlbaran?: (doc: DocumentoBase, totales: TotalesDocumento) => void
+  estadoAlbaran?: string
 }
 
 export function AlbaranPage(props: AlbaranPageProps) {

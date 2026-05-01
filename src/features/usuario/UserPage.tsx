@@ -22,7 +22,7 @@ import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -38,7 +38,7 @@ const DOCUMENT_SECTIONS: UserSection[] = [
 type EditorState =
   | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
-  | { section: 'albaranes'; id?: string; data?: DocumentoBase | null }
+  | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; estado?: string | null }
   | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null }
   | { section: 'ndas'; id?: string; data?: NdaDoc | null }
   | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null }
@@ -70,6 +70,9 @@ export function UserPage() {
   const [emailPresupuestoState, setEmailPresupuestoState] = useState<{
     email?: string; nombre: string
     doc: DocumentoBase; totals: TotalesDocumento; id?: string; isReenviar?: boolean
+  } | null>(null)
+  const [emailAlbaranState, setEmailAlbaranState] = useState<{
+    email?: string; nombre: string; doc: DocumentoBase; totals: TotalesDocumento; id?: string; isReenviar: boolean
   } | null>(null)
 
   useEffect(() => {
@@ -155,6 +158,8 @@ export function UserPage() {
       setFlashMessage(`Presupuesto enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else if (table === 'presupuestos') {
       setFlashMessage(`Borrador guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+    } else if (table === 'albaranes' && finalizar) {
+      setFlashMessage(`Albarán enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else {
       setFlashMessage(`Albarán guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     }
@@ -318,6 +323,28 @@ export function UserPage() {
     bumpRefresh()
   }
 
+  const handleMarcarPresupuestoEntregado = async (id: string) => {
+    const result = await marcarPresupuestoEntregado(id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo marcar como entregado.', variant: 'danger' })
+      return
+    }
+    setFlashMessage('Presupuesto marcado como entregado.')
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
+  const handleEnviarAlbaranDesdeListado = async (id: string) => {
+    const result = await enviarAlbaran(id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo enviar el albarán.', variant: 'danger' })
+      return
+    }
+    setFlashMessage('Albarán marcado como enviado.')
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
   const handleClienteGuardado = async (payload: RegularClientInput) => {
     if (!userId) throw new Error('No hay sesión activa')
     const result = await createRegularClient(userId, payload)
@@ -346,6 +373,8 @@ export function UserPage() {
           onEnviarPresupuesto={(id) => { void handleEnviarPresupuesto(id) }}
           onAprobarPresupuesto={(id) => { void handleAprobarPresupuesto(id) }}
           onConvertirAFactura={(id) => { void handleConvertirAFactura(id) }}
+          onMarcarPresupuestoEntregado={(id) => { void handleMarcarPresupuestoEntregado(id) }}
+          onEnviarAlbaran={(id) => { void handleEnviarAlbaranDesdeListado(id) }}
           onNavCalc={(s) => { setCalcOrigin(section as UserSection); setSearchParams({ s }) }}
           flashMessage={flashMessage}
         />
@@ -421,17 +450,28 @@ export function UserPage() {
     }
 
     if (section === 'albaranes') {
+      const editorId = editor.section === 'albaranes' ? editor.id : undefined
+      const editorEstado = editor.section === 'albaranes' ? (editor.estado ?? null) : null
       return (
         <AlbaranPage
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
-          onSave={(document, totals) => saveBusiness('albaranes', document, totals, editor.id)}
+          onSave={(document, totals) => saveBusiness('albaranes', document, totals, editorId)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
           onNavPerfil={() => { closeEditor(); setSearchParams({ s: 'perfil' }) }}
           onClienteGuardado={handleClienteGuardado}
+          estadoAlbaran={editorEstado ?? undefined}
+          onEmailAlbaran={(doc, totals) => {
+            setEmailAlbaranState({
+              email: doc.cliente?.email,
+              nombre: doc.numero ? `Albarán ${doc.numero}` : 'Albarán',
+              doc, totals, id: editorId,
+              isReenviar: Boolean(editorEstado && editorEstado !== 'pendiente'),
+            })
+          }}
         />
       )
     }
@@ -563,6 +603,24 @@ export function UserPage() {
             )
           }}
           onClose={() => setEmailPresupuestoState(null)}
+        />
+      )}
+
+      {emailAlbaranState && (
+        <EmailModal
+          emailCliente={emailAlbaranState.email}
+          nombreDocumento={emailAlbaranState.nombre}
+          onSent={async () => {
+            await saveBusiness(
+              'albaranes',
+              emailAlbaranState.doc,
+              emailAlbaranState.totals,
+              emailAlbaranState.id,
+              true,
+              true,
+            )
+          }}
+          onClose={() => setEmailAlbaranState(null)}
         />
       )}
     </>
