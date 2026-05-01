@@ -112,6 +112,9 @@
   --transition:      150ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-slow: 300ms cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* ── Rejilla hover de cards ── */
+  --card-grid-color: oklch(0 0 0 / 0.04);
+
   /* ── Anchos de contenido ── */
   --content-narrow:  640px;
   --content-default: 960px;
@@ -174,6 +177,8 @@
   --color-gold-active:    #9A6E00;
   --color-gold-highlight: #3A2E08;
   --color-gold-subtle:    #211A04;
+
+  --card-grid-color: oklch(1 0 0 / 0.04);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -322,8 +327,8 @@ body {
   transform: translate(-2px, -2px);
   box-shadow: 5px 5px 0px 0px var(--card-accent-color, var(--color-border));
   background-image:
-    linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
+    linear-gradient(to right, var(--card-grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--card-grid-color) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -713,16 +718,12 @@ body {
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 90ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .blog-card:hover {
   transform: translate(-2px, -2px);
   box-shadow: 5px 5px 0px 0px var(--color-border);
-  background-image:
-    linear-gradient(to right, oklch(1 0 0 / 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(1 0 0 / 0.03) 1px, transparent 1px);
-  background-size: 32px 32px;
 }
 .blog-card-tags {
   display: flex;
@@ -2223,8 +2224,15 @@ body {
   text-align: left;
   font-family: var(--font-body);
 }
-.stat-btn:hover  { transform: translate(-2px,-2px); box-shadow: 5px 5px 0px 0px var(--color-border); }
-.stat-btn:active { transform: translate(2px,2px);   box-shadow: 1px 1px 0px 0px var(--color-border); }
+.stat-btn:hover {
+  transform: translate(-2px,-2px);
+  box-shadow: 5px 5px 0px 0px var(--color-border);
+  background-image:
+    linear-gradient(to right, var(--card-grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--card-grid-color) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.stat-btn:active { transform: translate(2px,2px);   box-shadow: 1px 1px 0px 0px var(--color-border); background-image: none; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    HERRAMIENTA CARD — card de herramienta en panel admin

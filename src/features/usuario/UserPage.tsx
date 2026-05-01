@@ -154,7 +154,7 @@ export function UserPage() {
     } else if (table === 'presupuestos' && finalizar) {
       setFlashMessage(`Presupuesto enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else if (table === 'presupuestos') {
-      setFlashMessage('Borrador guardado.')
+      setFlashMessage(`Borrador guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else {
       setFlashMessage(`Albarán guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     }

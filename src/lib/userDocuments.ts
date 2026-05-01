@@ -121,7 +121,9 @@ export async function saveBusinessDocument(params: {
     numeroFinal = numero
   }
 
-  if (table === 'presupuestos' && finalizar) {
+  // Presupuestos: asignar número al crear (sin id) O al enviar (finalizar)
+  const asignarNumPre = table === 'presupuestos' && (finalizar || !id)
+  if (asignarNumPre) {
     const { numero, error: nextError } = await getNextPresupuestoNumero(userId)
     if (nextError) {
       return { data: null, error: nextError as { message: string }, numero: null as string | null }
@@ -147,7 +149,7 @@ export async function saveBusinessDocument(params: {
       : {
           user_id: userId,
           ...(isAutoNumbered
-            ? (finalizar ? { numero: numeroFinal } : {})
+            ? ((finalizar || asignarNumPre) ? { numero: numeroFinal } : {})
             : { numero: document.numero }),
           fecha: document.fecha,
           cliente_nombre: document.cliente.nombre,
@@ -175,7 +177,7 @@ export async function saveBusinessDocument(params: {
           datos_json: {
             ...document,
             numero: isAutoNumbered
-              ? (finalizar ? (numeroFinal ?? '') : (document.numero ?? ''))
+              ? ((finalizar || asignarNumPre) ? (numeroFinal ?? '') : (document.numero ?? ''))
               : document.numero,
           },
         }
@@ -183,7 +185,7 @@ export async function saveBusinessDocument(params: {
   const result = await writeRowWithRetry({ table, id, payload })
   return {
     ...result,
-    numero: isAutoNumbered ? (finalizar ? numeroFinal : null) : document.numero,
+    numero: isAutoNumbered ? ((finalizar || asignarNumPre) ? numeroFinal : null) : document.numero,
   }
 }
 
@@ -366,14 +368,19 @@ export async function saveLegalDocument(params: {
 export async function enviarPresupuesto(userId: string, id: string) {
   const { data: current, error: fetchError } = await supabase
     .from('presupuestos')
-    .select('datos_json')
+    .select('numero, datos_json')
     .eq('id', id)
     .single()
 
   if (fetchError) return { error: fetchError, numero: null }
 
-  const { numero, error: nextError } = await getNextPresupuestoNumero(userId)
-  if (nextError) return { error: nextError as { message: string }, numero: null }
+  // Si ya tiene número (asignado al crear), lo respetamos
+  let numero = (current?.numero as string | null) || null
+  if (!numero) {
+    const { numero: nextNumero, error: nextError } = await getNextPresupuestoNumero(userId)
+    if (nextError) return { error: nextError as { message: string }, numero: null }
+    numero = nextNumero
+  }
 
   const datosJson = current?.datos_json as DocumentoBase | null
   const updatedDatosJson = datosJson ? { ...datosJson, numero: numero ?? '' } : datosJson

@@ -44,8 +44,8 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: Doc
     ? ensureDocumentDefaults(tipo, initialData)
     : ({
     tipo,
-    // En factura el número se asigna al primer guardado en BD.
-    numero: tipo === 'factura' ? '' : generarNumeroDocumento(PREFIJOS[tipo], 1),
+    // En factura y presupuesto el número se asigna al guardar en BD. Albarán lo introduce el usuario.
+    numero: (tipo === 'factura' || tipo === 'presupuesto') ? '' : generarNumeroDocumento(PREFIJOS[tipo], 1),
     fecha: fechaHoy(),
     emisor: empresa
       ? {

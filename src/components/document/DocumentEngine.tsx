@@ -22,7 +22,7 @@ import type { Empresa } from '../../types/empresa.types'
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
   factura: 'Fechas',
-  presupuesto: 'Número y fechas',
+  presupuesto: 'Fechas',
   albaran: 'Número y fechas',
 }
 
@@ -277,8 +277,8 @@ export function DocumentEngine({
                   : 'PRE-XXX-XXXX')}
               </h1>
               {!documento.numero && (
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', marginTop: 2 }}>
-                  {tipo === 'factura' ? 'Se asignará al emitir' : 'Se asignará al enviar'}
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)' }}>
+                  {tipo === 'factura' ? 'Se asignará al emitir' : 'Se asignará al guardar o enviar'}
                 </p>
               )}
             </div>
@@ -508,7 +508,7 @@ export function DocumentEngine({
               {TITULO_ENCABEZADO[tipo]}
             </legend>
             <div className="fieldset-v3-body">
-              {empresa && tipo === 'factura' ? (
+              {(tipo === 'presupuesto' || (empresa && tipo === 'factura')) ? (
                 <div className="form-row">
                   <FormField
                     label="Fecha *"
