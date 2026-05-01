@@ -8,8 +8,19 @@ import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ContratoServiciosDoc, ParteLegal } from '../../types/legalDoc.types'
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
 import type { RegularClient } from '../../types/regularClient.types'
+import type { Empresa } from '../../types/empresa.types'
 
-// ─── Valores por defecto ─────────────────────────────────────────────────────
+interface ContratoPageProps {
+  embedded?: boolean
+  onBack?: () => void
+  defaultValues?: ContratoServiciosDoc
+  onSave?: (documento: ContratoServiciosDoc) => Promise<void>
+  saving?: boolean
+  clientes?: RegularClient[]
+  empresa?: Empresa | null
+  onEmailContrato?: (documento: ContratoServiciosDoc) => void
+  estadoContrato?: string
+}
 
 const DEFAULT_CONTRATO: ContratoServiciosDoc = {
   tipo: 'contrato',
@@ -28,6 +39,27 @@ const DEFAULT_CONTRATO: ContratoServiciosDoc = {
   penalizacionIncumplimiento: '',
   jurisdiccion: '',
   notas: '',
+}
+
+function buildDefaultValues(empresa: Empresa | null | undefined, existing?: ContratoServiciosDoc): ContratoServiciosDoc {
+  if (existing) return existing
+  const base = { ...DEFAULT_CONTRATO }
+  if (empresa) {
+    base.prestador = {
+      ...DEFAULT_PARTE_LEGAL,
+      nombre: empresa.nombre,
+      nif: empresa.nif,
+      direccion: empresa.direccion,
+      cp: empresa.cp,
+      ciudad: empresa.ciudad,
+      provincia: empresa.provincia,
+      email: empresa.email,
+      telefono: empresa.telefono ?? '',
+    }
+    base.jurisdiccion = empresa.ciudad
+    base.metadatos.lugar = empresa.ciudad
+  }
+  return base
 }
 
 // ─── Sub-formulario de parte (prestador / cliente) ─────────────────────────────
@@ -93,29 +125,30 @@ function FormParte({
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
-interface ContratoPageProps {
-  embedded?: boolean
-  onBack?: () => void
-  defaultValues?: ContratoServiciosDoc
-  onSave?: (documento: ContratoServiciosDoc) => Promise<void>
-  saving?: boolean
-  clientes?: RegularClient[]
-}
-
 export function ContratoPage({
   embedded = false,
   onBack,
-  defaultValues = DEFAULT_CONTRATO,
+  defaultValues,
   onSave,
   saving = false,
   clientes = [],
+  empresa,
+  onEmailContrato,
+  estadoContrato,
 }: ContratoPageProps) {
+  const resolvedDefaults = buildDefaultValues(empresa, defaultValues)
+
+  // Modo guest: inyectar número editable
+  if (!onSave && !resolvedDefaults.metadatos?.referencia) {
+    resolvedDefaults.metadatos.referencia = `CON-${new Date().getFullYear()}-001`
+  }
+
   return (
     <LegalDocEngine<ContratoServiciosDoc>
       tipo="contrato"
       titulo="Contratos de servicios"
       toolClass="tool-contrato"
-      defaultValues={defaultValues}
+      defaultValues={resolvedDefaults}
       buildDoc={(v) => ({ ...v, tipo: 'contrato' as const })}
       embedded={embedded}
       onBack={onBack}
@@ -123,6 +156,8 @@ export function ContratoPage({
       saving={saving}
       clientes={clientes}
       clienteField="cliente"
+      onEmail={onEmailContrato}
+      estadoDoc={estadoContrato}
       renderForm={({ register, watch, errors }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
@@ -133,14 +168,31 @@ export function ContratoPage({
           <>
             {/* Encabezado del documento */}
             <fieldset className="fieldset-v3">
-              <legend className="fieldset-legend">Encabezado del contrato</legend>
+              <legend className="fieldset-legend">Encabezado de contrato</legend>
               <div className="fieldset-v3-body">
                 <div className="form-row">
-                  <FormField
-                    label="Referencia / Nº contrato *"
-                    {...reg('metadatos.referencia', { required: 'Obligatorio' })}
-                    error={metaErr['referencia'] as never}
-                  />
+                  <div>
+                    <FormField
+                      label={onSave ? 'Nº contrato' : 'Nº contrato *'}
+                      readOnly={!!onSave}
+                      placeholder={onSave ? 'CON-YYYY-XXX' : 'CON-2026-001'}
+                      style={onSave ? {
+                        opacity: 0.55,
+                        cursor: 'default',
+                        borderStyle: 'dashed',
+                        boxShadow: 'none',
+                        transform: 'none',
+                        background: 'var(--color-surface-offset)',
+                      } : undefined}
+                      {...reg('metadatos.referencia', onSave ? {} : { required: 'Obligatorio' })}
+                      error={onSave ? undefined : metaErr['referencia'] as never}
+                    />
+                    {onSave && !defaultValues?.metadatos?.referencia && (
+                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)', marginTop: 'var(--space-1)' }}>
+                        Se asignará al finalizar
+                      </p>
+                    )}
+                  </div>
                   <FormField
                     label="Fecha *"
                     type="date"
@@ -173,12 +225,13 @@ export function ContratoPage({
                 />
                 <div className="form-row">
                   <FormField
-                    label="Importe total (€)"
+                    label="Importe total (€) *"
                     type="number"
                     step="0.01"
                     min={0}
                     placeholder="0.00"
-                    {...reg('importeTotal', { valueAsNumber: true })}
+                    error={err['importeTotal'] as never}
+                    {...reg('importeTotal', { required: 'Obligatorio', valueAsNumber: true })}
                   />
                   <div className="input-group">
                     <label className="input-label">Periodo de facturación</label>
@@ -240,7 +293,7 @@ export function ContratoPage({
                 </label>
                 <label className="input-toggle">
                   <input type="checkbox" {...reg('clausulaPropiedadIntelectual')} />
-                  <span>Inclur cláusula de propiedad intelectual (los entregables son del cliente)</span>
+                  <span>Incluir cláusula de propiedad intelectual (los entregables son del cliente)</span>
                 </label>
                 <TextAreaField
                   label="Penalización por incumplimiento (opcional)"
@@ -249,9 +302,10 @@ export function ContratoPage({
                   rows={2}
                 />
                 <FormField
-                  label="Jurisdicción (ciudad)"
+                  label="Jurisdicción (ciudad) *"
                   placeholder="Ciudad competente en caso de conflicto"
-                  {...reg('jurisdiccion')}
+                  error={err['jurisdiccion'] as never}
+                  {...reg('jurisdiccion', { required: 'Obligatorio' })}
                 />
               </div>
             </fieldset>

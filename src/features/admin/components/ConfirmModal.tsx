@@ -13,31 +13,10 @@ export interface ConfirmModalProps {
   onCancel: () => void
 }
 
-const VARIANTS: Record<
-  'danger' | 'success' | 'warning',
-  { background: string; hoverBg: string; borderColor: string; shadowColor: string; color: string }
-> = {
-  danger: {
-    background:  'var(--color-error)',
-    hoverBg:     'var(--color-error)',
-    borderColor: 'var(--color-error-highlight)',
-    shadowColor: 'var(--color-error-highlight)',
-    color:       'white',
-  },
-  success: {
-    background:  'var(--color-success)',
-    hoverBg:     'var(--color-success)',
-    borderColor: 'var(--color-success-active)',
-    shadowColor: 'var(--color-success-active)',
-    color:       'white',
-  },
-  warning: {
-    background:  'var(--color-gold)',
-    hoverBg:     'var(--color-gold-hover)',
-    borderColor: 'var(--color-gold-active)',
-    shadowColor: 'var(--color-gold-active)',
-    color:       'white',
-  },
+const VARIANT_CLASS: Record<'danger' | 'success' | 'warning', string> = {
+  danger:  'btn-danger',
+  success: 'btn-success',
+  warning: 'btn-warning',
 }
 
 export function ConfirmModal({
@@ -48,8 +27,6 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
-  const v = VARIANTS[confirmVariant]
-
   return (
     <div className="overlay overlay-dark overlay-z200">
       <div className="admin-modal-box admin-modal-sm">
@@ -73,14 +50,7 @@ export function ConfirmModal({
             Cancelar
           </button>
           <button
-            className="btn btn-sm btn-confirm"
-            style={{
-              '--confirm-bg':       v.background,
-              '--confirm-hover-bg': v.hoverBg,
-              '--confirm-border':   v.borderColor,
-              '--confirm-shadow':   v.shadowColor,
-              '--confirm-color':    v.color,
-            } as React.CSSProperties}
+            className={`btn btn-sm ${VARIANT_CLASS[confirmVariant]}`}
             onClick={onConfirm}
           >
             {confirmLabel}

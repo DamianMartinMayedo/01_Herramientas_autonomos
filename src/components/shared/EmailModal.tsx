@@ -22,12 +22,16 @@ function parsearCorreos(input: string): string[] {
 }
 
 export function EmailModal({ emailCliente, nombreDocumento, onClose, onSent }: EmailModalProps) {
-  const [inputCorreos, setInputCorreos] = useState(emailCliente ?? '')
+  const [inputCorreos, setInputCorreos] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (emailCliente) setInputCorreos(emailCliente)
+  }, [emailCliente])
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 50)

@@ -24,7 +24,12 @@ function ensureDocumentDefaults(tipo: DocumentoBase['tipo'], document: Documento
   }
 }
 
-export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: DocumentoBase | null, empresa?: Empresa | null) {
+export function useDocumentEngine(
+  tipo: DocumentoBase['tipo'],
+  initialData?: DocumentoBase | null,
+  empresa?: Empresa | null,
+  defaultNumero?: string,
+) {
   const {
     emisorGuardado,
     setEmisorGuardado,
@@ -37,8 +42,9 @@ export function useDocumentEngine(tipo: DocumentoBase['tipo'], initialData?: Doc
     ? ensureDocumentDefaults(tipo, initialData)
     : ({
     tipo,
-    // El número se asigna automáticamente al guardar en BD para todos los tipos.
-    numero: '',
+    // El número se asigna automáticamente al guardar en BD para usuarios registrados.
+    // Para guests, usa el formato sugerido (editable).
+    numero: defaultNumero ?? '',
     fecha: fechaHoy(),
     emisor: empresa
       ? {

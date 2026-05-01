@@ -26,7 +26,8 @@ export function PreviewModal({ documento, totales, onClose }: PreviewModalProps)
       const nombreArchivo =
         documento.numero?.trim() ||
         (documento.tipo === 'factura' ? 'Factura' :
-         documento.tipo === 'presupuesto' ? 'Presupuesto' : 'Documento')
+         documento.tipo === 'presupuesto' ? 'Presupuesto' :
+         documento.tipo === 'albaran' ? 'Albaran' : 'Documento')
       await descargarPdf(previewRef.current, nombreArchivo)
     } catch (e) {
       console.error(e)

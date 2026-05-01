@@ -21,9 +21,9 @@ import { regularClientToClienteInfo } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
-  factura: 'Fechas',
-  presupuesto: 'Fechas',
-  albaran: 'Fechas',
+  factura: 'Encabezado de factura',
+  presupuesto: 'Encabezado de presupuesto',
+  albaran: 'Encabezado de albarán',
 }
 
 interface ViewOnlyActions {
@@ -55,6 +55,7 @@ interface DocumentEngineProps {
   onConvertirAFactura?: () => void
   onEmailAlbaran?: (doc: DocumentoBase, totales: TotalesDocumento) => void
   estadoAlbaran?: string
+  defaultNumero?: string
 }
 
 export function DocumentEngine({
@@ -78,6 +79,7 @@ export function DocumentEngine({
   onConvertirAFactura,
   onEmailAlbaran,
   estadoAlbaran,
+  defaultNumero,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
@@ -86,8 +88,19 @@ export function DocumentEngine({
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [selectedClientId, setSelectedClientId] = useState('')
   const [savingCliente, setSavingCliente] = useState(false)
+
+  useEffect(() => {
+    if (!initialData?.cliente?.nombre || clientes.length === 0) return
+    const match = clientes.find(
+      (c) =>
+        c.nombre.trim().toLowerCase() === initialData.cliente.nombre.trim().toLowerCase() ||
+        (c.nif && initialData.cliente.nif && c.nif.trim().toLowerCase() === initialData.cliente.nif.trim().toLowerCase())
+    )
+    if (match) setSelectedClientId(match.id)
+  }, [initialData?.cliente?.nombre, initialData?.cliente?.nif, clientes])
   const navigate = useNavigate()
   const {
     form,
@@ -98,7 +111,7 @@ export function DocumentEngine({
     eliminarLinea,
     guardarEmisor,
     formatEuro: fmt,
-  } = useDocumentEngine(tipo, initialData, empresa)
+  } = useDocumentEngine(tipo, initialData, empresa, defaultNumero)
 
   const {
     register,
@@ -278,13 +291,15 @@ export function DocumentEngine({
                 fontFamily: 'var(--font-display)',
                 fontSize: 'var(--text-lg)',
                 fontWeight: 700,
-                color: documento.numero ? 'var(--color-text)' : 'var(--color-text-faint)',
+                color: 'var(--color-text)',
               }}>
-                {documento.numero || (tipo === 'factura'
-                  ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
-                  : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX')}
+                {!onSave
+                  ? (tipo === 'factura' ? 'Nueva factura' : tipo === 'presupuesto' ? 'Nuevo presupuesto' : 'Nuevo albarán')
+                  : (documento.numero || (tipo === 'factura'
+                    ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
+                    : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX'))}
               </h1>
-              {!documento.numero && (
+              {onSave && !documento.numero && (
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)' }}>
                   {tipo === 'factura' ? 'Se asignará al emitir' : 'Se asignará al guardar'}
                 </p>
@@ -468,30 +483,30 @@ export function DocumentEngine({
           <Lock size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
           <span>
             {tipo === 'presupuesto'
-              ? <><strong style={{ color: 'var(--color-text)' }}>Presupuesto {viewOnlyActions.estadoActual ?? 'enviado'} · Solo lectura.</strong>{' '}Gestiona las acciones desde el listado.</>
+              ? <><strong style={{ color: 'var(--color-text)' }}>Presupuesto convertido en factura · Solo lectura.</strong>{' '}Gestiona las acciones desde el listado.</>
               : initialData?.esRectificativa
-                ? <>
-                    <strong style={{ color: 'var(--color-text)' }}>Factura rectificativa emitida · Solo lectura.</strong>
-                    {' '}No se puede volver a rectificar.{' '}
-                    <span className="tooltip-wrap" style={{ verticalAlign: 'middle' }}>
-                      <Info size={13} style={{ color: 'var(--color-primary)', cursor: 'help' }} />
-                      <div className="tooltip-content">
-                        Hacienda exige que cada corrección se haga mediante una factura rectificativa independiente. Rectificar una rectificativa crearía una cadena de documentos incorrecta que podría derivar en sanciones fiscales.
-                        <div className="tooltip-arrow" />
-                      </div>
-                    </span>
-                  </>
-                : <>
-                    <strong style={{ color: 'var(--color-text)' }}>Factura emitida · Solo lectura.</strong>
-                    {' '}Para modificarla usa <strong style={{ color: 'var(--color-text)' }}>Rectificar</strong>.{' '}
-                    <span className="tooltip-wrap" style={{ verticalAlign: 'middle' }}>
-                      <Info size={13} style={{ color: 'var(--color-primary)', cursor: 'help' }} />
-                      <div className="tooltip-content">
-                        Por normativa de Hacienda, una factura emitida no puede modificarse directamente. Cualquier corrección debe hacerse mediante una <strong>factura rectificativa</strong>, que anula o corrige la original. Modificar una factura emitida directamente puede derivar en sanciones fiscales.
-                        <div className="tooltip-arrow" />
-                      </div>
-                    </span>
-                  </>
+                  ? <>
+                      <strong style={{ color: 'var(--color-text)' }}>Factura rectificativa emitida · Solo lectura.</strong>
+                      {' '}No se puede volver a rectificar.{' '}
+                      <span className="tooltip-wrap" style={{ verticalAlign: 'middle' }}>
+                        <Info size={13} style={{ color: 'var(--color-primary)', cursor: 'help' }} />
+                        <div className="tooltip-content">
+                          Hacienda exige que cada corrección se haga mediante una factura rectificativa independiente. Rectificar una rectificativa crearía una cadena de documentos incorrecta que podría derivar en sanciones fiscales.
+                          <div className="tooltip-arrow" />
+                        </div>
+                      </span>
+                    </>
+                  : <>
+                      <strong style={{ color: 'var(--color-text)' }}>Factura emitida · Solo lectura.</strong>
+                      {' '}Para modificarla usa <strong style={{ color: 'var(--color-text)' }}>Rectificar</strong>.{' '}
+                      <span className="tooltip-wrap" style={{ verticalAlign: 'middle' }}>
+                        <Info size={13} style={{ color: 'var(--color-primary)', cursor: 'help' }} />
+                        <div className="tooltip-content">
+                          Por normativa de Hacienda, una factura emitida no puede modificarse directamente. Cualquier corrección debe hacerse mediante una <strong>factura rectificativa</strong>, que anula o corrige la original. Modificar una factura emitida directamente puede derivar en sanciones fiscales.
+                          <div className="tooltip-arrow" />
+                        </div>
+                      </span>
+                    </>
             }
           </span>
         </div>
@@ -534,53 +549,14 @@ export function DocumentEngine({
               {TITULO_ENCABEZADO[tipo]}
             </legend>
             <div className="fieldset-v3-body">
-              {(tipo === 'presupuesto' || (empresa && tipo === 'factura')) ? (
-                <div className="form-row">
-                  <FormField
-                    label="Fecha *"
-                    type="date"
-                    {...register('fecha', { required: 'La fecha es obligatoria' })}
-                    error={errors.fecha}
-                  />
-                  <FormField
-                    label="Vencimiento"
-                    type="date"
-                    {...register('fechaVencimiento', {
-                      validate: (value) => {
-                        if (!value) return true
-                        const fechaDoc = form.getValues('fecha')
-                        if (!fechaDoc) return true
-                        return value >= fechaDoc || 'El vencimiento no puede ser anterior a la fecha del documento'
-                      },
-                    })}
-                    error={errors.fechaVencimiento}
-                  />
-                </div>
-              ) : tipo === 'albaran' ? (
-                <FormField
-                  label="Fecha *"
-                  type="date"
-                  {...register('fecha', { required: 'La fecha es obligatoria' })}
-                  error={errors.fecha}
-                />
-              ) : (
+              {!onSave ? (
                 <>
                   <div className="form-row">
                     <FormField
                       label="Número *"
-                      {...register('numero', tipo === 'factura' ? {} : { required: 'El número es obligatorio' })}
+                      {...register('numero', { required: 'El número es obligatorio' })}
                       error={errors.numero}
-                      readOnly={tipo === 'factura'}
-                      disabled={tipo === 'factura'}
-                      placeholder={tipo === 'factura' ? 'Se asignará al finalizar' : undefined}
-                      style={tipo === 'factura'
-                        ? {
-                            background: 'var(--color-surface-offset)',
-                            color: 'var(--color-text-faint)',
-                            cursor: 'not-allowed',
-                            opacity: 0.9,
-                          }
-                        : undefined}
+                      placeholder={tipo === 'factura' ? 'FAC-2026-001' : tipo === 'presupuesto' ? 'PRE-2026-001' : 'ALB-2026-001'}
                     />
                     <FormField
                       label="Fecha *"
@@ -603,6 +579,81 @@ export function DocumentEngine({
                       })}
                       error={errors.fechaVencimiento}
                     />
+                  )}
+                </>
+              ) : (
+                <>
+                  {(tipo === 'presupuesto' || (empresa && tipo === 'factura')) ? (
+                    <div className="form-row">
+                      <FormField
+                        label="Fecha *"
+                        type="date"
+                        {...register('fecha', { required: 'La fecha es obligatoria' })}
+                        error={errors.fecha}
+                      />
+                      <FormField
+                        label="Vencimiento"
+                        type="date"
+                        {...register('fechaVencimiento', {
+                          validate: (value) => {
+                            if (!value) return true
+                            const fechaDoc = form.getValues('fecha')
+                            if (!fechaDoc) return true
+                            return value >= fechaDoc || 'El vencimiento no puede ser anterior a la fecha del documento'
+                          },
+                        })}
+                        error={errors.fechaVencimiento}
+                      />
+                    </div>
+                  ) : tipo === 'albaran' ? (
+                    <FormField
+                      label="Fecha *"
+                      type="date"
+                      {...register('fecha', { required: 'La fecha es obligatoria' })}
+                      error={errors.fecha}
+                    />
+                  ) : (
+                    <>
+                      <div className="form-row">
+                        <FormField
+                          label="Número *"
+                          {...register('numero', tipo === 'factura' ? {} : { required: 'El número es obligatorio' })}
+                          error={errors.numero}
+                          readOnly={tipo === 'factura'}
+                          disabled={tipo === 'factura'}
+                          placeholder={tipo === 'factura' ? 'Se asignará al finalizar' : undefined}
+                          style={tipo === 'factura'
+                            ? {
+                                background: 'var(--color-surface-offset)',
+                                color: 'var(--color-text-faint)',
+                                cursor: 'not-allowed',
+                                opacity: 0.9,
+                              }
+                            : undefined}
+                        />
+                        <FormField
+                          label="Fecha *"
+                          type="date"
+                          {...register('fecha', { required: 'La fecha es obligatoria' })}
+                          error={errors.fecha}
+                        />
+                      </div>
+                      {esFinanciero && (
+                        <FormField
+                          label="Vencimiento"
+                          type="date"
+                          {...register('fechaVencimiento', {
+                            validate: (value) => {
+                              if (!value) return true
+                              const fechaDoc = form.getValues('fecha')
+                              if (!fechaDoc) return true
+                              return value >= fechaDoc || 'El vencimiento no puede ser anterior a la fecha del documento'
+                            },
+                          })}
+                          error={errors.fechaVencimiento}
+                        />
+                      )}
+                    </>
                   )}
                 </>
               )}

@@ -43,7 +43,7 @@ const TABLA_CONFIG: Record<TipoDocumento, {
   facturas:      { label: 'Facturas',      labelSingular: 'factura',      articuloFemenino: true,  campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: 'total',   routeCrear: '/factura' },
   presupuestos:  { label: 'Presupuestos',  labelSingular: 'presupuesto',  articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: 'total',   routeCrear: '/presupuesto' },
   albaranes:     { label: 'Albaranes',     labelSingular: 'albarán',      articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/albaran' },
-  contratos:     { label: 'Contratos',     labelSingular: 'contrato',     articuloFemenino: false, campoTitulo: 'titulo',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/contrato' },
+  contratos:     { label: 'Contratos',     labelSingular: 'contrato',     articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/contrato' },
   ndas:          { label: 'NDAs',          labelSingular: 'NDA',          articuloFemenino: false, campoTitulo: 'titulo',  campoSecundario: 'otra_parte_nombre', campoPrecio: undefined, routeCrear: '/nda' },
   reclamaciones: { label: 'Reclamaciones', labelSingular: 'reclamación',  articuloFemenino: true,  campoTitulo: 'titulo',  campoSecundario: 'deudor_nombre',     campoPrecio: 'importe', routeCrear: '/reclamacion-pago' },
 }
@@ -82,6 +82,7 @@ interface Props {
   onConvertirAFactura?: (id: string) => void
   onMarcarPresupuestoEntregado?: (id: string) => void
   onEnviarAlbaran?: (id: string) => Promise<void> | void
+  onEnviarContrato?: (id: string) => Promise<void> | void
   onNavCalc?: (section: string) => void
   flashMessage?: string | null
 }
@@ -89,10 +90,18 @@ interface Props {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DocRow = Record<string, any>
 
+function getClienteEmail(row: DocRow): string | undefined {
+  if (row.cliente_email) return row.cliente_email as string | undefined
+  const datos = row.datos_json as DocRow | undefined
+  if (datos?.cliente?.email) return datos.cliente.email as string | undefined
+  if (datos?.cliente?.correo) return datos.cliente.correo as string | undefined
+  return undefined
+}
+
 export function DocumentoListado({
   tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir,
   onEnviarPresupuesto, onAprobarPresupuesto, onConvertirAFactura,
-  onMarcarPresupuestoEntregado, onEnviarAlbaran, onNavCalc,
+  onMarcarPresupuestoEntregado, onEnviarAlbaran, onEnviarContrato, onNavCalc,
   flashMessage,
 }: Props) {
   const { user } = useAuth()
@@ -111,6 +120,8 @@ export function DocumentoListado({
   const [factFilter, setFactFilter] = useState<'todos' | 'borrador' | 'emitida' | 'cobrada' | 'anulada' | 'rectificativa'>('todos')
   const [presFilter, setPresFilter] = useState<'todos' | 'sin-enviar' | 'enviado' | 'aprobado' | 'convertido'>('todos')
   const [albFilter, setAlbFilter] = useState<'todos' | 'pendiente' | 'enviado'>('todos')
+  const [contrFilter, setContrFilter] = useState<'todos' | 'borrador' | 'enviado' | 'firmado' | 'finalizado'>('todos')
+  const [emailContratoListadoRow, setEmailContratoListadoRow] = useState<DocRow | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [alertState, setAlertState] = useState<{ title?: string; msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const userId = user?.id
@@ -121,10 +132,11 @@ export function DocumentoListado({
     setFactFilter('todos')
     setPresFilter('todos')
     setAlbFilter('todos')
+    setContrFilter('todos')
     setCurrentPage(1)
   }, [tipo])
 
-  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter, albFilter])
+  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter, albFilter, contrFilter])
 
   useEffect(() => {
     if (!userId) return
@@ -244,7 +256,7 @@ export function DocumentoListado({
   }
 
   const renderRowBase = (row: DocRow, actions: React.ReactNode, extraBadge?: React.ReactNode, overrideBadge?: React.ReactNode) => {
-    const titulo  = row[cfg.campoTitulo] ?? '—'
+    const titulo  = row[cfg.campoTitulo] || (tipo === 'contratos' ? row.titulo : null) || '—'
     const cliente = row[cfg.campoSecundario] ?? '—'
     const precio  = cfg.campoPrecio ? row[cfg.campoPrecio] : null
     const fecha   = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES') : ''
@@ -351,28 +363,7 @@ export function DocumentoListado({
   }
 
   const renderPresupuestoRow = (row: DocRow) => {
-    const esBorrador = row.estado === 'borrador'
-    const actions = esBorrador ? (
-      <>
-        <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
-          <Pencil size={13} />
-        </button>
-        <button
-          type="button"
-          title="Marcar como entregado"
-          className="icon-btn icon-btn--success"
-          onClick={() => onMarcarPresupuestoEntregado?.(row.id)}
-        >
-          <CheckCircle2 size={13} />
-        </button>
-        <button type="button" title="Enviar por correo" className="icon-btn icon-btn--primary" onClick={() => setEmailPresupuestoEnviarRow(row)}>
-          <Mail size={13} />
-        </button>
-        <button type="button" title="Eliminar" className="icon-btn icon-btn--danger" onClick={() => handleDeleteRequest(row.id)} disabled={deleting === row.id}>
-          <Trash2 size={13} />
-        </button>
-      </>
-    ) : (
+    const actions = (
       <>
         {row.estado !== 'convertido' && (
           <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
@@ -390,35 +381,33 @@ export function DocumentoListado({
   // ── Albaranes ─────────────────────────────────────────────────────────────
 
   const renderAlbaranRow = (row: DocRow) => {
-    const enviado = row.estado === 'enviado'
-    return renderRowBase(row, (
+    const actions = (
       <>
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        {!enviado && (
-          <button
-            type="button"
-            title="Marcar como entregado"
-            className="icon-btn icon-btn--success"
-            onClick={() => onEnviarAlbaran?.(row.id)}
-          >
-            <CheckCircle2 size={13} />
-          </button>
-        )}
-        <button
-          type="button"
-          title={enviado ? 'Reenviar por correo' : 'Enviar por correo'}
-          className="icon-btn icon-btn--primary"
-          onClick={() => setEmailAlbaranListadoRow(row)}
-        >
-          <Mail size={13} />
-        </button>
-        <button type="button" title="Eliminar" className="icon-btn icon-btn--danger" onClick={() => handleDeleteRequest(row.id)} disabled={deleting === row.id}>
-          <Trash2 size={13} />
+        <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+          <MoreHorizontal size={13} />
         </button>
       </>
-    ))
+    )
+    return renderRowBase(row, actions)
+  }
+
+  // ── Contratos ─────────────────────────────────────────────────────────────
+
+  const renderContratoRow = (row: DocRow) => {
+    const actions = (
+      <>
+        <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
+          <Pencil size={13} />
+        </button>
+        <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+          <MoreHorizontal size={13} />
+        </button>
+      </>
+    )
+    return renderRowBase(row, actions)
   }
 
   // ── Fila genérica ─────────────────────────────────────────────────────────
@@ -717,8 +706,61 @@ export function DocumentoListado({
         </>
       )}
 
-      {/* Vista genérica para otros tipos */}
-      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && tipo !== 'albaranes' && (
+      {/* Vista con filtros para contratos */}
+      {!loading && tipo === 'contratos' && (
+        <>
+          {rows.length === 0 && emptyState}
+          {rows.length > 0 && (() => {
+            const CONTR_FILTERS: { key: typeof contrFilter; label: string }[] = [
+              { key: 'todos',       label: 'Todos' },
+              { key: 'borrador',    label: 'Borrador' },
+              { key: 'enviado',     label: 'Enviado' },
+              { key: 'firmado',     label: 'Firmado' },
+              { key: 'finalizado',  label: 'Finalizado' },
+            ]
+            const rowsFiltrados = contrFilter === 'todos' ? rows : rows.filter(r => r.estado === contrFilter)
+            return (
+              <>
+                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                  {CONTR_FILTERS.map(({ key, label }) => {
+                    const n = key === 'todos' ? rows.length : rows.filter(r => r.estado === key).length
+                    if (key !== 'todos' && n === 0) return null
+                    return (
+                      <button
+                        key={key}
+                        className={`filter-pill${contrFilter === key ? ' active' : ''}`}
+                        onClick={() => setContrFilter(key)}
+                      >
+                        {label}{key !== 'todos' && n > 0 ? ` (${n})` : ''}
+                      </button>
+                    )
+                  })}
+                </div>
+                {rowsFiltrados.length === 0
+                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay contratos en este estado.</p>
+                  : (() => {
+                    const { items, totalPages } = paginar(rowsFiltrados)
+                    return (
+                      <>
+                        <div className="card card-no-pad">
+                          <table className="data-table">
+                            {renderTableHeader()}
+                            <tbody>{items.map(row => renderContratoRow(row))}</tbody>
+                          </table>
+                        </div>
+                        {renderPaginacion(totalPages)}
+                      </>
+                    )
+                  })()
+                }
+              </>
+            )
+          })()}
+        </>
+      )}
+
+      {/* Vista genérica para ndas y reclamaciones */}
+      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && tipo !== 'albaranes' && tipo !== 'contratos' && (
         <>
           {rows.length === 0 && emptyState}
           {rows.length > 0 && (
@@ -770,6 +812,11 @@ export function DocumentoListado({
           <>
             <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
             <button className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            {row.estado === 'borrador' && (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); onMarcarPresupuestoEntregado?.(row.id) }}>
+                <CheckCircle2 size={13} /> Marcar como entregado
+              </button>
+            )}
             {row.estado === 'enviado' && (
               <button className="dropdown-item" onClick={() => { closeDropdown(); onAprobarPresupuesto?.(row.id) }}>
                 <CheckCircle2 size={13} /> Marcar como aprobado
@@ -784,7 +831,47 @@ export function DocumentoListado({
               </>
             )}
             <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
+            {row.estado === 'borrador' ? (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailPresupuestoEnviarRow(row) }}><Mail size={13} /> Enviar por correo</button>
+            ) : (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
+            )}
+            <div className="dropdown-divider" />
+            <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+              <Trash2 size={13} /> Eliminar
+            </button>
+          </>
+        ) : tipo === 'albaranes' ? (
+          <>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            {row.estado !== 'enviado' && (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); onEnviarAlbaran?.(row.id) }}>
+                <CheckCircle2 size={13} /> Marcar como entregado
+              </button>
+            )}
+            <div className="dropdown-divider" />
+            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailAlbaranListadoRow(row) }}>
+              <Mail size={13} /> {row.estado === 'enviado' ? 'Reenviar por correo' : 'Enviar por correo'}
+            </button>
+            <div className="dropdown-divider" />
+            <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+              <Trash2 size={13} /> Eliminar
+            </button>
+          </>
+        ) : tipo === 'contratos' ? (
+          <>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button className="dropdown-item" onClick={() => { closeDropdown(); onOpen?.(row.id) }}><Pencil size={13} /> Editar</button>
+            {row.estado === 'borrador' && (
+              <button className="dropdown-item" onClick={() => { closeDropdown(); onEnviarContrato?.(row.id) }}>
+                <CheckCircle2 size={13} /> Marcar como enviado
+              </button>
+            )}
+            <div className="dropdown-divider" />
+            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailContratoListadoRow(row) }}>
+              <Mail size={13} /> {row.estado === 'enviado' ? 'Reenviar por correo' : 'Enviar por correo'}
+            </button>
             <div className="dropdown-divider" />
             <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
               <Trash2 size={13} /> Eliminar
@@ -847,7 +934,7 @@ export function DocumentoListado({
       {/* EmailModal para enviar presupuesto borrador (asigna número + cambia estado) */}
       {emailPresupuestoEnviarRow && (
         <EmailModal
-          emailCliente={emailPresupuestoEnviarRow.cliente_email as string | undefined}
+          emailCliente={getClienteEmail(emailPresupuestoEnviarRow)}
           nombreDocumento={emailPresupuestoEnviarRow.numero
             ? `Presupuesto ${emailPresupuestoEnviarRow.numero as string}`
             : 'Presupuesto'}
@@ -901,7 +988,7 @@ export function DocumentoListado({
       {/* Modal de envío por correo */}
       {emailModalRow && (
         <EmailModal
-          emailCliente={emailModalRow.cliente_email as string | undefined}
+          emailCliente={getClienteEmail(emailModalRow)}
           nombreDocumento={
             emailModalRow.numero
               ? `${tipo === 'presupuestos' ? 'Presupuesto' : 'Factura'} ${emailModalRow.numero as string}`
@@ -914,7 +1001,7 @@ export function DocumentoListado({
       {/* Email albarán desde listado — marca como entregado al enviar */}
       {emailAlbaranListadoRow && (
         <EmailModal
-          emailCliente={emailAlbaranListadoRow.cliente_email as string | undefined}
+          emailCliente={getClienteEmail(emailAlbaranListadoRow)}
           nombreDocumento={
             emailAlbaranListadoRow.numero
               ? `Albarán ${emailAlbaranListadoRow.numero as string}`
@@ -922,6 +1009,20 @@ export function DocumentoListado({
           }
           onSent={async () => { await onEnviarAlbaran?.(emailAlbaranListadoRow.id) }}
           onClose={() => setEmailAlbaranListadoRow(null)}
+        />
+      )}
+
+      {/* Email contrato desde listado — marca como enviado al enviar */}
+      {emailContratoListadoRow && (
+        <EmailModal
+          emailCliente={getClienteEmail(emailContratoListadoRow)}
+          nombreDocumento={
+            emailContratoListadoRow.numero
+              ? `Contrato ${emailContratoListadoRow.numero as string}`
+              : 'Contrato'
+          }
+          onSent={async () => { await onEnviarContrato?.(emailContratoListadoRow.id) }}
+          onClose={() => setEmailContratoListadoRow(null)}
         />
       )}
 

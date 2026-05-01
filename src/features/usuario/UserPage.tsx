@@ -22,7 +22,7 @@ import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, enviarContrato, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -38,7 +38,7 @@ const DOCUMENT_SECTIONS: UserSection[] = [
 type EditorState =
   | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
-  | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; estado?: string | null }
+  | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null }
   | { section: 'ndas'; id?: string; data?: NdaDoc | null }
   | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null }
@@ -73,6 +73,9 @@ export function UserPage() {
   } | null>(null)
   const [emailAlbaranState, setEmailAlbaranState] = useState<{
     email?: string; nombre: string; doc: DocumentoBase; totals: TotalesDocumento; id?: string; isReenviar: boolean
+  } | null>(null)
+  const [emailContratoState, setEmailContratoState] = useState<{
+    email?: string; nombre: string; doc: ContratoServiciosDoc; id?: string; isReenviar: boolean
   } | null>(null)
 
   useEffect(() => {
@@ -125,7 +128,12 @@ export function UserPage() {
 
   const handleOpenDocument = async (targetSection: TipoDocumento, id: string) => {
     const result = await getStoredUserDocument(SECTION_TO_TABLE[targetSection], id)
-    if (result.error || !result.data?.datos_json) {
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo abrir el documento. Inténtalo de nuevo.', variant: 'danger' })
+      return
+    }
+    if (!result.data?.datos_json) {
+      setAlertState({ msg: 'Este documento no tiene datos guardados y no se puede abrir.', variant: 'warning' })
       return
     }
 
@@ -172,11 +180,12 @@ export function UserPage() {
     const result = await getStoredUserDocument(SECTION_TO_TABLE[targetSection], id)
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: targetSection })
+    const isViewOnly = targetSection === 'facturas' || (targetSection === 'presupuestos' && result.data.estado === 'convertido')
     setEditor({
       section: targetSection,
       id,
       data: result.data.datos_json as EditorState extends { data: infer T } ? T : never,
-      viewOnly: true,
+      viewOnly: isViewOnly,
       estado: result.data.estado,
     } as EditorState)
   }
@@ -199,11 +208,25 @@ export function UserPage() {
     const result = await getStoredUserDocument('presupuestos', id)
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: 'presupuestos' })
+    const isConvertido = result.data.estado === 'convertido'
     setEditor({
       section: 'presupuestos',
       id,
       data: result.data.datos_json as DocumentoBase,
-      viewOnly: true,
+      viewOnly: isConvertido,
+      estado: result.data.estado,
+      autoDownload: true,
+    })
+  }
+
+  const handleDescargarAlbaran = async (id: string) => {
+    const result = await getStoredUserDocument('albaranes', id)
+    if (result.error || !result.data?.datos_json) return
+    setSearchParams({ s: 'albaranes' })
+    setEditor({
+      section: 'albaranes',
+      id,
+      data: result.data.datos_json as DocumentoBase,
       estado: result.data.estado,
       autoDownload: true,
     })
@@ -345,6 +368,18 @@ export function UserPage() {
     bumpRefresh()
   }
 
+  const handleEnviarContratoDesdeListado = async (id: string) => {
+    if (!userId) return
+    const result = await enviarContrato(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo enviar el contrato.', variant: 'danger' })
+      return
+    }
+    setFlashMessage(`Contrato enviado${result.numero ? `: ${result.numero}` : ''}.`)
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
   const handleClienteGuardado = async (payload: RegularClientInput) => {
     if (!userId) throw new Error('No hay sesión activa')
     const result = await createRegularClient(userId, payload)
@@ -366,6 +401,7 @@ export function UserPage() {
           onDescargar={(id) => {
             if (section === 'facturas') void handleDescargarFactura(id)
             else if (section === 'presupuestos') void handleDescargarPresupuesto(id)
+            else if (section === 'albaranes') void handleDescargarAlbaran(id)
           }}
           onEmitir={(id) => { void handleEmitirFactura(id) }}
           onDuplicar={(id) => { void handleDuplicarFactura(id) }}
@@ -375,6 +411,7 @@ export function UserPage() {
           onConvertirAFactura={(id) => { void handleConvertirAFactura(id) }}
           onMarcarPresupuestoEntregado={(id) => { void handleMarcarPresupuestoEntregado(id) }}
           onEnviarAlbaran={(id) => { void handleEnviarAlbaranDesdeListado(id) }}
+          onEnviarContrato={(id) => { void handleEnviarContratoDesdeListado(id) }}
           onNavCalc={(s) => { setCalcOrigin(section as UserSection); setSearchParams({ s }) }}
           flashMessage={flashMessage}
         />
@@ -388,6 +425,7 @@ export function UserPage() {
       const autoDownload = editor.section === 'facturas' ? (editor.autoDownload ?? false) : false
       return (
         <FacturaPage
+          key={editorId ?? 'new-factura'}
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
@@ -416,6 +454,7 @@ export function UserPage() {
       const autoDownload = editor.section === 'presupuestos' ? (editor.autoDownload ?? false) : false
       return (
         <PresupuestoPage
+          key={editorId ?? 'new-presupuesto'}
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
@@ -450,21 +489,26 @@ export function UserPage() {
     }
 
     if (section === 'albaranes') {
-      const editorId = editor.section === 'albaranes' ? editor.id : undefined
+      const isViewOnly = editor.section === 'albaranes' && editor.viewOnly === true
+      const editorId = editor.id
       const editorEstado = editor.section === 'albaranes' ? (editor.estado ?? null) : null
+      const autoDownload = editor.section === 'albaranes' ? (editor.autoDownload ?? false) : false
       return (
         <AlbaranPage
+          key={editorId ?? 'new-albaran'}
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
-          onSave={(document, totals) => saveBusiness('albaranes', document, totals, editorId)}
+          onSave={isViewOnly ? undefined : (document, totals) => saveBusiness('albaranes', document, totals, editorId)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
           onNavPerfil={() => { closeEditor(); setSearchParams({ s: 'perfil' }) }}
           onClienteGuardado={handleClienteGuardado}
           estadoAlbaran={editorEstado ?? undefined}
-          onEmailAlbaran={(doc, totals) => {
+          autoOpenPreview={autoDownload}
+          viewOnlyActions={isViewOnly ? { estadoActual: editorEstado ?? undefined } : undefined}
+          onEmailAlbaran={isViewOnly ? undefined : (doc, totals) => {
             setEmailAlbaranState({
               email: doc.cliente?.email,
               nombre: doc.numero ? `Albarán ${doc.numero}` : 'Albarán',
@@ -477,14 +521,28 @@ export function UserPage() {
     }
 
     if (section === 'contratos') {
+      const editorId = editor.section === 'contratos' ? editor.id : undefined
+      const editorEstado = editor.section === 'contratos' ? (editor.estado ?? null) : null
       return (
         <ContratoPage
+          key={editorId ?? 'new-contrato'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as ContratoServiciosDoc | undefined) ?? undefined}
           onSave={(document) => saveLegal('contratos', document, editor.id)}
           saving={saving}
           clientes={clientesDisponibles}
+          empresa={empresa}
+          estadoContrato={editorEstado ?? undefined}
+          onEmailContrato={(doc) => {
+            setEmailContratoState({
+              email: doc.cliente?.email,
+              nombre: doc.metadatos?.referencia ? `Contrato ${doc.metadatos.referencia}` : 'Contrato',
+              doc,
+              id: editorId,
+              isReenviar: Boolean(editorEstado && editorEstado !== 'borrador'),
+            })
+          }}
         />
       )
     }
@@ -492,6 +550,7 @@ export function UserPage() {
     if (section === 'ndas') {
       return (
         <NdaPage
+          key={editorId ?? 'new-nda'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as NdaDoc | undefined) ?? undefined}
@@ -505,6 +564,7 @@ export function UserPage() {
     if (section === 'reclamaciones') {
       return (
         <ReclamacionPage
+          key={editorId ?? 'new-reclamacion'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as ReclamacionPagoDoc | undefined) ?? undefined}
@@ -621,6 +681,19 @@ export function UserPage() {
             )
           }}
           onClose={() => setEmailAlbaranState(null)}
+        />
+      )}
+
+      {emailContratoState && (
+        <EmailModal
+          emailCliente={emailContratoState.email}
+          nombreDocumento={emailContratoState.nombre}
+          onSent={async () => {
+            if (!emailContratoState.id) return
+            await enviarContrato(userId as string, emailContratoState.id)
+            bumpRefresh()
+          }}
+          onClose={() => setEmailContratoState(null)}
         />
       )}
     </>

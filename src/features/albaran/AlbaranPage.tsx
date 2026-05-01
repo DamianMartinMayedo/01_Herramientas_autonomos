@@ -15,15 +15,22 @@ interface AlbaranPageProps {
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
   onEmailAlbaran?: (doc: DocumentoBase, totales: TotalesDocumento) => void
   estadoAlbaran?: string
+  autoOpenPreview?: boolean
+  viewOnlyActions?: { estadoActual?: string }
 }
 
 export function AlbaranPage(props: AlbaranPageProps) {
+  const defaultNumero = !props.onSave && !props.initialData?.numero
+    ? `ALB-${new Date().getFullYear()}-001`
+    : undefined
+
   return (
     <DocumentEngine
       tipo="albaran"
       titulo="Albaranes"
       toolClass="tool-albaran"
       {...props}
+      defaultNumero={defaultNumero}
     />
   )
 }

@@ -22,12 +22,17 @@ interface PresupuestoPageProps {
 }
 
 export function PresupuestoPage(props: PresupuestoPageProps) {
+  const defaultNumero = !props.onSave && !props.initialData?.numero
+    ? `PRE-${new Date().getFullYear()}-001`
+    : undefined
+
   return (
     <DocumentEngine
       tipo="presupuesto"
       titulo="Presupuestos"
       toolClass="tool-presupuesto"
       {...props}
+      defaultNumero={defaultNumero}
     />
   )
 }

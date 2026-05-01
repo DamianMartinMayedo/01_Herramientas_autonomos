@@ -18,12 +18,17 @@ interface FacturaPageProps {
 }
 
 export function FacturaPage(props: FacturaPageProps) {
+  const defaultNumero = !props.onSave && !props.initialData?.numero
+    ? `FAC-${new Date().getFullYear()}-001`
+    : undefined
+
   return (
     <DocumentEngine
       tipo="factura"
       titulo="Facturas"
       toolClass="tool-factura"
       {...props}
+      defaultNumero={defaultNumero}
     />
   )
 }

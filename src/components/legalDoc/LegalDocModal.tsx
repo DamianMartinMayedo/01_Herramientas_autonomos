@@ -30,6 +30,7 @@ interface LegalDocModalProps {
   /** Email del cliente/receptor para autorellenar el modal de correo */
   clienteEmail?: string
   onClose: () => void
+  onSent?: () => Promise<void> | void
 }
 
 /**
@@ -50,7 +51,7 @@ function resolverEmailCliente(documento: LegalDoc): string | undefined {
   )
 }
 
-export function LegalDocModal({ documento, clienteEmail, onClose }: LegalDocModalProps) {
+export function LegalDocModal({ documento, clienteEmail, onClose, onSent }: LegalDocModalProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -155,6 +156,7 @@ export function LegalDocModal({ documento, clienteEmail, onClose }: LegalDocModa
         <EmailModal
           emailCliente={emailResuelto}
           nombreDocumento={nombreDocumento}
+          onSent={onSent}
           onClose={() => setEmailModalAbierto(false)}
         />
       )}

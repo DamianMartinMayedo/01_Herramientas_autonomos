@@ -41,41 +41,36 @@ export function AlertModal({
   }, [onConfirm, onCancel])
 
   return (
-    <div className="auth-modal-overlay" role="dialog" aria-modal="true">
-      <div className="auth-modal" style={{ maxWidth: 420 }}>
-        <button className="auth-modal__close" onClick={onCancel ?? onConfirm} aria-label="Cerrar">
-          <X size={18} />
-        </button>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {(title || variant) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              {VARIANT_ICON[variant]}
-              {title && (
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)' }}>
-                  {title}
-                </h3>
-              )}
-            </div>
+    <div className="overlay overlay-dark overlay-z200" role="dialog" aria-modal="true" onClick={(e) => e.target === e.currentTarget && (onCancel ?? onConfirm)()}>
+      <div className="admin-modal-box admin-modal-sm">
+        <div className="admin-modal-header">
+          {VARIANT_ICON[variant]}
+          {title && (
+            <h2 className="admin-modal-title">{title}</h2>
           )}
+          <button className="modal-close-btn" onClick={onCancel ?? onConfirm} aria-label="Cerrar">
+            <X size={16} />
+          </button>
+        </div>
 
+        <div className="admin-modal-body">
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
             {message}
           </p>
+        </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
-            {cancelLabel && onCancel && (
-              <button className="btn btn-secondary btn-sm" onClick={onCancel}>
-                {cancelLabel}
-              </button>
-            )}
-            <button
-              className={`btn btn-sm ${variant === 'danger' ? 'btn-danger' : 'btn-primary'}`}
-              onClick={onConfirm}
-            >
-              {confirmLabel}
+        <div className="admin-modal-footer">
+          {cancelLabel && onCancel && (
+            <button className="btn btn-secondary btn-sm" onClick={onCancel}>
+              {cancelLabel}
             </button>
-          </div>
+          )}
+          <button
+            className={`btn btn-sm ${variant === 'danger' || variant === 'warning' ? 'btn-danger' : 'btn-primary'}`}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
         </div>
       </div>
     </div>

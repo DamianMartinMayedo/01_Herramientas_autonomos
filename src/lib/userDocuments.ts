@@ -110,6 +110,17 @@ async function getNextRectificativaNumero(userId: string): Promise<{ numero: str
   return { numero: (row?.numero as string | undefined) ?? '', error: null }
 }
 
+async function getNextContratoNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
+  const { data: nextData, error } = await supabase.rpc('next_document_number', {
+    p_tipo: 'contrato',
+    p_prefijo: 'CON',
+    p_user_id: userId,
+  })
+  if (error) return { numero: null, error }
+  const row = Array.isArray(nextData) ? nextData[0] : null
+  return { numero: (row?.numero as string | undefined) ?? '', error: null }
+}
+
 export async function saveBusinessDocument(params: {
   table: 'facturas' | 'presupuestos' | 'albaranes'
   userId: string
@@ -347,25 +358,41 @@ export async function saveLegalDocument(params: {
   userId: string
   document: LegalDoc
   id?: string
+  finalizar?: boolean
 }) {
-  const { table, userId, document, id } = params
+  const { table, userId, document, id, finalizar = false } = params
 
   let payload: Record<string, unknown>
 
   if (table === 'contratos') {
     const contrato = document as ContratoServiciosDoc
-    payload = {
+    let numeroContrato: string | null = contrato.metadatos.referencia || null
+
+    if (!id && !numeroContrato) {
+      const { numero, error: nextError } = await getNextContratoNumero(userId)
+      if (nextError) {
+        return { data: null, error: nextError as { message: string }, numero: null as string | null }
+      }
+      numeroContrato = numero
+    }
+
+    const basePayload: Record<string, unknown> = {
       user_id: userId,
-      titulo: contrato.metadatos.referencia || contrato.objetoContrato.slice(0, 80) || 'Contrato',
+      titulo: contrato.objetoContrato.slice(0, 80) || 'Contrato',
       fecha: contrato.metadatos.fecha,
       cliente_nombre: contrato.cliente.nombre,
       cliente_nif: contrato.cliente.nif,
       cliente_email: contrato.cliente.email,
       tipo: 'servicios',
-      estado: 'borrador',
+      estado: finalizar ? 'enviado' : 'borrador',
       notas: contrato.notas,
-      datos_json: contrato,
+      datos_json: { ...contrato, metadatos: { ...contrato.metadatos, referencia: numeroContrato ?? contrato.metadatos.referencia } },
     }
+    // Solo tocar numero si se está creando o si el usuario introdujo una referencia explícita
+    if (!id || numeroContrato) {
+      basePayload.numero = numeroContrato
+    }
+    payload = basePayload
   } else if (table === 'ndas') {
     const nda = document as NdaDoc
     payload = {
@@ -395,7 +422,51 @@ export async function saveLegalDocument(params: {
     }
   }
 
-  return writeRowWithRetry({ table, id, payload })
+  const result = await writeRowWithRetry({ table, id, payload })
+  return {
+    ...result,
+    numero: table === 'contratos' ? (payload.numero as string | null) : null,
+  }
+}
+
+export async function enviarContrato(userId: string, id: string) {
+  // Intentar con la columna numero (requiere migración 010 aplicada)
+  try {
+    const { data: current, error: fetchError } = await supabase
+      .from('contratos')
+      .select('numero, datos_json')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    let numero = (current?.numero as string | null) || null
+    if (!numero) {
+      const { numero: nextNumero, error: nextError } = await getNextContratoNumero(userId)
+      if (nextError) throw nextError
+      numero = nextNumero
+    }
+
+    const datosJson = current?.datos_json as ContratoServiciosDoc | null
+    const updatedDatosJson = datosJson
+      ? { ...datosJson, metadatos: { ...datosJson.metadatos, referencia: numero ?? datosJson.metadatos.referencia } }
+      : datosJson
+
+    const { error: updateError } = await supabase
+      .from('contratos')
+      .update({ numero, estado: 'enviado', datos_json: updatedDatosJson })
+      .eq('id', id)
+
+    return { error: updateError, numero }
+  } catch {
+    // Fallback: marcar como enviado sin columna numero
+    const { error: updateError } = await supabase
+      .from('contratos')
+      .update({ estado: 'enviado' })
+      .eq('id', id)
+
+    return { error: updateError, numero: null as string | null }
+  }
 }
 
 export async function enviarPresupuesto(userId: string, id: string) {

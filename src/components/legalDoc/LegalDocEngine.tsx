@@ -4,10 +4,10 @@
  * Paralelo a DocumentEngine, pero orientado a cláusulas, firmantes y texto libre.
  * Lo usarán: ContratoPage, NdaPage, ReclamacionPage
  */
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch, type DefaultValues } from 'react-hook-form'
-import { ChevronLeft, Save, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, Save, CheckCircle2, Mail } from 'lucide-react'
 import type { LegalDoc, ParteLegal, TipoLegalDoc } from '../../types/legalDoc.types'
 import { LegalDocModal } from './LegalDocModal'
 import { LegalDocPreview } from './LegalDocPreview'
@@ -28,6 +28,8 @@ export interface LegalDocEngineProps<T extends LegalDoc> {
   saving?: boolean
   clientes?: RegularClient[]
   clienteField?: 'cliente' | 'parteB' | 'deudor'
+  onEmail?: (documento: T) => void
+  estadoDoc?: string
 }
 
 export interface FormHelpers<T extends LegalDoc> {
@@ -74,12 +76,27 @@ export function LegalDocEngine<T extends LegalDoc>({
   saving = false,
   clientes = [],
   clienteField,
+  onEmail,
+  estadoDoc,
 }: LegalDocEngineProps<T>) {
   const navigate = useNavigate()
   const [modalAbierto, setModalAbierto] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState('')
+
+  useEffect(() => {
+    const raw = defaultValues as Partial<Record<'cliente' | 'parteB' | 'deudor', { nombre?: string; nif?: string }>>
+    const parteNombre = raw.cliente?.nombre ?? raw.parteB?.nombre ?? raw.deudor?.nombre
+    const parteNif = raw.cliente?.nif ?? raw.parteB?.nif ?? raw.deudor?.nif
+    if (!parteNombre || clientes.length === 0) return
+    const match = clientes.find(
+      (c) =>
+        c.nombre.trim().toLowerCase() === parteNombre.trim().toLowerCase() ||
+        (c.nif && parteNif && c.nif.trim().toLowerCase() === parteNif.trim().toLowerCase())
+    )
+    if (match) setSelectedClientId(match.id)
+  }, [defaultValues, clientes])
 
   const form = useForm<T>({
     defaultValues: defaultValues as DefaultValues<T>,
@@ -90,7 +107,12 @@ export function LegalDocEngine<T extends LegalDoc>({
     formState: { errors },
     setValue,
     handleSubmit,
+    reset,
   } = form
+
+  useEffect(() => {
+    reset(defaultValues as DefaultValues<T>)
+  }, [defaultValues, reset])
 
   const rawValues = useWatch({ control: form.control }) as T
   const docPreview = buildDoc(rawValues) as T
@@ -108,6 +130,11 @@ export function LegalDocEngine<T extends LegalDoc>({
   }
 
   const handleExportar = handleSubmit(() => setModalAbierto(true))
+
+  const handleEnviarEmail = handleSubmit(async (values) => {
+    if (!onEmail) return
+    onEmail(values as T)
+  })
 
   const handleGuardarDatos = useCallback(() => {
     try {
@@ -203,7 +230,9 @@ export function LegalDocEngine<T extends LegalDoc>({
             fontWeight: 700,
             color: 'var(--color-text)',
           }}>
-            {titulo}
+            {!onSave
+              ? (tipo === 'contrato' ? 'Nuevo contrato' : tipo === 'nda' ? 'Nuevo NDA' : 'Nueva reclamación')
+              : titulo}
           </h1>
         </div>
 
@@ -228,6 +257,12 @@ export function LegalDocEngine<T extends LegalDoc>({
             <Button variant="secondary" size="sm" type="button" onClick={handleGuardarDocumento} disabled={saving}>
               <Save size={14} />
               {saving ? 'Guardando...' : 'Guardar documento'}
+            </Button>
+          )}
+          {onEmail && (
+            <Button variant="secondary" size="sm" type="button" onClick={handleEnviarEmail} disabled={saving}>
+              <Mail size={14} />
+              {estadoDoc && estadoDoc !== 'borrador' ? 'Reenviar' : 'Enviar por correo'}
             </Button>
           )}
           <Button variant="primary" size="sm" onClick={handleExportar} type="button">
@@ -298,6 +333,10 @@ export function LegalDocEngine<T extends LegalDoc>({
           documento={docPreview}
           clienteEmail={clienteEmail}
           onClose={() => setModalAbierto(false)}
+          onSent={async () => {
+            await onEmail?.(docPreview)
+            setModalAbierto(false)
+          }}
         />
       )}
     </div>
