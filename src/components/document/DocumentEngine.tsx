@@ -87,7 +87,7 @@ export function DocumentEngine({
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoOpenPreview])
 
   const [selectedClientId, setSelectedClientId] = useState('')
   const [savingCliente, setSavingCliente] = useState(false)
@@ -110,7 +110,6 @@ export function DocumentEngine({
     agregarLinea,
     eliminarLinea,
     guardarEmisor,
-    formatEuro: fmt,
   } = useDocumentEngine(tipo, initialData, empresa, defaultNumero)
 
   const {
@@ -234,13 +233,6 @@ export function DocumentEngine({
     marginBottom: 'var(--space-4)',
   }
 
-  const totalRowStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: 'var(--text-sm)',
-    color: 'var(--color-text-muted)',
-  }
-
   return (
     <div
       className={toolClass}
@@ -295,9 +287,11 @@ export function DocumentEngine({
               }}>
                 {!onSave
                   ? (tipo === 'factura' ? 'Nueva factura' : tipo === 'presupuesto' ? 'Nuevo presupuesto' : 'Nuevo albarán')
-                  : (documento.numero || (tipo === 'factura'
-                    ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
-                    : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX'))}
+                  : ((initialData?.numero || documento.numero)
+                    ? (initialData?.numero || documento.numero)
+                    : (tipo === 'factura'
+                      ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
+                      : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX'))}
               </h1>
               {onSave && !documento.numero && (
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)' }}>

@@ -4,12 +4,11 @@
  * Mismo patrón que PreviewModal pero usa LegalDocPreview.
  */
 import { useRef, useState } from 'react'
-import { X, Printer, Pencil, AlertTriangle, Loader2, Mail } from 'lucide-react'
+import { X, Printer, Pencil, AlertTriangle, Loader2 } from 'lucide-react'
 import type { LegalDoc } from '../../types/legalDoc.types'
 import { LegalDocPreview } from './LegalDocPreview'
 import { Button } from '../ui/Button'
 import { descargarPdf } from '../../utils/downloadPdf'
-import { EmailModal } from '../shared/EmailModal'
 
 const NOMBRE_ARCHIVO: Record<LegalDoc['tipo'], string> = {
   contrato: 'Contrato-servicios',
@@ -17,47 +16,17 @@ const NOMBRE_ARCHIVO: Record<LegalDoc['tipo'], string> = {
   reclamacion: 'Reclamacion-pago',
 }
 
-const LABEL_DOC: Record<LegalDoc['tipo'], string> = {
-  contrato: 'Contrato de servicios',
-  nda: 'NDA — Confidencialidad',
-  reclamacion: 'Reclamación de pago',
-}
-
 const PREVIEW_ZOOM = 0.78
 
 interface LegalDocModalProps {
   documento: LegalDoc
-  /** Email del cliente/receptor para autorellenar el modal de correo */
-  clienteEmail?: string
   onClose: () => void
-  onSent?: () => Promise<void> | void
 }
 
-/**
- * Intenta extraer el email de la parte receptora del documento:
- * - Contrato → cliente.email
- * - NDA → parteB.email
- * - Reclamación → deudor.email
- * Si el llamador ya pasó clienteEmail explícitamente, se usa ese.
- */
-function resolverEmailCliente(documento: LegalDoc): string | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const doc = documento as any
-  return (
-    doc?.cliente?.email ||
-    doc?.parteB?.email ||
-    doc?.deudor?.email ||
-    undefined
-  )
-}
-
-export function LegalDocModal({ documento, clienteEmail, onClose, onSent }: LegalDocModalProps) {
+export function LegalDocModal({ documento, onClose }: LegalDocModalProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [emailModalAbierto, setEmailModalAbierto] = useState(false)
-
-  const emailResuelto = clienteEmail ?? resolverEmailCliente(documento)
 
   const handleDescargar = async () => {
     if (!previewRef.current) return
@@ -77,19 +46,14 @@ export function LegalDocModal({ documento, clienteEmail, onClose, onSent }: Lega
     }
   }
 
-  const nombreDocumento = [
-    LABEL_DOC[documento.tipo],
-    documento.metadatos.referencia?.trim(),
-  ].filter(Boolean).join(' — ')
-
   return (
     <>
       <div
-        className="overlay overlay-darker"
+        className="overlay overlay-dark overlay-z60"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="modal-box modal-lg"
+          className="admin-modal-box admin-modal-lg"
           role="dialog"
           aria-modal="true"
           aria-label="Vista previa del documento legal"
@@ -130,36 +94,15 @@ export function LegalDocModal({ documento, clienteEmail, onClose, onSent }: Lega
               <Pencil size={16} />
               Volver a editar
             </Button>
-            <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-              <Button
-                variant="secondary"
-                onClick={() => setEmailModalAbierto(true)}
-                disabled={generando}
-                type="button"
-              >
-                <Mail size={16} />
-                Enviar por correo
-              </Button>
-              <Button variant="primary" onClick={handleDescargar} disabled={generando}>
-                {generando
-                  ? <Loader2 size={16} className="spin" />
-                  : <Printer size={16} />}
-                {generando ? 'Abriendo...' : 'Guardar como PDF'}
-              </Button>
-            </div>
+            <Button variant="primary" onClick={handleDescargar} disabled={generando}>
+              {generando
+                ? <Loader2 size={16} className="spin" />
+                : <Printer size={16} />}
+              {generando ? 'Abriendo...' : 'Guardar como PDF'}
+            </Button>
           </div>
-        </div>
+</div>
       </div>
-
-      {/* Email modal — z-60, se superpone al modal principal */}
-      {emailModalAbierto && (
-        <EmailModal
-          emailCliente={emailResuelto}
-          nombreDocumento={nombreDocumento}
-          onSent={onSent}
-          onClose={() => setEmailModalAbierto(false)}
-        />
-      )}
     </>
   )
 }

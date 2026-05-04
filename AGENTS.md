@@ -97,3 +97,57 @@ npm run lint     # eslint .
 2. NO `style={{}}` para estilos estáticos
 3. NO commits主动性 — esperar que el usuario lo pida
 4. Verificar `tsc --noEmit` antes de entregar cambios de tipos
+
+## Reglas críticas (NUNCA cambiar sin entender el impacto)
+
+Estas reglas, si se cambian, **rompen la app**:
+
+### 1. `select('*')` en listados — `DocumentoListado.tsx:142`
+```tsx
+.from(tipo).select('*')
+```
+Las 6 tablas tienen esquemas distintos con columnas desnormalizadas. `*` funciona sin mantener 6 listas de columnas.
+
+### 2. `DocRow = Record<string, any>` — `DocumentoListado.tsx:32`
+```tsx
+type DocRow = Record<string, any>
+```
+El `any` es **intencional y contenido**. `unknown` generaría 20+ errores de tipo en accesos como `row.numero`, `row.estado`.
+
+### 3. `key={editorId ?? 'new-tipo'}` en editores — `UserPage.tsx:427,458,498,527,552,566`
+```tsx
+<FacturaPage key={editorId ?? 'new-factura'} ... />
+```
+Fuerza remount del formulario al cambiar documento. Sin esto, el form conserva valores anteriores.
+
+### 4. Patrón `active` flag en useEffect async — `DocumentoListado.tsx:136`
+```tsx
+let active = true
+async function fetch() {
+  const { data } = await supabase...
+  if (!active) return  // Previene setState en componente desmontado
+  setRows(data)
+}
+```
+Evita memory leaks cuando el componente se desmonta antes de que termine el async.
+
+### 5. `reset(defaultValues)` en LegalDocEngine — `LegalDocEngine.tsx:113`
+```tsx
+useEffect(() => { reset(defaultValues) }, [defaultValues, reset])
+```
+Sincroniza el form cuando `defaultValues` cambia al navegar entre documentos.
+
+### 6. `setEmisorGuardado` actualiza localStorage + store atómico — `documentStore.ts:47`
+```tsx
+setEmisorGuardado: (emisor) => {
+  localStorage.setItem(EMISOR_KEY, JSON.stringify(emisor))
+  set({ emisorGuardado: emisor })
+}
+```
+Si se desincronizan, los datos del emisor se pierden.
+
+### 7. RPC `next_document_number` para numeración — `userDocuments.ts`
+Todas las funciones de numeración usan este RPC para manejar concurrencia de forma segura.
+
+### 8. `datos_json` JSONB como estructura completa — todas las tablas
+Los documentos almacenan la estructura completa en `datos_json` mientras mantienen columnas desnormalizadas (`cliente_nombre`, etc.) para listados.

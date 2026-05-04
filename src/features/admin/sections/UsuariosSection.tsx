@@ -26,7 +26,7 @@ type Factura = {
   total: number
   estado: string
   cliente_nombre: string
-  datos_json: any
+  datos_json: unknown
   user_id: string
 }
 

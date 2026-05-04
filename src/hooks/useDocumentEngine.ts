@@ -92,7 +92,7 @@ export function useDocumentEngine(
     if (tipo === 'factura' && presupuestoPendiente) {
       limpiarPresupuestoPendiente()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tipo, presupuestoPendiente, limpiarPresupuestoPendiente])
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

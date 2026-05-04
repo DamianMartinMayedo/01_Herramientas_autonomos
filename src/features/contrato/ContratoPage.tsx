@@ -158,10 +158,10 @@ export function ContratoPage({
       clienteField="cliente"
       onEmail={onEmailContrato}
       estadoDoc={estadoContrato}
-      renderForm={({ register, watch, errors }) => {
+      renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
-        const duracion = (watch('duracion' as never) as unknown) as string
+        const duracion = getValues('duracion') as string
         const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
 
         return (

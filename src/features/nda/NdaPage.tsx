@@ -107,11 +107,11 @@ export function NdaPage({
       saving={saving}
       clientes={clientes}
       clienteField="parteB"
-      renderForm={({ register, watch, errors }) => {
+      renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
-        const direction = (watch('direction' as never) as unknown) as string
+        const direction = getValues('direction') as string
 
         return (
           <>

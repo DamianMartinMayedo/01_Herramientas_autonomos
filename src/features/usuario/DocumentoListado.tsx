@@ -26,6 +26,10 @@ import {
   PRESUPUESTO_STATUS_LABELS,
   isPresupuestoStatus,
 } from '../../types/presupuestoStatus'
+import { getClienteEmail } from '../../types/docRow.types'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DocRow = Record<string, any>
 
 export type TipoDocumento =
   | 'facturas' | 'presupuestos' | 'albaranes'
@@ -87,16 +91,7 @@ interface Props {
   flashMessage?: string | null
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DocRow = Record<string, any>
 
-function getClienteEmail(row: DocRow): string | undefined {
-  if (row.cliente_email) return row.cliente_email as string | undefined
-  const datos = row.datos_json as DocRow | undefined
-  if (datos?.cliente?.email) return datos.cliente.email as string | undefined
-  if (datos?.cliente?.correo) return datos.cliente.correo as string | undefined
-  return undefined
-}
 
 export function DocumentoListado({
   tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir,
@@ -160,10 +155,22 @@ export function DocumentoListado({
 
   const closeDropdown = () => { setDropdownOpenId(null); setDropdownPos(null) }
 
+  const handleDropdownKeyDown = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      openDropdown(e as unknown as React.MouseEvent, id)
+    }
+    if (e.key === 'Escape') closeDropdown()
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      openDropdown(e as unknown as React.MouseEvent, id)
+    }
+  }
+
   const openDropdown = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (dropdownOpenId === id) { closeDropdown(); return }
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const rect = e.currentTarget.getBoundingClientRect()
     setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
     setDropdownOpenId(id)
   }
@@ -328,7 +335,7 @@ export function DocumentoListado({
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
 
   const renderEmitidaRow = (row: DocRow) => renderRowBase(row, (
-    <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+    <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
       <MoreHorizontal size={13} />
     </button>
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
@@ -370,7 +377,7 @@ export function DocumentoListado({
             <Pencil size={13} />
           </button>
         )}
-        <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -386,7 +393,7 @@ export function DocumentoListado({
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -402,7 +409,7 @@ export function DocumentoListado({
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        <button type="button" title="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -541,6 +548,7 @@ export function DocumentoListado({
                       <button
                         key={key}
                         className={`filter-pill${factFilter === key ? ' active' : ''}`}
+                        aria-selected={factFilter === key}
                         onClick={() => setFactFilter(key)}
                       >
                         {label}{n > 0 && key !== 'todos' ? ` (${n})` : ''}
@@ -596,6 +604,7 @@ export function DocumentoListado({
                     <button
                       key={key}
                       className={`filter-pill${presFilter === key ? ' active' : ''}`}
+                      aria-selected={presFilter === key}
                       onClick={() => setPresFilter(key)}
                     >
                       {label}
@@ -676,6 +685,7 @@ export function DocumentoListado({
                       <button
                         key={key}
                         className={`filter-pill${albFilter === key ? ' active' : ''}`}
+                        aria-selected={albFilter === key}
                         onClick={() => setAlbFilter(key)}
                       >
                         {label}{key !== 'todos' && n > 0 ? ` (${n})` : ''}
@@ -729,6 +739,7 @@ export function DocumentoListado({
                       <button
                         key={key}
                         className={`filter-pill${contrFilter === key ? ' active' : ''}`}
+                        aria-selected={contrFilter === key}
                         onClick={() => setContrFilter(key)}
                       >
                         {label}{key !== 'todos' && n > 0 ? ` (${n})` : ''}
@@ -786,94 +797,94 @@ export function DocumentoListado({
 
         const menuItems = tipo === 'facturas' ? (
           <>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
             {canMarkFacturaAsCobrada(row.estado) && (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); void handleFacturaStatus(row.id, 'cobrada') }}>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); void handleFacturaStatus(row.id, 'cobrada') }}>
                 <CheckCircle2 size={13} /> Marcar como cobrada
               </button>
             )}
             {canMarkFacturaAsNoCobrada(row.estado) && (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); void handleFacturaStatus(row.id, 'emitida') }}>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); void handleFacturaStatus(row.id, 'emitida') }}>
                 <Undo2 size={13} /> Marcar como no cobrada
               </button>
             )}
             {!row.datos_json?.esRectificativa && (
               <>
                 <div className="dropdown-divider" />
-                <button className="dropdown-item" onClick={() => { closeDropdown(); onDuplicar?.(row.id) }}><Copy size={13} /> Duplicar</button>
-                <button className="dropdown-item" onClick={() => { closeDropdown(); onCorregir?.(row.id) }}><PenLine size={13} /> Corregir</button>
+                <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onDuplicar?.(row.id) }}><Copy size={13} /> Duplicar</button>
+                <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onCorregir?.(row.id) }}><PenLine size={13} /> Corregir</button>
               </>
             )}
             <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
           </>
         ) : tipo === 'presupuestos' ? (
           <>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
             {row.estado === 'borrador' && (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); onMarcarPresupuestoEntregado?.(row.id) }}>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onMarcarPresupuestoEntregado?.(row.id) }}>
                 <CheckCircle2 size={13} /> Marcar como entregado
               </button>
             )}
             {row.estado === 'enviado' && (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); onAprobarPresupuesto?.(row.id) }}>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onAprobarPresupuesto?.(row.id) }}>
                 <CheckCircle2 size={13} /> Marcar como aprobado
               </button>
             )}
             {(row.estado === 'enviado' || row.estado === 'aprobado') && (
               <>
                 <div className="dropdown-divider" />
-                <button className="dropdown-item" onClick={() => { closeDropdown(); setConvertirFacturaConfirmId(row.id) }}>
+                <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setConvertirFacturaConfirmId(row.id) }}>
                   <ArrowRight size={13} /> Convertir a factura
                 </button>
               </>
             )}
             <div className="dropdown-divider" />
             {row.estado === 'borrador' ? (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailPresupuestoEnviarRow(row) }}><Mail size={13} /> Enviar por correo</button>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailPresupuestoEnviarRow(row) }}><Mail size={13} /> Enviar por correo</button>
             ) : (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailModalRow(row) }}><Mail size={13} /> Enviar por correo</button>
             )}
             <div className="dropdown-divider" />
-            <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+            <button role="menuitem" className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
               <Trash2 size={13} /> Eliminar
             </button>
           </>
         ) : tipo === 'albaranes' ? (
           <>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
             {row.estado !== 'enviado' && (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); onEnviarAlbaran?.(row.id) }}>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onEnviarAlbaran?.(row.id) }}>
                 <CheckCircle2 size={13} /> Marcar como entregado
               </button>
             )}
             <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailAlbaranListadoRow(row) }}>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailAlbaranListadoRow(row) }}>
               <Mail size={13} /> {row.estado === 'enviado' ? 'Reenviar por correo' : 'Enviar por correo'}
             </button>
             <div className="dropdown-divider" />
-            <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+            <button role="menuitem" className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
               <Trash2 size={13} /> Eliminar
             </button>
           </>
         ) : tipo === 'contratos' ? (
           <>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
-            <button className="dropdown-item" onClick={() => { closeDropdown(); onOpen?.(row.id) }}><Pencil size={13} /> Editar</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onOpen?.(row.id) }}><Pencil size={13} /> Editar</button>
             {row.estado === 'borrador' && (
-              <button className="dropdown-item" onClick={() => { closeDropdown(); onEnviarContrato?.(row.id) }}>
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onEnviarContrato?.(row.id) }}>
                 <CheckCircle2 size={13} /> Marcar como enviado
               </button>
             )}
             <div className="dropdown-divider" />
-            <button className="dropdown-item" onClick={() => { closeDropdown(); setEmailContratoListadoRow(row) }}>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailContratoListadoRow(row) }}>
               <Mail size={13} /> {row.estado === 'enviado' ? 'Reenviar por correo' : 'Enviar por correo'}
             </button>
             <div className="dropdown-divider" />
-            <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+            <button role="menuitem" className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
               <Trash2 size={13} /> Eliminar
             </button>
           </>
@@ -882,8 +893,27 @@ export function DocumentoListado({
         return createPortal(
           <div
             className="dropdown-menu"
+            role="menu"
+            aria-label="Acciones"
             style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 500, margin: 0 }}
             onClick={e => e.stopPropagation()}
+            onKeyDown={e => {
+              if (e.key === 'Escape') { closeDropdown(); return }
+              const menu = e.currentTarget as HTMLElement
+              const items = Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
+              if (items.length === 0) return
+              const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement)
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0
+                items[next]?.focus()
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                const prev = currentIndex > 0 ? currentIndex - 1 : items.length - 1
+                items[prev]?.focus()
+              }
+            }}
           >
             {menuItems}
           </div>,

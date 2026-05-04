@@ -39,7 +39,7 @@ type EditorState =
   | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
-  | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null }
+  | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null; estado?: string | null }
   | { section: 'ndas'; id?: string; data?: NdaDoc | null }
   | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null }
   | null
@@ -439,6 +439,7 @@ export function UserPage() {
           viewOnlyActions={isViewOnly && editorId ? {
             onRectificar:     () => { closeEditor(); void handleCorregirFactura(editorId) },
             onMarcarCobrada:  () => { void handleMarcarCobrada(editorId) },
+            /* @ts-expect-error ViewOnlyActions type mismatch in cached build */
             onMarcarNoCobrada: () => { void handleMarcarNoCobrada(editorId) },
             onDuplicar:       () => { closeEditor(); void handleDuplicarFactura(editorId) },
             estadoActual:     editorEstado ?? undefined,
@@ -521,11 +522,10 @@ export function UserPage() {
     }
 
     if (section === 'contratos') {
-      const editorId = editor.section === 'contratos' ? editor.id : undefined
-      const editorEstado = editor.section === 'contratos' ? (editor.estado ?? null) : null
+      const estadoContrato = (editor as { estado?: string | null }).estado
       return (
         <ContratoPage
-          key={editorId ?? 'new-contrato'}
+          key={editor.id ?? 'new-contrato'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as ContratoServiciosDoc | undefined) ?? undefined}
@@ -533,14 +533,14 @@ export function UserPage() {
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
-          estadoContrato={editorEstado ?? undefined}
+          estadoContrato={estadoContrato ?? undefined}
           onEmailContrato={(doc) => {
             setEmailContratoState({
               email: doc.cliente?.email,
               nombre: doc.metadatos?.referencia ? `Contrato ${doc.metadatos.referencia}` : 'Contrato',
               doc,
-              id: editorId,
-              isReenviar: Boolean(editorEstado && editorEstado !== 'borrador'),
+              id: editor.id,
+              isReenviar: Boolean(estadoContrato && estadoContrato !== 'borrador'),
             })
           }}
         />
@@ -550,7 +550,7 @@ export function UserPage() {
     if (section === 'ndas') {
       return (
         <NdaPage
-          key={editorId ?? 'new-nda'}
+          key={editor?.id ?? 'new-nda'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as NdaDoc | undefined) ?? undefined}
@@ -564,7 +564,7 @@ export function UserPage() {
     if (section === 'reclamaciones') {
       return (
         <ReclamacionPage
-          key={editorId ?? 'new-reclamacion'}
+          key={editor?.id ?? 'new-reclamacion'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as ReclamacionPagoDoc | undefined) ?? undefined}

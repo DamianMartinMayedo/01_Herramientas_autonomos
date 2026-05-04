@@ -35,6 +35,7 @@ export interface LegalDocEngineProps<T extends LegalDoc> {
 export interface FormHelpers<T extends LegalDoc> {
   register: ReturnType<typeof useForm<T>>['register']
   watch: ReturnType<typeof useForm<T>>['watch']
+  getValues: ReturnType<typeof useForm<T>>['getValues']
   errors: ReturnType<typeof useForm<T>>['formState']['errors']
   setValue: ReturnType<typeof useForm<T>>['setValue']
 }
@@ -104,6 +105,7 @@ export function LegalDocEngine<T extends LegalDoc>({
   const {
     register,
     watch,
+    getValues,
     formState: { errors },
     setValue,
     handleSubmit,
@@ -116,13 +118,6 @@ export function LegalDocEngine<T extends LegalDoc>({
 
   const rawValues = useWatch({ control: form.control }) as T
   const docPreview = buildDoc(rawValues) as T
-
-  const raw = rawValues as Partial<Record<'cliente' | 'parteB' | 'deudor', { email?: string }>>
-  const clienteEmail =
-    raw.cliente?.email ||
-    raw.parteB?.email ||
-    raw.deudor?.email ||
-    undefined
 
   const showFeedback = (message: string) => {
     setFeedbackMessage(message)
@@ -176,6 +171,7 @@ export function LegalDocEngine<T extends LegalDoc>({
   const helpers: FormHelpers<T> = {
     register,
     watch,
+    getValues,
     errors,
     setValue,
   }
@@ -331,12 +327,7 @@ export function LegalDocEngine<T extends LegalDoc>({
       {modalAbierto && (
         <LegalDocModal
           documento={docPreview}
-          clienteEmail={clienteEmail}
           onClose={() => setModalAbierto(false)}
-          onSent={async () => {
-            await onEmail?.(docPreview)
-            setModalAbierto(false)
-          }}
         />
       )}
     </div>

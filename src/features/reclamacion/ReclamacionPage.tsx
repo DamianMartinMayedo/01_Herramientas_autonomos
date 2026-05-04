@@ -2,7 +2,6 @@
  * ReclamacionPage.tsx
  * Generador de carta de reclamación de pago.
  */
-import { useEffect } from 'react'
 import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ReclamacionPagoDoc, ParteLegal } from '../../types/legalDoc.types'
@@ -105,20 +104,15 @@ export function ReclamacionPage({
       saving={saving}
       clientes={clientes}
       clienteField="deudor"
-      renderForm={({ register, watch, errors, setValue }) => {
+      renderForm={({ register, getValues, errors, setValue }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
-        // Doble cast via unknown para evitar el error de solapamiento de tipos
-        const tono = (watch('tono' as never) as unknown) as string
+        const tono = getValues('tono') as string
 
         // Cuando se selecciona «urgente» se activa el checkbox automáticamente;
         // al salir de «urgente» se desactiva para no dejar ruido en otros tonos.
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useEffect(() => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ;(setValue as any)('mencionAccionLegal', tono === 'urgente')
-        }, [tono, setValue])
+        ;(setValue as (field: string, value: unknown) => void)('mencionAccionLegal', tono === 'urgente')
 
         return (
           <>
