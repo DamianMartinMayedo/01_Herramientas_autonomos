@@ -305,7 +305,7 @@ export function HomePage() {
             <h2 className="register-cta-title">Lleva tu gestión al siguiente nivel</h2>
             <p className="register-cta-sub">Regístrate gratis y accede a todas las herramientas: guarda tus documentos, gestiona clientes, lleva tu contabilidad y mucho más.</p>
             <button
-              className="btn btn-white-copper btn-lg"
+              className="btn btn-white-copper"
               onClick={() => window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'register' } }))}
             >
               Crear tu cuenta
