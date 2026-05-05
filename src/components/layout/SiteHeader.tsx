@@ -38,6 +38,9 @@ export function SiteHeader() {
             HerramientasAutonomos
           </Link>
           <nav className="site-nav">
+            <Link to="/" className="site-nav-link">
+              Inicio
+            </Link>
             <Link to="/blog" className="site-nav-link">
               Blog
             </Link>
