@@ -7,6 +7,7 @@ import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ReclamacionPagoDoc, ParteLegal } from '../../types/legalDoc.types'
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
 import type { RegularClient } from '../../types/regularClient.types'
+import { Seo } from '../../components/seo/Seo'
 
 // ─── Valores por defecto ─────────────────────────────────────────────────────
 
@@ -92,18 +93,23 @@ export function ReclamacionPage({
   clientes = [],
 }: ReclamacionPageProps) {
   return (
-    <LegalDocEngine<ReclamacionPagoDoc>
-      tipo="reclamacion"
-      titulo="Reclamación de pago"
-      toolClass="tool-reclamacion"
-      defaultValues={defaultValues}
-      buildDoc={(v) => ({ ...v, tipo: 'reclamacion' as const })}
-      embedded={embedded}
-      onBack={onBack}
-      onSave={onSave}
-      saving={saving}
-      clientes={clientes}
-      clienteField="deudor"
+    <>
+      <Seo
+        title="Carta de reclamación de pago"
+        description="Genera cartas de reclamación de pago profesionales para cobrar facturas vencidas. Válido en España."
+      />
+      <LegalDocEngine<ReclamacionPagoDoc>
+        tipo="reclamacion"
+        titulo="Reclamación de pago"
+        toolClass="tool-reclamacion"
+        defaultValues={defaultValues}
+        buildDoc={(v) => ({ ...v, tipo: 'reclamacion' as const })}
+        embedded={embedded}
+        onBack={onBack}
+        onSave={onSave}
+        saving={saving}
+        clientes={clientes}
+        clienteField="deudor"
       renderForm={({ register, getValues, errors, setValue }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
@@ -235,5 +241,6 @@ export function ReclamacionPage({
         )
       }}
     />
+    </>
   )
 }

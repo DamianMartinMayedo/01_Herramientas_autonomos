@@ -8,11 +8,13 @@ import { useBlogStore, type BlogPost } from '../../store/blogStore'
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
+import { Seo } from '../../components/seo/Seo'
 
 /** Renderizador de Markdown ligero sin dependencia extra */
 function renderMarkdown(md: string): string {
   const html = md
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     .replace(/^#{4}\s(.+)$/gm, '<h4>$1</h4>')
     .replace(/^#{3}\s(.+)$/gm, '<h3>$1</h3>')
     .replace(/^#{2}\s(.+)$/gm, '<h2>$1</h2>')
@@ -69,10 +71,36 @@ export function BlogPostPage() {
 
   const related = getRelated(post.id, posts, post.tags)
 
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.titulo,
+    description: post.extracto,
+    datePublished: post.publishedAt ?? post.createdAt,
+    dateModified: post.updatedAt,
+    author: {
+      '@type': 'Organization',
+      name: 'HerramientasAutonomos.es',
+      url: 'https://herramientasautonomos.es',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'HerramientasAutonomos.es',
+      url: 'https://herramientasautonomos.es',
+    },
+    mainEntityOfPage: `https://herramientasautonomos.es/blog/${post.slug}`,
+  }
+
   return (
     
-    
     <div className="page-root">
+
+      <Seo
+        title={post.titulo}
+        description={post.extracto}
+        ogType="article"
+        jsonLd={articleJsonLd}
+      />
 
       <SiteHeader />
 
@@ -86,14 +114,10 @@ export function BlogPostPage() {
   
   
 
-        {/* Breadcrumb / Volver */}
-        <nav className="post-breadcrumb">
-          <Link to="/" className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <ArrowLeft size={13} /> Inicio
-          </Link>
-          <span className="breadcrumb-sep">/</span>
-          <Link to="/blog" className="back-link">Blog</Link>
-        </nav>
+        {/* Volver */}
+        <button className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: 'var(--space-8)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => navigate(-1)}>
+          <ArrowLeft size={13} /> Volver
+        </button>
 
         {/* Tags */}
         {post.tags.length > 0 && (
@@ -127,13 +151,16 @@ export function BlogPostPage() {
         {/* Contenido Markdown */}
         <div className="blog-content" dangerouslySetInnerHTML={{ __html: html }} />
 
-        {/* CTA herramientas */}
+        {/* CTA registro */}
         <div className="post-cta-box">
-          <p className="post-cta-title">¿Listo para aplicarlo?</p>
-          <p className="post-cta-sub">Prueba nuestras herramientas</p>
-          <Link to="/" className="btn btn-primary btn-sm">
-            Ver todas las herramientas
-          </Link>
+          <p className="post-cta-title">¿Quieres gestionar todo esto desde un solo sitio?</p>
+          <p className="post-cta-sub">Crea tu cuenta <strong>gratis</strong> y accede a facturas, presupuestos, contratos, calculadoras y más.</p>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'register' } }))}
+          >
+            Crear tu cuenta
+          </button>
         </div>
 
         {/* Artículos relacionados */}

@@ -9,6 +9,7 @@ import type { ContratoServiciosDoc, ParteLegal } from '../../types/legalDoc.type
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
 import type { RegularClient } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
+import { Seo } from '../../components/seo/Seo'
 
 interface ContratoPageProps {
   embedded?: boolean
@@ -146,21 +147,26 @@ export function ContratoPage({
   }
 
   return (
-    <LegalDocEngine<ContratoServiciosDoc>
-      tipo="contrato"
-      titulo="Contratos de servicios"
-      toolClass="tool-contrato"
-      defaultValues={resolvedDefaults}
-      buildDoc={(v) => ({ ...v, tipo: 'contrato' as const })}
-      embedded={embedded}
-      onBack={onBack}
-      onSave={onSave}
-      saving={saving}
-      clientes={clientes}
-      clienteField="cliente"
-      onEmail={onEmailContrato}
-      estadoDoc={estadoContrato}
-      autoOpenPreview={autoOpenPreview}
+    <>
+      <Seo
+        title="Generador de contratos para autónomos"
+        description="Crea contratos de prestación de servicios profesionales en minutos. Plantilla adaptada a la legislación española."
+      />
+      <LegalDocEngine<ContratoServiciosDoc>
+        tipo="contrato"
+        titulo="Contratos de servicios"
+        toolClass="tool-contrato"
+        defaultValues={resolvedDefaults}
+        buildDoc={(v) => ({ ...v, tipo: 'contrato' as const })}
+        embedded={embedded}
+        onBack={onBack}
+        onSave={onSave}
+        saving={saving}
+        clientes={clientes}
+        clienteField="cliente"
+        onEmail={onEmailContrato}
+        estadoDoc={estadoContrato}
+        autoOpenPreview={autoOpenPreview}
       renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
@@ -329,5 +335,6 @@ export function ContratoPage({
         )
       }}
     />
+    </>
   )
 }

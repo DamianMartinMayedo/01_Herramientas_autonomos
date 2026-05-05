@@ -4,6 +4,7 @@ import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
+import { Seo } from '../../components/seo/Seo'
 
 export function IvaIrpfCalculator() {
   const [baseImponible, setBaseImponible]   = useState<number | ''>('')
@@ -27,6 +28,10 @@ export function IvaIrpfCalculator() {
 
   return (
     <>
+      <Seo
+        title="Calculadora IVA e IRPF para autónomos"
+        description="Calcula el IVA a repercutir y la retención de IRPF de tus facturas. Herramienta gratuita para autónomos."
+      />
       <div className="tool-page-header">
         <div className="tool-icon-box" style={{ background: 'var(--color-teal-highlight)', color: 'var(--color-teal)' }}>
           <Calculator size={24} />

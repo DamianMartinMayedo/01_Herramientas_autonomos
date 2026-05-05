@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { AuthModal } from '../../features/auth/AuthModal'
@@ -19,6 +19,16 @@ export function SiteHeader() {
     setModalView('register')
     setModalOpen(true)
   }
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { view?: 'login' | 'register' }
+      setModalView(detail?.view ?? 'register')
+      setModalOpen(true)
+    }
+    window.addEventListener('ha:open-auth', handler)
+    return () => window.removeEventListener('ha:open-auth', handler)
+  }, [])
 
   return (
     <>

@@ -2,44 +2,67 @@
  * BlogPage.tsx
  * Listado público de artículos del blog — 2 columnas.
  */
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useBlogStore } from '../../store/blogStore'
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
+import { Seo } from '../../components/seo/Seo'
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(iso))
 }
 
 export function BlogPage() {
+  const navigate = useNavigate()
   const posts = useBlogStore((s) => s.posts).filter((p) => p.status === 'published')
+
+  const jsonLd = posts.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Blog para autónomos',
+    description: 'Guías prácticas sobre fiscalidad, gestión y herramientas para autónomos.',
+    itemListElement: posts.map((post, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': 'Article',
+        url: `https://herramientasautonomos.es/blog/${post.slug}`,
+        name: post.titulo,
+        description: post.extracto,
+        datePublished: post.publishedAt ?? post.createdAt,
+      },
+    })),
+  } : undefined
 
   return (
     <div className="page-root">
+      <Seo
+        title="Blog para autónomos — Guías y consejos"
+        description="Artículos prácticos sobre fiscalidad, gestión y herramientas para que tu actividad como autónomo sea más sencilla."
+        jsonLd={jsonLd}
+      />
 
       <SiteHeader />
 
       <main style={{ maxWidth: 'var(--content-wide)', margin: '0 auto', padding: 'var(--space-12) var(--space-6) var(--space-20)' }}>
 
-        {/* Volver + Hero */}
-        <section style={{ marginBottom: 'var(--space-10)' }}>
-          <Link
-            to="/"
-            className="back-link"
-            style={{ marginBottom: 'var(--space-6)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
-          >
-            <ArrowLeft size={14} /> Volver al inicio
-          </Link>
+        {/* Volver */}
+        <button
+          className="back-link"
+          style={{ marginBottom: 'var(--space-6)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft size={14} /> Volver
+        </button>
 
-          <p className="section-label" style={{ marginBottom: 'var(--space-3)' }}>Blog</p>
-          <h1 className="hero-heading--page" style={{ marginBottom: 'var(--space-4)' }}>
-            Guías y consejos para autónomos
-          </h1>
-          <p className="hero-sub--page">
-            Artículos prácticos sobre fiscalidad, gestión y herramientas para que tu actividad como autónomo sea más sencilla.
-          </p>
-        </section>
+        <p className="section-label" style={{ marginBottom: 'var(--space-3)' }}>Blog</p>
+        <h1 className="hero-heading--page" style={{ marginBottom: 'var(--space-4)' }}>
+          Guías y consejos para autónomos
+        </h1>
+        <p className="hero-sub--page">
+          Artículos prácticos sobre fiscalidad, gestión y herramientas para que tu actividad como autónomo sea más sencilla.
+        </p>
 
         {/* Lista de artículos */}
         {posts.length === 0 ? (

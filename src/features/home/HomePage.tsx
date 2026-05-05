@@ -7,6 +7,7 @@ import type { BlogPost } from '../../store/blogStore'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 import { useAdminStore, type Herramienta } from '../../store/adminStore'
+import { Seo } from '../../components/seo/Seo'
 
 /*
   Paleta de acentos de card — SOLO usar variables que existen en index.css
@@ -241,6 +242,31 @@ export function HomePage() {
 
   return (
     <div className="page-root">
+      <Seo
+        title="Herramientas para autónomos"
+        description="Crea facturas, presupuestos, contratos y calculadoras fiscales online. Sin complicaciones."
+        jsonLd={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'HerramientasAutonomos.es',
+            url: 'https://herramientasautonomos.es/',
+            description: 'Herramientas para autónomos: facturas, presupuestos, contratos, calculadoras fiscales y más.',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: 'https://herramientasautonomos.es/?q={search_term_string}',
+              'query-input': 'required name=search_term_string',
+            },
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'HerramientasAutonomos.es',
+            url: 'https://herramientasautonomos.es/',
+            sameAs: [],
+          },
+        ]}
+      />
       <SiteHeader />
       <main className="page-main">
 
@@ -257,10 +283,10 @@ export function HomePage() {
 
         {/* Grid herramientas por categoría */}
         <section className="section-pb">
-          <p className="section-label">Herramientas disponibles</p>
+          <h2 className="section-label">Herramientas disponibles</h2>
           {categoriasOrdenadas.map(cat => (
             <div key={cat.id} style={{ marginBottom: 'var(--space-10)' }}>
-              <p className="section-block-label">{cat.label}</p>
+              <h2 className="section-block-label">{cat.label}</h2>
               <div className="tools-grid">
                 {cat.items.map(h => <ToolCard key={h.id} h={h} />)}
               </div>

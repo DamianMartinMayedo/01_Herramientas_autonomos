@@ -2,6 +2,7 @@ import { DocumentEngine } from '../../components/document/DocumentEngine'
 import type { DocumentoBase, TotalesDocumento } from '../../types/document.types'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
+import { Seo } from '../../components/seo/Seo'
 
 interface AlbaranPageProps {
   embedded?: boolean
@@ -25,12 +26,18 @@ export function AlbaranPage(props: AlbaranPageProps) {
     : undefined
 
   return (
-    <DocumentEngine
-      tipo="albaran"
-      titulo="Albaranes"
-      toolClass="tool-albaran"
-      {...props}
-      defaultNumero={defaultNumero}
-    />
+    <>
+      <Seo
+        title="Crear albaranes de entrega"
+        description="Genera albaranes de entrega profesionales en PDF. Documenta envíos y recepciones de mercancía fácilmente."
+      />
+      <DocumentEngine
+        tipo="albaran"
+        titulo="Albaranes"
+        toolClass="tool-albaran"
+        {...props}
+        defaultNumero={defaultNumero}
+      />
+    </>
   )
 }

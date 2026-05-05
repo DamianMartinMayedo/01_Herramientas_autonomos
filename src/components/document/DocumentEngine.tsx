@@ -1086,6 +1086,7 @@ export function DocumentEngine({
           documento={documento}
           totales={totales}
           onClose={() => setModalAbierto(false)}
+          isGuest={!onSave && !viewOnlyActions}
         />
       )}
 

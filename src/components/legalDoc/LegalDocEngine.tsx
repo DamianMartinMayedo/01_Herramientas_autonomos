@@ -334,6 +334,7 @@ export function LegalDocEngine<T extends LegalDoc>({
         <LegalDocModal
           documento={docPreview}
           onClose={() => setModalAbierto(false)}
+          isGuest={!onSave}
         />
       )}
     </div>

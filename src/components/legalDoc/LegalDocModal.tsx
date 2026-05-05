@@ -21,9 +21,10 @@ const PREVIEW_ZOOM = 0.78
 interface LegalDocModalProps {
   documento: LegalDoc
   onClose: () => void
+  isGuest?: boolean
 }
 
-export function LegalDocModal({ documento, onClose }: LegalDocModalProps) {
+export function LegalDocModal({ documento, onClose, isGuest = false }: LegalDocModalProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,11 +90,13 @@ export function LegalDocModal({ documento, onClose }: LegalDocModalProps) {
           )}
 
           {/* Acciones */}
-          <div className="modal-footer">
-            <Button variant="secondary" onClick={onClose} disabled={generando}>
-              <Pencil size={16} />
-              Volver a editar
-            </Button>
+          <div className="modal-footer" style={{ justifyContent: 'flex-end' }}>
+            {isGuest && (
+              <Button variant="secondary" onClick={onClose} disabled={generando}>
+                <Pencil size={16} />
+                Volver a editar
+              </Button>
+            )}
             <Button variant="primary" onClick={handleDescargar} disabled={generando}>
               {generando
                 ? <Loader2 size={16} className="spin" />

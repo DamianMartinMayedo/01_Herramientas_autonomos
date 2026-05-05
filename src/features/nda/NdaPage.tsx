@@ -7,6 +7,7 @@ import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { NdaDoc, ParteLegal } from '../../types/legalDoc.types'
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
 import type { RegularClient } from '../../types/regularClient.types'
+import { Seo } from '../../components/seo/Seo'
 
 // ─── Valores por defecto ─────────────────────────────────────────────────────
 
@@ -95,18 +96,23 @@ export function NdaPage({
   clientes = [],
 }: NdaPageProps) {
   return (
-    <LegalDocEngine<NdaDoc>
-      tipo="nda"
-      titulo="Acuerdo de confidencialidad (NDA)"
-      toolClass="tool-nda"
-      defaultValues={defaultValues}
-      buildDoc={(v) => ({ ...v, tipo: 'nda' as const })}
-      embedded={embedded}
-      onBack={onBack}
-      onSave={onSave}
-      saving={saving}
-      clientes={clientes}
-      clienteField="parteB"
+    <>
+      <Seo
+        title="Generador de NDA online"
+        description="Crea acuerdos de confidencialidad (NDA) unilaterales o bilaterales en minutos. Válido en España."
+      />
+      <LegalDocEngine<NdaDoc>
+        tipo="nda"
+        titulo="Acuerdo de confidencialidad (NDA)"
+        toolClass="tool-nda"
+        defaultValues={defaultValues}
+        buildDoc={(v) => ({ ...v, tipo: 'nda' as const })}
+        embedded={embedded}
+        onBack={onBack}
+        onSave={onSave}
+        saving={saving}
+        clientes={clientes}
+        clienteField="parteB"
       renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj
@@ -217,5 +223,6 @@ export function NdaPage({
         )
       }}
     />
+    </>
   )
 }

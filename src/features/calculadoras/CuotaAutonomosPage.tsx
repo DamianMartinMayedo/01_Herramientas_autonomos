@@ -4,6 +4,7 @@ import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
+import { Seo } from '../../components/seo/Seo'
 
 const TRAMOS_2024 = [
   { min: 0,    max: 670,      cuota: 225 },
@@ -43,6 +44,10 @@ export function CuotaCalculator() {
 
   return (
     <>
+      <Seo
+        title="Calculadora cuota autónomos 2026"
+        description="Calcula tu cuota mensual de autónomos según el sistema de tramos por ingresos reales. Actualizado a 2026."
+      />
       <div className="tool-page-header">
         <div className="tool-icon-box" style={{ background: 'var(--color-copper-highlight)', color: 'var(--color-copper)' }}>
           <Calculator size={24} />

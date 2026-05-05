@@ -2,6 +2,7 @@ import { DocumentEngine } from '../../components/document/DocumentEngine'
 import type { DocumentoBase, TotalesDocumento } from '../../types/document.types'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
+import { Seo } from '../../components/seo/Seo'
 
 interface FacturaPageProps {
   embedded?: boolean
@@ -24,12 +25,18 @@ export function FacturaPage(props: FacturaPageProps) {
     : undefined
 
   return (
-    <DocumentEngine
-      tipo="factura"
-      titulo="Facturas"
-      toolClass="tool-factura"
+    <>
+      <Seo
+        title="Crear facturas online"
+        description="Genera facturas profesionales en PDF para tus clientes. Sin complicaciones y con todos los campos obligatorios."
+      />
+      <DocumentEngine
+        tipo="factura"
+        titulo="Facturas"
+        toolClass="tool-factura"
       {...props}
       defaultNumero={defaultNumero}
     />
+    </>
   )
 }

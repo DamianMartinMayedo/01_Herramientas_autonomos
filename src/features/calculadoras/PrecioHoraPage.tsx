@@ -4,6 +4,7 @@ import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 import { Calculator, ArrowLeft } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
+import { Seo } from '../../components/seo/Seo'
 
 export function PrecioHoraCalculator() {
   const [salarioNeto,          setSalarioNeto]          = useState<number | ''>('')
@@ -35,6 +36,10 @@ export function PrecioHoraCalculator() {
 
   return (
     <>
+      <Seo
+        title="Calculadora precio por hora para autónomos"
+        description="Calcula cuánto debes cobrar por hora para cubrir tus gastos y alcanzar tu salario deseado como autónomo."
+      />
       <div className="tool-page-header">
         <div className="tool-icon-box" style={{ background: 'var(--color-purple-highlight)', color: 'var(--color-purple)' }}>
           <Calculator size={24} />

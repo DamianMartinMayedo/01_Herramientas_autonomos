@@ -2,6 +2,7 @@ import { DocumentEngine } from '../../components/document/DocumentEngine'
 import type { DocumentoBase, TotalesDocumento } from '../../types/document.types'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
+import { Seo } from '../../components/seo/Seo'
 
 interface PresupuestoPageProps {
   embedded?: boolean
@@ -27,12 +28,18 @@ export function PresupuestoPage(props: PresupuestoPageProps) {
     : undefined
 
   return (
-    <DocumentEngine
-      tipo="presupuesto"
-      titulo="Presupuestos"
-      toolClass="tool-presupuesto"
-      {...props}
-      defaultNumero={defaultNumero}
-    />
+    <>
+      <Seo
+        title="Crear presupuestos profesionales"
+        description="Elabora presupuestos detallados en PDF para tus clientes. Listo para enviar."
+      />
+      <DocumentEngine
+        tipo="presupuesto"
+        titulo="Presupuestos"
+        toolClass="tool-presupuesto"
+        {...props}
+        defaultNumero={defaultNumero}
+      />
+    </>
   )
 }

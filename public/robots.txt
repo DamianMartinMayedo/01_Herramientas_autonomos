@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /usuario/
+
+Sitemap: https://herramientasautonomos.es/sitemap.xml

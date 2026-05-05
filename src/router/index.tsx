@@ -15,6 +15,9 @@ const CuotaAutonomosPage = lazy(() => import('../features/calculadoras/CuotaAuto
 const PrecioHoraPage     = lazy(() => import('../features/calculadoras/PrecioHoraPage').then(m => ({ default: m.PrecioHoraPage })))
 const IvaIrpfPage        = lazy(() => import('../features/calculadoras/IvaIrpfPage').then(m => ({ default: m.IvaIrpfPage })))
 const UserPage           = lazy(() => import('../features/usuario/UserPage').then(m => ({ default: m.UserPage })))
+const PrivacidadPage     = lazy(() => import('../features/legal/PrivacidadPage').then(m => ({ default: m.PrivacidadPage })))
+const CookiesPage        = lazy(() => import('../features/legal/CookiesPage').then(m => ({ default: m.CookiesPage })))
+const TerminosPage       = lazy(() => import('../features/legal/TerminosPage').then(m => ({ default: m.TerminosPage })))
 
 import { RouteErrorPage }  from '../components/routing/RouteErrorPage'
 import { RouteLoading }    from '../components/routing/RouteLoading'
@@ -41,5 +44,8 @@ export const router = createBrowserRouter([
   { path: '/iva-irpf',          element: withRouteSuspense(<IvaIrpfPage />),         errorElement: <RouteErrorPage /> },
   { path: '/blog',              element: withRouteSuspense(<BlogPage />),            errorElement: <RouteErrorPage /> },
   { path: '/blog/:slug',        element: withRouteSuspense(<BlogPostPage />),        errorElement: <RouteErrorPage /> },
+  { path: '/privacidad',        element: withRouteSuspense(<PrivacidadPage />),      errorElement: <RouteErrorPage /> },
+  { path: '/cookies',           element: withRouteSuspense(<CookiesPage />),         errorElement: <RouteErrorPage /> },
+  { path: '/terminos',          element: withRouteSuspense(<TerminosPage />),        errorElement: <RouteErrorPage /> },
   { path: '*',                  element: <NotFoundPage /> },
 ])
