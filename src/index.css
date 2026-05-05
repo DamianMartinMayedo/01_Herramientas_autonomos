@@ -876,11 +876,10 @@ body {
 /* ── Cómo funciona (versión simple, post-hero) ── */
 .how-it-works-section {
   padding: var(--space-8) 0;
-  background: var(--color-surface);
 }
 .how-it-works-step--simple {
-  background: var(--color-primary-subtle);
-  border: none;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
   padding: var(--space-5) var(--space-4);
 }
 .how-it-works-icon--simple {
