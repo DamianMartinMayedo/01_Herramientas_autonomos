@@ -270,20 +270,25 @@ export function HomePage() {
       <SiteHeader />
       <main className="page-main">
 
-        {/* Hero */}
-        <section className="section-hero">
+        {/* Hero compacto */}
+        <section className="section-hero section-hero--compact">
           <div className="manifesto-item featured">
-            <h1 className="hero-heading">
-              Todo lo que necesitas<br />como autónomo,<br />
+            <h1 className="hero-heading hero-heading--compact">
+              Herramientas para autónomos,<br />
               <span className="hero-heading-accent">sin complicaciones.</span>
             </h1>
-            <p className="hero-sub">Facturas, presupuestos, contratos, calculadoras y más.</p>
+            <p className="hero-sub" style={{ marginBottom: 'var(--space-6)' }}>Facturas, presupuestos, contratos, calculadoras y más.</p>
+            <button
+              className="btn btn-white"
+              onClick={() => window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'register' } }))}
+            >
+              Crear cuenta gratis
+            </button>
           </div>
         </section>
 
         {/* Grid herramientas por categoría */}
         <section className="section-pb">
-          <h2 className="section-label">Herramientas disponibles</h2>
           {categoriasOrdenadas.map(cat => (
             <div key={cat.id} style={{ marginBottom: 'var(--space-10)' }}>
               <h2 className="section-block-label">{cat.label}</h2>
@@ -292,6 +297,20 @@ export function HomePage() {
               </div>
             </div>
           ))}
+        </section>
+
+        {/* CTA registro */}
+        <section className="section-pb">
+          <div className="register-cta-box">
+            <h2 className="register-cta-title">Lleva tu gestión al siguiente nivel</h2>
+            <p className="register-cta-sub">Regístrate gratis y accede a todas las herramientas: guarda tus documentos, gestiona clientes, lleva tu contabilidad y mucho más.</p>
+            <button
+              className="btn btn-white-copper btn-lg"
+              onClick={() => window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'register' } }))}
+            >
+              Crear tu cuenta
+            </button>
+          </div>
         </section>
 
         {/* Blog */}
