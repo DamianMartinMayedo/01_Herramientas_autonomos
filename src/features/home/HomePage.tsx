@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { RouteLoading } from '../../components/routing/RouteLoading'
-import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock, Scroll, ShieldCheck, BadgeAlert, Truck } from 'lucide-react'
+import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock, Scroll, ShieldCheck, BadgeAlert, Truck, FileCheck, Download, UserPlus } from 'lucide-react'
 import type { BlogPost } from '../../store/blogStore'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
@@ -290,13 +290,41 @@ export function HomePage() {
         {/* Grid herramientas por categoría */}
         <section className="section-pb">
           {categoriasOrdenadas.map(cat => (
-            <div key={cat.id} style={{ marginBottom: 'var(--space-10)' }}>
+            <div key={cat.id} style={{ marginTop: 'var(--space-10)' }}>
               <h2 className="section-block-label">{cat.label}</h2>
               <div className="tools-grid">
                 {cat.items.map(h => <ToolCard key={h.id} h={h} />)}
               </div>
             </div>
           ))}
+        </section>
+
+        {/* Cómo funciona */}
+        <section className="section-pb">
+          <h2 className="section-label">Cómo funciona</h2>
+          <div className="how-it-works-grid">
+            <div className="how-it-works-step">
+              <div className="how-it-works-icon">
+                <FileCheck size={20} />
+              </div>
+              <h3 className="how-it-works-title">Elige tu herramienta</h3>
+              <p className="how-it-works-desc">Selecciona entre facturas, presupuestos, contratos, calculadoras y más.</p>
+            </div>
+            <div className="how-it-works-step">
+              <div className="how-it-works-icon">
+                <Download size={20} />
+              </div>
+              <h3 className="how-it-works-title">Rellena los datos</h3>
+              <p className="how-it-works-desc">Completa la información de tu documento o introduce los valores en la calculadora.</p>
+            </div>
+            <div className="how-it-works-step">
+              <div className="how-it-works-icon">
+                <UserPlus size={20} />
+              </div>
+              <h3 className="how-it-works-title">Descarga o guarda</h3>
+              <p className="how-it-works-desc">Descarga tu documento en PDF o regístrate para guardarlo y gestionarlo después.</p>
+            </div>
+          </div>
         </section>
 
         {/* CTA registro */}
@@ -308,7 +336,7 @@ export function HomePage() {
               className="btn btn-white-copper"
               onClick={() => window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'register' } }))}
             >
-              Crear tu cuenta
+              Guardar mis documentos
             </button>
           </div>
         </section>

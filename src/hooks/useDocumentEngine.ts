@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { nanoid } from 'nanoid'
 import type { DocumentoBase, LineaDocumento, MetodoPago } from '../types/document.types'
@@ -152,6 +152,18 @@ export function useDocumentEngine(
     const emisor = form.getValues('emisor')
     setEmisorGuardado(emisor)
   }, [form, setEmisorGuardado])
+
+  const emisorValues = useWatch({ control: form.control, name: 'emisor' })
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!emisorValues) return
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      setEmisorGuardado(emisorValues as DocumentoBase['emisor'])
+    }, 1000)
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
+  }, [emisorValues, setEmisorGuardado])
 
   return {
     form,

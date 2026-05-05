@@ -47,10 +47,10 @@ export function SiteHeader() {
                 <UserMenu user={user} plan={plan} />
               ) : (
                 <div className="auth-buttons">
-                  <button className="auth-btn auth-btn--ghost" onClick={openLogin}>
+                  <button className="btn btn-sm btn-copper" onClick={openLogin}>
                     Entrar
                   </button>
-                  <button className="auth-btn auth-btn--primary" onClick={openRegister}>
+                  <button className="btn btn-sm btn-primary" onClick={openRegister}>
                     Registrarse
                   </button>
                 </div>

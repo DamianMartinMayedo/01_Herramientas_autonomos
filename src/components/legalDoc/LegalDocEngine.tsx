@@ -4,7 +4,7 @@
  * Paralelo a DocumentEngine, pero orientado a cláusulas, firmantes y texto libre.
  * Lo usarán: ContratoPage, NdaPage, ReclamacionPage
  */
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch, type DefaultValues } from 'react-hook-form'
 import { ChevronLeft, Save, CheckCircle2, Mail } from 'lucide-react'
@@ -12,6 +12,7 @@ import type { LegalDoc, ParteLegal, TipoLegalDoc } from '../../types/legalDoc.ty
 import { LegalDocModal } from './LegalDocModal'
 import { LegalDocPreview } from './LegalDocPreview'
 import { Button } from '../ui/Button'
+import { AuthModal } from '../../features/auth/AuthModal'
 import type { RegularClient } from '../../types/regularClient.types'
 import { regularClientToParteLegal } from '../../types/regularClient.types'
 
@@ -87,6 +88,7 @@ export function LegalDocEngine<T extends LegalDoc>({
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState('')
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
@@ -137,22 +139,29 @@ export function LegalDocEngine<T extends LegalDoc>({
     onEmail(values as T)
   })
 
-  const handleGuardarDatos = useCallback(() => {
-    try {
-      const values = form.getValues()
-      const source =
-        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).prestador ??
-        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).parteA ??
-        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).acreedor
+  const allFormValues = useWatch({ control: form.control })
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-      if (source) {
-        localStorage.setItem(`ha-legal-emisor-${tipo}`, JSON.stringify(source))
+  useEffect(() => {
+    if (!allFormValues) return
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      try {
+        const values = form.getValues()
+        const source =
+          (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).prestador ??
+          (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).parteA ??
+          (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).acreedor
+
+        if (source) {
+          localStorage.setItem(`ha-legal-emisor-${tipo}`, JSON.stringify(source))
+        }
+      } catch {
+        // localStorage puede estar bloqueado
       }
-    } catch {
-      // localStorage puede estar bloqueado
-    }
-    showFeedback('Datos guardados')
-  }, [form, tipo])
+    }, 1000)
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
+  }, [allFormValues, form, tipo])
 
   const handleGuardarDocumento = handleSubmit(async (values) => {
     if (!onSave) return
@@ -250,10 +259,13 @@ export function LegalDocEngine<T extends LegalDoc>({
             </span>
           )}
           {!embedded && (
-            <Button variant="secondary" size="sm" type="button" onClick={handleGuardarDatos}>
-              <Save size={14} />
-              Guardar mis datos
-            </Button>
+            <button
+              type="button"
+              className="btn btn-sm btn-copper"
+              onClick={() => setAuthModalOpen(true)}
+            >
+              Regístrate gratis
+            </button>
           )}
           {onSave && (
             <Button variant="secondary" size="sm" type="button" onClick={handleGuardarDocumento} disabled={saving}>
@@ -335,6 +347,14 @@ export function LegalDocEngine<T extends LegalDoc>({
           documento={docPreview}
           onClose={() => setModalAbierto(false)}
           isGuest={!onSave}
+        />
+      )}
+
+      {authModalOpen && (
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialView="register"
         />
       )}
     </div>

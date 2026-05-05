@@ -321,6 +321,23 @@ body {
 .btn-warning:hover  { background: var(--color-gold-hover); box-shadow: 5px 5px 0px 0px var(--color-gold-active) !important; }
 .btn-warning:active { box-shadow: 1px 1px 0px 0px var(--color-gold-active) !important; }
 
+.btn-copper-hover  { background: var(--color-copper-hover); box-shadow: 5px 5px 0px 0px var(--color-copper-active) !important; }
+.btn-copper-active { box-shadow: 1px 1px 0px 0px var(--color-copper-active) !important; }
+
+.btn-copper {
+  background: var(--color-copper);
+  color: white;
+  border-color: var(--color-copper-active);
+  box-shadow: 3px 3px 0px 0px var(--color-copper-active);
+}
+.btn-copper:hover {
+  background: var(--color-copper-hover);
+  box-shadow: 5px 5px 0px 0px var(--color-copper-active) !important;
+}
+.btn-copper:active {
+  box-shadow: 1px 1px 0px 0px var(--color-copper-active) !important;
+}
+
 .btn-sm { padding: var(--space-2) var(--space-4); font-size: var(--text-xs); }
 .btn-lg { padding: var(--space-4) var(--space-8); font-size: var(--text-base); border-radius: var(--radius-lg); }
 
@@ -806,6 +823,54 @@ body {
   margin-left: auto;
   margin-right: auto;
   line-height: 1.6;
+}
+
+/* ── Cómo funciona ── */
+.how-it-works-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+.how-it-works-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+}
+.how-it-works-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-highlight);
+  color: var(--color-primary);
+  margin-bottom: var(--space-4);
+}
+.how-it-works-title {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+.how-it-works-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  max-width: 260px;
+}
+@media (max-width: 640px) {
+  .how-it-works-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
 }
 
 /* ── Sección blog header ── */

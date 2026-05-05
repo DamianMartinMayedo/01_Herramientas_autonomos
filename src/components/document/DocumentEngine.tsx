@@ -15,6 +15,7 @@ import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
 import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send, Undo2, Info } from 'lucide-react'
 import { EmailModal } from '../shared/EmailModal'
+import { AuthModal } from '../../features/auth/AuthModal'
 import { formatFecha } from '../../utils/formatters'
 import type { RegularClient, RegularClientInput } from '../../types/regularClient.types'
 import { regularClientToClienteInfo } from '../../types/regularClient.types'
@@ -87,6 +88,7 @@ export function DocumentEngine({
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
   }, [autoOpenPreview])
@@ -111,7 +113,6 @@ export function DocumentEngine({
     mostrarIrpf,
     agregarLinea,
     eliminarLinea,
-    guardarEmisor,
   } = useDocumentEngine(tipo, initialData, empresa, defaultNumero, numero)
 
   const {
@@ -132,11 +133,6 @@ export function DocumentEngine({
   const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
     setFeedbackMessage({ text: message, type })
     setTimeout(() => setFeedbackMessage(null), 2500)
-  }
-
-  const handleGuardarEmisor = () => {
-    guardarEmisor()
-    showFeedback('Datos guardados')
   }
 
   const handleGuardarBorrador = form.handleSubmit(async (values) => {
@@ -323,10 +319,13 @@ export function DocumentEngine({
             </span>
           )}
           {!embedded && !viewOnlyActions && (
-            <Button variant="secondary" size="sm" onClick={handleGuardarEmisor} type="button">
-              <Save size={14} />
-              Guardar mis datos
-            </Button>
+            <button
+              type="button"
+              className="btn btn-sm btn-copper"
+              onClick={() => setAuthModalOpen(true)}
+            >
+              Regístrate gratis
+            </button>
           )}
           {viewOnlyActions && tipo === 'factura' && (
             <>
@@ -1134,6 +1133,14 @@ export function DocumentEngine({
             </div>
           </div>
         </div>
+      )}
+
+      {authModalOpen && (
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialView="register"
+        />
       )}
     </div>
   )
