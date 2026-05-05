@@ -1584,9 +1584,16 @@ body {
   pointer-events: none;
   transition: opacity 150ms ease;
 }
+.tooltip-wrap:hover {
+  z-index: 200;
+}
 .tooltip-wrap:hover .tooltip-content {
   opacity: 1;
   pointer-events: auto;
+}
+.tools-grid > :has(.tooltip-wrap:hover) {
+  position: relative;
+  z-index: 200;
 }
 .tooltip-arrow {
   position: absolute;
