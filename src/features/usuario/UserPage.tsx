@@ -36,11 +36,11 @@ const DOCUMENT_SECTIONS: UserSection[] = [
 ]
 
 type EditorState =
-  | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
+  | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean; numero?: string | null }
   | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
-  | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null; estado?: string | null }
-  | { section: 'ndas'; id?: string; data?: NdaDoc | null }
+  | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null; estado?: string | null; autoDownload?: boolean }
+  | { section: 'ndas'; id?: string; data?: NdaDoc | null; autoDownload?: boolean }
   | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null }
   | null
 
@@ -138,10 +138,14 @@ export function UserPage() {
     }
 
     setSearchParams({ s: targetSection })
+    const datosJson: DocumentoBase = { ...(result.data.datos_json as DocumentoBase) }
+    if (result.data.numero) {
+      datosJson.numero = result.data.numero
+    }
     setEditor({
       section: targetSection,
       id,
-      data: result.data.datos_json as EditorState extends { data: infer T } ? T : never,
+      data: datosJson,
       estado: result.data.estado,
     } as EditorState)
   }
@@ -201,6 +205,7 @@ export function UserPage() {
       viewOnly: true,
       estado: result.data.estado,
       autoDownload: true,
+      numero: result.data.numero ?? undefined,
     })
   }
 
@@ -227,6 +232,19 @@ export function UserPage() {
       section: 'albaranes',
       id,
       data: result.data.datos_json as DocumentoBase,
+      estado: result.data.estado,
+      autoDownload: true,
+    })
+  }
+
+  const handleDescargarContrato = async (id: string) => {
+    const result = await getStoredUserDocument('contratos', id)
+    if (result.error || !result.data?.datos_json) return
+    setSearchParams({ s: 'contratos' })
+    setEditor({
+      section: 'contratos',
+      id,
+      data: result.data.datos_json as ContratoServiciosDoc,
       estado: result.data.estado,
       autoDownload: true,
     })
@@ -402,6 +420,7 @@ export function UserPage() {
             if (section === 'facturas') void handleDescargarFactura(id)
             else if (section === 'presupuestos') void handleDescargarPresupuesto(id)
             else if (section === 'albaranes') void handleDescargarAlbaran(id)
+            else if (section === 'contratos') void handleDescargarContrato(id)
           }}
           onEmitir={(id) => { void handleEmitirFactura(id) }}
           onDuplicar={(id) => { void handleDuplicarFactura(id) }}
@@ -444,6 +463,7 @@ export function UserPage() {
             onDuplicar:       () => { closeEditor(); void handleDuplicarFactura(editorId) },
             estadoActual:     editorEstado ?? undefined,
           } : undefined}
+          numero={'numero' in editor ? editor.numero : undefined}
         />
       )
     }
@@ -534,6 +554,7 @@ export function UserPage() {
           clientes={clientesDisponibles}
           empresa={empresa}
           estadoContrato={estadoContrato ?? undefined}
+          autoOpenPreview={'autoDownload' in editor ? editor.autoDownload : undefined}
           onEmailContrato={(doc) => {
             setEmailContratoState({
               email: doc.cliente?.email,

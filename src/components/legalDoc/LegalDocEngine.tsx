@@ -30,6 +30,7 @@ export interface LegalDocEngineProps<T extends LegalDoc> {
   clienteField?: 'cliente' | 'parteB' | 'deudor'
   onEmail?: (documento: T) => void
   estadoDoc?: string
+  autoOpenPreview?: boolean
 }
 
 export interface FormHelpers<T extends LegalDoc> {
@@ -79,12 +80,17 @@ export function LegalDocEngine<T extends LegalDoc>({
   clienteField,
   onEmail,
   estadoDoc,
+  autoOpenPreview = false,
 }: LegalDocEngineProps<T>) {
   const navigate = useNavigate()
   const [modalAbierto, setModalAbierto] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState('')
+
+  useEffect(() => {
+    if (autoOpenPreview) setModalAbierto(true)
+  }, [autoOpenPreview])
 
   useEffect(() => {
     const raw = defaultValues as Partial<Record<'cliente' | 'parteB' | 'deudor', { nombre?: string; nif?: string }>>

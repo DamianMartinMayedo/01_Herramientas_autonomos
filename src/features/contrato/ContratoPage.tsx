@@ -20,6 +20,7 @@ interface ContratoPageProps {
   empresa?: Empresa | null
   onEmailContrato?: (documento: ContratoServiciosDoc) => void
   estadoContrato?: string
+  autoOpenPreview?: boolean
 }
 
 const DEFAULT_CONTRATO: ContratoServiciosDoc = {
@@ -135,6 +136,7 @@ export function ContratoPage({
   empresa,
   onEmailContrato,
   estadoContrato,
+  autoOpenPreview,
 }: ContratoPageProps) {
   const resolvedDefaults = buildDefaultValues(empresa, defaultValues)
 
@@ -158,6 +160,7 @@ export function ContratoPage({
       clienteField="cliente"
       onEmail={onEmailContrato}
       estadoDoc={estadoContrato}
+      autoOpenPreview={autoOpenPreview}
       renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
         const err = errors as ErrorsObj

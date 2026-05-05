@@ -56,6 +56,7 @@ interface DocumentEngineProps {
   onEmailAlbaran?: (doc: DocumentoBase, totales: TotalesDocumento) => void
   estadoAlbaran?: string
   defaultNumero?: string
+  numero?: string | null
 }
 
 export function DocumentEngine({
@@ -80,6 +81,7 @@ export function DocumentEngine({
   onEmailAlbaran,
   estadoAlbaran,
   defaultNumero,
+  numero,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
@@ -110,7 +112,7 @@ export function DocumentEngine({
     agregarLinea,
     eliminarLinea,
     guardarEmisor,
-  } = useDocumentEngine(tipo, initialData, empresa, defaultNumero)
+  } = useDocumentEngine(tipo, initialData, empresa, defaultNumero, numero)
 
   const {
     register,
@@ -285,13 +287,11 @@ export function DocumentEngine({
                 fontWeight: 700,
                 color: 'var(--color-text)',
               }}>
-                {!onSave
-                  ? (tipo === 'factura' ? 'Nueva factura' : tipo === 'presupuesto' ? 'Nuevo presupuesto' : 'Nuevo albarán')
-                  : ((initialData?.numero || documento.numero)
-                    ? (initialData?.numero || documento.numero)
-                    : (tipo === 'factura'
-                      ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
-                      : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX'))}
+                {(initialData?.numero || documento.numero)
+                  ? (initialData?.numero || documento.numero)
+                  : (tipo === 'factura'
+                    ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
+                    : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX')}
               </h1>
               {onSave && !documento.numero && (
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)' }}>
@@ -543,7 +543,7 @@ export function DocumentEngine({
               {TITULO_ENCABEZADO[tipo]}
             </legend>
             <div className="fieldset-v3-body">
-              {!onSave ? (
+              {!onSave && !initialData?.numero ? (
                 <>
                   <div className="form-row">
                     <FormField
@@ -607,31 +607,13 @@ export function DocumentEngine({
                       error={errors.fecha}
                     />
                   ) : (
-                    <>
-                      <div className="form-row">
-                        <FormField
-                          label="Número *"
-                          {...register('numero', tipo === 'factura' ? {} : { required: 'El número es obligatorio' })}
-                          error={errors.numero}
-                          readOnly={tipo === 'factura'}
-                          disabled={tipo === 'factura'}
-                          placeholder={tipo === 'factura' ? 'Se asignará al finalizar' : undefined}
-                          style={tipo === 'factura'
-                            ? {
-                                background: 'var(--color-surface-offset)',
-                                color: 'var(--color-text-faint)',
-                                cursor: 'not-allowed',
-                                opacity: 0.9,
-                              }
-                            : undefined}
-                        />
-                        <FormField
-                          label="Fecha *"
-                          type="date"
-                          {...register('fecha', { required: 'La fecha es obligatoria' })}
-                          error={errors.fecha}
-                        />
-                      </div>
+                    <div className="form-row">
+                      <FormField
+                        label="Fecha *"
+                        type="date"
+                        {...register('fecha', { required: 'La fecha es obligatoria' })}
+                        error={errors.fecha}
+                      />
                       {esFinanciero && (
                         <FormField
                           label="Vencimiento"
@@ -647,7 +629,7 @@ export function DocumentEngine({
                           error={errors.fechaVencimiento}
                         />
                       )}
-                    </>
+                    </div>
                   )}
                 </>
               )}

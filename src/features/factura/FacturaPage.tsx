@@ -15,6 +15,7 @@ interface FacturaPageProps {
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
   viewOnlyActions?: { onRectificar: () => void; onMarcarCobrada: () => void; onDuplicar: () => void; estadoActual?: string }
   autoOpenPreview?: boolean
+  numero?: string | null
 }
 
 export function FacturaPage(props: FacturaPageProps) {

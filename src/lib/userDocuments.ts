@@ -20,6 +20,7 @@ export interface UserDocumentRow {
   id: string
   datos_json?: UserDocumentDraft | null
   estado?: string | null
+  numero?: string | null
 }
 
 function resumenConcepto(lineas: DocumentoBase['lineas']) {
@@ -553,7 +554,7 @@ export async function convertirPresupuestoAFactura(userId: string, id: string) {
 export async function getStoredUserDocument(table: UserDocumentTable, id: string) {
   const { data, error } = await supabase
     .from(table)
-    .select('id, datos_json, estado')
+    .select('id, datos_json, estado, numero')
     .eq('id', id)
     .single()
 

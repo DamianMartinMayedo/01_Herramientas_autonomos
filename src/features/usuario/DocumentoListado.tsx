@@ -874,6 +874,7 @@ export function DocumentoListado({
           <>
             <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
             <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onOpen?.(row.id) }}><Pencil size={13} /> Editar</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
             {row.estado === 'borrador' && (
               <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onEnviarContrato?.(row.id) }}>
                 <CheckCircle2 size={13} /> Marcar como enviado

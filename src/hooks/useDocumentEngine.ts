@@ -29,6 +29,7 @@ export function useDocumentEngine(
   initialData?: DocumentoBase | null,
   empresa?: Empresa | null,
   defaultNumero?: string,
+  numero?: string | null,
 ) {
   const {
     emisorGuardado,
@@ -38,49 +39,51 @@ export function useDocumentEngine(
   } = useDocumentStore()
   const clientePendiente = presupuestoPendiente?.cliente
 
-  const createDefaultDocument = (): DocumentoBase => initialData
-    ? ensureDocumentDefaults(tipo, initialData)
-    : ({
-    tipo,
-    // El número se asigna automáticamente al guardar en BD para usuarios registrados.
-    // Para guests, usa el formato sugerido (editable).
-    numero: defaultNumero ?? '',
-    fecha: fechaHoy(),
-    emisor: empresa
-      ? {
-          nombre:    empresa.nombre,
-          nif:       empresa.nif,
-          email:     empresa.email,
-          direccion: empresa.direccion,
-          cp:        empresa.cp,
-          ciudad:    empresa.ciudad,
-          provincia: empresa.provincia,
-          telefono:  empresa.telefono ?? '',
-        }
-      : (emisorGuardado ?? {
-          nombre: '', nif: '', direccion: '',
-          ciudad: '', cp: '', provincia: '', email: '', telefono: '',
-        }),
-    cliente: {
-      nombre: clientePendiente?.nombre ?? '',
-      nif: clientePendiente?.nif ?? '',
-      direccion: clientePendiente?.direccion ?? '',
-      ciudad: clientePendiente?.ciudad ?? '',
-      cp: clientePendiente?.cp ?? '',
-      provincia: clientePendiente?.provincia ?? '',
-      email: clientePendiente?.email ?? '',
-    },
-    lineas: presupuestoPendiente?.lineas ?? [{ id: nanoid(), ...DEFAULT_LINEA }],
-    notas: presupuestoPendiente?.notas ?? '',
-    mostrarIrpf: presupuestoPendiente?.mostrarIrpf ?? true,
-    formaPago: {
-      metodo: 'transferencia' as MetodoPago,
-      cuenta: '',
-      telefono: '',
-      email: '',
-      detalle: '',
-    },
-  })
+  const createDefaultDocument = (): DocumentoBase => {
+    const numeroFinal = numero ?? (initialData ? (initialData.numero ?? (defaultNumero ?? '')) : (defaultNumero ?? ''))
+    if (initialData) {
+      return { ...ensureDocumentDefaults(tipo, initialData), numero: numeroFinal }
+    }
+    return ({
+      tipo,
+      numero: numeroFinal || (defaultNumero ?? ''),
+      fecha: fechaHoy(),
+      emisor: empresa
+        ? {
+            nombre:    empresa.nombre,
+            nif:       empresa.nif,
+            email:     empresa.email,
+            direccion: empresa.direccion,
+            cp:        empresa.cp,
+            ciudad:    empresa.ciudad,
+            provincia: empresa.provincia,
+            telefono:  empresa.telefono ?? '',
+          }
+        : (emisorGuardado ?? {
+            nombre: '', nif: '', direccion: '',
+            ciudad: '', cp: '', provincia: '', email: '', telefono: '',
+          }),
+      cliente: {
+        nombre: clientePendiente?.nombre ?? '',
+        nif: clientePendiente?.nif ?? '',
+        direccion: clientePendiente?.direccion ?? '',
+        ciudad: clientePendiente?.ciudad ?? '',
+        cp: clientePendiente?.cp ?? '',
+        provincia: clientePendiente?.provincia ?? '',
+        email: clientePendiente?.email ?? '',
+      },
+      lineas: presupuestoPendiente?.lineas ?? [{ id: nanoid(), ...DEFAULT_LINEA }],
+      notas: presupuestoPendiente?.notas ?? '',
+      mostrarIrpf: presupuestoPendiente?.mostrarIrpf ?? true,
+      formaPago: {
+        metodo: 'transferencia' as MetodoPago,
+        cuenta: '',
+        telefono: '',
+        email: '',
+        detalle: '',
+      },
+    })
+  }
 
   const form = useForm<DocumentoBase>({
     mode: 'onBlur',
