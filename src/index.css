@@ -17,6 +17,7 @@
   --color-surface-dynamic:  #DAD7D0;
   --color-divider:          #D2CFC8;
   --color-border:           #C8C5BC;
+  --color-white:            #FFFFFF;
 
   /* ── Textos ── */
   --color-text:         #1E1C1A;
@@ -132,6 +133,7 @@
   --color-surface-dynamic:  #2D2B2A;
   --color-divider:          #282624;
   --color-border:           #3A3836;
+  --color-white:            #FFFFFF;
   --color-text:             #D4D0CB;
   --color-text-muted:       #8E8A87;
   --color-text-faint:       #4E4C4A;
@@ -875,10 +877,10 @@ body {
 
 /* ── Cómo funciona (versión simple, post-hero) ── */
 .how-it-works-section {
-  padding: var(--space-8) 0;
+  padding: var(--space-12) 0;
 }
 .how-it-works-step--simple {
-  background: #FFFFFF;
+  background: var(--color-white);
   border: 1px solid var(--color-border);
   padding: var(--space-5) var(--space-4);
 }
