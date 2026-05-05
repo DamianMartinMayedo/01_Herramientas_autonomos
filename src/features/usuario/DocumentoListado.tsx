@@ -152,24 +152,28 @@ export function DocumentoListado({
 
   const closeDropdown = () => { setDropdownOpenId(null); setDropdownPos(null) }
 
+  const openDropdownAtElement = (el: Element, id: string) => {
+    if (dropdownOpenId === id) { closeDropdown(); return }
+    const rect = el.getBoundingClientRect()
+    setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    setDropdownOpenId(id)
+  }
+
   const handleDropdownKeyDown = (e: React.KeyboardEvent, id: string) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      openDropdown(e as unknown as React.MouseEvent, id)
+      openDropdownAtElement(e.currentTarget, id)
     }
     if (e.key === 'Escape') closeDropdown()
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      openDropdown(e as unknown as React.MouseEvent, id)
+      openDropdownAtElement(e.currentTarget, id)
     }
   }
 
   const openDropdown = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
-    if (dropdownOpenId === id) { closeDropdown(); return }
-    const rect = e.currentTarget.getBoundingClientRect()
-    setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-    setDropdownOpenId(id)
+    openDropdownAtElement(e.currentTarget, id)
   }
 
   const handleDeleteRequest = (id: string) => {

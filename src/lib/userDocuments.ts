@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import type { PostgrestError } from '@supabase/supabase-js'
 import type { DocumentoBase, TotalesDocumento } from '../types/document.types'
 import type { ContratoServiciosDoc, LegalDoc, NdaDoc, ReclamacionPagoDoc } from '../types/legalDoc.types'
 
@@ -44,7 +45,7 @@ async function writeRowWithRetry(params: {
   table: string
   id?: string
   payload: Record<string, unknown>
-}) {
+}): Promise<{ data: { id: string } | null; error: PostgrestError | Error | null }> {
   const { table, id } = params
   const payload = { ...params.payload }
 
@@ -64,7 +65,7 @@ async function writeRowWithRetry(params: {
     delete payload[missing]
   }
 
-  return { data: null, error: new Error('No se pudo guardar: demasiados reintentos por columnas inexistentes.') as unknown as { message: string } }
+  return { data: null, error: new Error('No se pudo guardar: demasiados reintentos por columnas inexistentes.') }
 }
 
 async function getNextNumero(
