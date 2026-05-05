@@ -26,10 +26,7 @@ import {
   PRESUPUESTO_STATUS_LABELS,
   isPresupuestoStatus,
 } from '../../types/presupuestoStatus'
-import { getClienteEmail } from '../../types/docRow.types'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DocRow = Record<string, any>
+import { getClienteEmail, type DocRow } from '../../types/docRow.types'
 
 export type TipoDocumento =
   | 'facturas' | 'presupuestos' | 'albaranes'

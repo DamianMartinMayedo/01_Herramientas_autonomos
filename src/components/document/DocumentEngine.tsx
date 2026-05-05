@@ -141,7 +141,7 @@ export function DocumentEngine({
       await onSave(values as DocumentoBase, totales, false)
       showFeedback('Borrador guardado')
     } catch {
-      showFeedback('No se pudo guardar. Inténtalo de nuevo.')
+      showFeedback('No se pudo guardar. Inténtalo de nuevo.', 'error')
     }
   }, () => showFeedback('Revisa los campos obligatorios antes de guardar.', 'error'))
 
@@ -155,7 +155,7 @@ export function DocumentEngine({
       await onSave(form.getValues() as DocumentoBase, totales, true)
       setFinalizarModalAbierto(false)
     } catch {
-      showFeedback('No se pudo finalizar. Inténtalo de nuevo.')
+      showFeedback('No se pudo finalizar. Inténtalo de nuevo.', 'error')
       setFinalizarModalAbierto(false)
     }
   }

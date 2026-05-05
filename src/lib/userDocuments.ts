@@ -67,10 +67,14 @@ async function writeRowWithRetry(params: {
   return { data: null, error: new Error('No se pudo guardar: demasiados reintentos por columnas inexistentes.') as unknown as { message: string } }
 }
 
-async function getNextPresupuestoNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
+async function getNextNumero(
+  userId: string,
+  tipo: string,
+  prefijo: string,
+): Promise<{ numero: string | null; error: unknown }> {
   const { data: nextData, error } = await supabase.rpc('next_document_number', {
-    p_tipo: 'presupuesto',
-    p_prefijo: 'PRE',
+    p_tipo: tipo,
+    p_prefijo: prefijo,
     p_user_id: userId,
   })
   if (error) return { numero: null, error }
@@ -78,49 +82,11 @@ async function getNextPresupuestoNumero(userId: string): Promise<{ numero: strin
   return { numero: (row?.numero as string | undefined) ?? '', error: null }
 }
 
-async function getNextFacturaNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
-  const { data: nextData, error } = await supabase.rpc('next_document_number', {
-    p_tipo: 'factura',
-    p_prefijo: 'FAC',
-    p_user_id: userId,
-  })
-  if (error) return { numero: null, error }
-  const row = Array.isArray(nextData) ? nextData[0] : null
-  return { numero: (row?.numero as string | undefined) ?? '', error: null }
-}
-
-async function getNextAlbaranNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
-  const { data: nextData, error } = await supabase.rpc('next_document_number', {
-    p_tipo: 'albaran',
-    p_prefijo: 'ALB',
-    p_user_id: userId,
-  })
-  if (error) return { numero: null, error }
-  const row = Array.isArray(nextData) ? nextData[0] : null
-  return { numero: (row?.numero as string | undefined) ?? '', error: null }
-}
-
-async function getNextRectificativaNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
-  const { data: nextData, error } = await supabase.rpc('next_document_number', {
-    p_tipo: 'rectificativa',
-    p_prefijo: 'R',
-    p_user_id: userId,
-  })
-  if (error) return { numero: null, error }
-  const row = Array.isArray(nextData) ? nextData[0] : null
-  return { numero: (row?.numero as string | undefined) ?? '', error: null }
-}
-
-async function getNextContratoNumero(userId: string): Promise<{ numero: string | null; error: unknown }> {
-  const { data: nextData, error } = await supabase.rpc('next_document_number', {
-    p_tipo: 'contrato',
-    p_prefijo: 'CON',
-    p_user_id: userId,
-  })
-  if (error) return { numero: null, error }
-  const row = Array.isArray(nextData) ? nextData[0] : null
-  return { numero: (row?.numero as string | undefined) ?? '', error: null }
-}
+const getNextPresupuestoNumero = (userId: string) => getNextNumero(userId, 'presupuesto', 'PRE')
+const getNextFacturaNumero = (userId: string) => getNextNumero(userId, 'factura', 'FAC')
+const getNextAlbaranNumero = (userId: string) => getNextNumero(userId, 'albaran', 'ALB')
+const getNextRectificativaNumero = (userId: string) => getNextNumero(userId, 'rectificativa', 'R')
+const getNextContratoNumero = (userId: string) => getNextNumero(userId, 'contrato', 'CON')
 
 export async function saveBusinessDocument(params: {
   table: 'facturas' | 'presupuestos' | 'albaranes'
