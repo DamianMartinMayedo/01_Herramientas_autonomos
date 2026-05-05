@@ -873,6 +873,34 @@ body {
   }
 }
 
+/* ── Cómo funciona (versión simple, post-hero) ── */
+.how-it-works-section {
+  padding: var(--space-8) 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+.how-it-works-step--simple {
+  background: none;
+  border: none;
+  padding: var(--space-4) var(--space-2);
+}
+.how-it-works-icon--simple {
+  width: 40px;
+  height: 40px;
+  background: var(--color-copper-highlight);
+  color: var(--color-copper);
+}
+.how-it-works-title--simple {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+.how-it-works-desc--simple {
+  font-size: var(--text-xs);
+  max-width: 220px;
+}
+
 /* ── Sección blog header ── */
 .blog-section-header {
   display: flex;

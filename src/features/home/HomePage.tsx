@@ -287,6 +287,33 @@ export function HomePage() {
           </div>
         </section>
 
+        {/* Cómo funciona */}
+        <section className="how-it-works-section">
+          <div className="how-it-works-grid">
+            <div className="how-it-works-step how-it-works-step--simple">
+              <div className="how-it-works-icon how-it-works-icon--simple">
+                <FileCheck size={18} />
+              </div>
+              <h3 className="how-it-works-title how-it-works-title--simple">Elige tu herramienta</h3>
+              <p className="how-it-works-desc how-it-works-desc--simple">Facturas, presupuestos, contratos, calculadoras y más.</p>
+            </div>
+            <div className="how-it-works-step how-it-works-step--simple">
+              <div className="how-it-works-icon how-it-works-icon--simple">
+                <Download size={18} />
+              </div>
+              <h3 className="how-it-works-title how-it-works-title--simple">Rellena los datos</h3>
+              <p className="how-it-works-desc how-it-works-desc--simple">Completa la información de tu documento o introduce los valores.</p>
+            </div>
+            <div className="how-it-works-step how-it-works-step--simple">
+              <div className="how-it-works-icon how-it-works-icon--simple">
+                <UserPlus size={18} />
+              </div>
+              <h3 className="how-it-works-title how-it-works-title--simple">Descarga o guarda</h3>
+              <p className="how-it-works-desc how-it-works-desc--simple">Descarga en PDF o regístrate para guardar y gestionar después.</p>
+            </div>
+          </div>
+        </section>
+
         {/* Grid herramientas por categoría */}
         <section className="section-pb">
           {categoriasOrdenadas.map(cat => (
@@ -297,34 +324,6 @@ export function HomePage() {
               </div>
             </div>
           ))}
-        </section>
-
-        {/* Cómo funciona */}
-        <section className="section-pb">
-          <h2 className="section-label">Cómo funciona</h2>
-          <div className="how-it-works-grid">
-            <div className="how-it-works-step">
-              <div className="how-it-works-icon">
-                <FileCheck size={20} />
-              </div>
-              <h3 className="how-it-works-title">Elige tu herramienta</h3>
-              <p className="how-it-works-desc">Selecciona entre facturas, presupuestos, contratos, calculadoras y más.</p>
-            </div>
-            <div className="how-it-works-step">
-              <div className="how-it-works-icon">
-                <Download size={20} />
-              </div>
-              <h3 className="how-it-works-title">Rellena los datos</h3>
-              <p className="how-it-works-desc">Completa la información de tu documento o introduce los valores en la calculadora.</p>
-            </div>
-            <div className="how-it-works-step">
-              <div className="how-it-works-icon">
-                <UserPlus size={20} />
-              </div>
-              <h3 className="how-it-works-title">Descarga o guarda</h3>
-              <p className="how-it-works-desc">Descarga tu documento en PDF o regístrate para guardarlo y gestionarlo después.</p>
-            </div>
-          </div>
         </section>
 
         {/* CTA registro */}
