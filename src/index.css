@@ -877,8 +877,6 @@ body {
 .how-it-works-section {
   padding: var(--space-8) 0;
   background: var(--color-surface);
-  border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
 }
 .how-it-works-step--simple {
   background: var(--color-primary-subtle);
