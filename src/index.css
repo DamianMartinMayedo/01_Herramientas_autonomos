@@ -9,7 +9,7 @@
 :root,
 [data-theme="light"] {
   /* ── Fondos y superficies ── */
-  --color-bg:               #F5F3EF;
+  --color-bg:               #F8F6F2;
   --color-surface:          #F8F6F2;
   --color-surface-2:        #FAFAF7;
   --color-surface-offset:   #EDEAE5;
@@ -124,7 +124,7 @@
 /* ── Modo oscuro ── */
 .dark,
 [data-theme="dark"] {
-  --color-bg:               #111010;
+  --color-bg:               #181716;
   --color-surface:          #181716;
   --color-surface-2:        #1E1D1C;
   --color-surface-offset:   #1B1A19;
