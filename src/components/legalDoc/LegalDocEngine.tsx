@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm, useWatch, type DefaultValues } from 'react-hook-form'
+import { useForm, useWatch, type DefaultValues, type Path, type PathValue } from 'react-hook-form'
 import { ChevronLeft, Save, CheckCircle2, Mail } from 'lucide-react'
 import type { LegalDoc, ParteLegal, TipoLegalDoc } from '../../types/legalDoc.types'
 import { LegalDocModal } from './LegalDocModal'
@@ -50,20 +50,18 @@ const sectionLabelStyle: React.CSSProperties = {
   marginBottom: 'var(--space-4)',
 }
 
+const PARTE_KEYS = ['nombre', 'nif', 'direccion', 'ciudad', 'cp', 'provincia', 'email', 'telefono'] as const
+
 function setParteValue<T extends LegalDoc>(
   setValue: ReturnType<typeof useForm<T>>['setValue'],
   field: 'cliente' | 'parteB' | 'deudor',
-  parte: ParteLegal
+  parte: ParteLegal,
 ) {
-  const prefix = field as string
-  setValue(`${prefix}.nombre` as never, parte.nombre as never, { shouldDirty: true })
-  setValue(`${prefix}.nif` as never, parte.nif as never, { shouldDirty: true })
-  setValue(`${prefix}.direccion` as never, parte.direccion as never, { shouldDirty: true })
-  setValue(`${prefix}.ciudad` as never, parte.ciudad as never, { shouldDirty: true })
-  setValue(`${prefix}.cp` as never, parte.cp as never, { shouldDirty: true })
-  setValue(`${prefix}.provincia` as never, (parte.provincia ?? '') as never, { shouldDirty: true })
-  setValue(`${prefix}.email` as never, (parte.email ?? '') as never, { shouldDirty: true })
-  setValue(`${prefix}.telefono` as never, (parte.telefono ?? '') as never, { shouldDirty: true })
+  PARTE_KEYS.forEach((key) => {
+    const path = `${field}.${key}` as Path<T>
+    const value = (parte[key] ?? '') as PathValue<T, Path<T>>
+    setValue(path, value, { shouldDirty: true })
+  })
 }
 
 export function LegalDocEngine<T extends LegalDoc>({

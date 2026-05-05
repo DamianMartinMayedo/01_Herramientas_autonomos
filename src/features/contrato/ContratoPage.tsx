@@ -3,6 +3,7 @@
  * Generador de contrato de prestación de servicios.
  * Usa LegalDocEngine como orquestador.
  */
+import type { FieldError } from 'react-hook-form'
 import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ContratoServiciosDoc, ParteLegal } from '../../types/legalDoc.types'
@@ -68,7 +69,7 @@ function buildDefaultValues(empresa: Empresa | null | undefined, existing?: Cont
 
 type RegisterFn = (name: string, opts?: Record<string, unknown>) => Record<string, unknown>
 
-type ErrorsObj = Record<string, { message?: string } | undefined>
+type ErrorsObj = Record<string, FieldError | undefined>
 
 function FormParte({
   titulo,
@@ -81,7 +82,7 @@ function FormParte({
   register: RegisterFn
   errors: ErrorsObj
 }) {
-  const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, { message?: string }>>
+  const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, FieldError>>
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
@@ -89,13 +90,13 @@ function FormParte({
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
-          error={e.nombre as never}
+          error={e.nombre}
         />
         <div className="form-row">
           <FormField
             label="NIF / CIF / NIE *"
             {...register(`${prefix}.nif`, { required: 'Obligatorio' })}
-            error={e.nif as never}
+            error={e.nif}
           />
           <FormField
             label="Email"
@@ -106,7 +107,7 @@ function FormParte({
         <FormField
           label="Dirección *"
           {...register(`${prefix}.direccion`, { required: 'Obligatorio' })}
-          error={e.direccion as never}
+          error={e.direccion}
         />
         <div className="form-row">
           <FormField label="Código postal" {...register(`${prefix}.cp`)} />
@@ -169,9 +170,9 @@ export function ContratoPage({
         autoOpenPreview={autoOpenPreview}
       renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
-        const err = errors as ErrorsObj
+        const err = errors as unknown as ErrorsObj
         const duracion = getValues('duracion') as string
-        const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
+        const metaErr = (err['metadatos'] ?? {}) as Record<string, FieldError | undefined>
 
         return (
           <>
@@ -194,7 +195,7 @@ export function ContratoPage({
                         background: 'var(--color-surface-offset)',
                       } : undefined}
                       {...reg('metadatos.referencia', onSave ? {} : { required: 'Obligatorio' })}
-                      error={onSave ? undefined : metaErr['referencia'] as never}
+                      error={onSave ? undefined : metaErr['referencia']}
                     />
                     {onSave && !defaultValues?.metadatos?.referencia && (
                       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)', marginTop: 'var(--space-1)' }}>
@@ -206,14 +207,14 @@ export function ContratoPage({
                     label="Fecha *"
                     type="date"
                     {...reg('metadatos.fecha', { required: 'Obligatorio' })}
-                    error={metaErr['fecha'] as never}
+                    error={metaErr['fecha']}
                   />
                 </div>
                 <FormField
                   label="Lugar de firma *"
                   placeholder="Ciudad donde se firma"
                   {...reg('metadatos.lugar', { required: 'Obligatorio' })}
-                  error={metaErr['lugar'] as never}
+                  error={metaErr['lugar']}
                 />
               </div>
             </fieldset>
@@ -239,7 +240,7 @@ export function ContratoPage({
                     step="0.01"
                     min={0}
                     placeholder="0.00"
-                    error={err['importeTotal'] as never}
+                    error={err['importeTotal']}
                     {...reg('importeTotal', { required: 'Obligatorio', valueAsNumber: true })}
                   />
                   <div className="input-group">
@@ -278,7 +279,7 @@ export function ContratoPage({
                     label="Fecha de inicio *"
                     type="date"
                     {...reg('fechaInicio', { required: 'Obligatorio' })}
-                    error={err['fechaInicio'] as never}
+                    error={err['fechaInicio']}
                   />
                 </div>
                 {duracion === 'fecha_fin' && (
@@ -286,7 +287,7 @@ export function ContratoPage({
                     label="Fecha de fin *"
                     type="date"
                     {...reg('fechaFin', { required: 'Obligatorio si hay fecha de fin' })}
-                    error={err['fechaFin'] as never}
+                    error={err['fechaFin']}
                   />
                 )}
               </div>
@@ -313,7 +314,7 @@ export function ContratoPage({
                 <FormField
                   label="Jurisdicción (ciudad) *"
                   placeholder="Ciudad competente en caso de conflicto"
-                  error={err['jurisdiccion'] as never}
+                  error={err['jurisdiccion']}
                   {...reg('jurisdiccion', { required: 'Obligatorio' })}
                 />
               </div>
