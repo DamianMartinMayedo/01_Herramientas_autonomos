@@ -111,15 +111,11 @@ export function ReclamacionPage({
         saving={saving}
         clientes={clientes}
         clienteField="deudor"
-      renderForm={({ register, getValues, errors, setValue }) => {
+      renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
         const err = errors as unknown as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, FieldError | undefined>
         const tono = getValues('tono') as string
-
-        // Cuando se selecciona «urgente» se activa el checkbox automáticamente;
-        // al salir de «urgente» se desactiva para no dejar ruido en otros tonos.
-        ;(setValue as (field: string, value: unknown) => void)('mencionAccionLegal', tono === 'urgente')
 
         return (
           <>

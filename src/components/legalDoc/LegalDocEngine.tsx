@@ -125,6 +125,16 @@ export function LegalDocEngine<T extends LegalDoc>({
   const rawValues = useWatch({ control: form.control }) as T
   const docPreview = buildDoc(rawValues) as T
 
+  useEffect(() => {
+    if (tipo !== 'reclamacion') return
+    const subscription = watch((_values, { name }) => {
+      if (name !== 'tono') return
+      const tono = _values['tono'] as string | undefined
+      ;(setValue as (field: string, value: unknown) => void)('mencionAccionLegal', tono === 'urgente')
+    })
+    return () => subscription.unsubscribe()
+  }, [tipo, watch, setValue])
+
   const showFeedback = (message: string) => {
     setFeedbackMessage(message)
     setTimeout(() => setFeedbackMessage(null), 2500)
