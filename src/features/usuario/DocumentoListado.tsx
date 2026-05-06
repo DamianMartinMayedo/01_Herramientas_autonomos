@@ -45,7 +45,7 @@ const TABLA_CONFIG: Record<TipoDocumento, {
   presupuestos:  { label: 'Presupuestos',  labelSingular: 'presupuesto',  articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: 'total',   routeCrear: '/presupuesto' },
   albaranes:     { label: 'Albaranes',     labelSingular: 'albarán',      articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/albaran' },
   contratos:     { label: 'Contratos',     labelSingular: 'contrato',     articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/contrato' },
-  ndas:          { label: 'NDAs',          labelSingular: 'NDA',          articuloFemenino: false, campoTitulo: 'titulo',  campoSecundario: 'otra_parte_nombre', campoPrecio: undefined, routeCrear: '/nda' },
+  ndas:          { label: 'NDAs',          labelSingular: 'NDA',          articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'otra_parte_nombre', campoPrecio: undefined, routeCrear: '/nda' },
   reclamaciones: { label: 'Reclamaciones', labelSingular: 'reclamación',  articuloFemenino: true,  campoTitulo: 'titulo',  campoSecundario: 'deudor_nombre',     campoPrecio: 'importe', routeCrear: '/reclamacion-pago' },
 }
 
@@ -84,6 +84,7 @@ interface Props {
   onMarcarPresupuestoEntregado?: (id: string) => void
   onEnviarAlbaran?: (id: string) => Promise<void> | void
   onEnviarContrato?: (id: string) => Promise<void> | void
+  onEnviarNda?: (id: string) => Promise<void> | void
   onNavCalc?: (section: string) => void
   flashMessage?: string | null
 }
@@ -93,7 +94,7 @@ interface Props {
 export function DocumentoListado({
   tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir,
   onEnviarPresupuesto, onAprobarPresupuesto, onConvertirAFactura,
-  onMarcarPresupuestoEntregado, onEnviarAlbaran, onEnviarContrato, onNavCalc,
+  onMarcarPresupuestoEntregado, onEnviarAlbaran, onEnviarContrato, onEnviarNda, onNavCalc,
   flashMessage,
 }: Props) {
   const { user } = useAuth()
@@ -114,6 +115,8 @@ export function DocumentoListado({
   const [albFilter, setAlbFilter] = useState<'todos' | 'pendiente' | 'enviado'>('todos')
   const [contrFilter, setContrFilter] = useState<'todos' | 'borrador' | 'enviado' | 'firmado' | 'finalizado'>('todos')
   const [emailContratoListadoRow, setEmailContratoListadoRow] = useState<DocRow | null>(null)
+  const [ndaFilter, setNdaFilter] = useState<'todos' | 'borrador' | 'enviado' | 'firmado'>('todos')
+  const [emailNdaListadoRow, setEmailNdaListadoRow] = useState<DocRow | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [alertState, setAlertState] = useState<{ title?: string; msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const userId = user?.id
@@ -125,10 +128,11 @@ export function DocumentoListado({
     setPresFilter('todos')
     setAlbFilter('todos')
     setContrFilter('todos')
+    setNdaFilter('todos')
     setCurrentPage(1)
   }, [tipo])
 
-  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter, albFilter, contrFilter])
+  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter, albFilter, contrFilter, ndaFilter])
 
   useEffect(() => {
     if (!userId) return
@@ -258,7 +262,7 @@ export function DocumentoListado({
   }
 
   const renderRowBase = (row: DocRow, actions: React.ReactNode, extraBadge?: React.ReactNode, overrideBadge?: React.ReactNode) => {
-    const titulo  = row[cfg.campoTitulo] || (tipo === 'contratos' ? row.titulo : null) || '—'
+    const titulo  = row[cfg.campoTitulo] || ((tipo === 'contratos' || tipo === 'ndas') ? row.titulo : null) || '—'
     const cliente = row[cfg.campoSecundario] ?? '—'
     const precio  = cfg.campoPrecio ? row[cfg.campoPrecio] : null
     const fecha   = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES') : ''
@@ -387,6 +391,20 @@ export function DocumentoListado({
   // ── Contratos ─────────────────────────────────────────────────────────────
 
   const renderContratoRow = (row: DocRow) => {
+    const actions = (
+      <>
+        <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
+          <Pencil size={13} />
+        </button>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+          <MoreHorizontal size={13} />
+        </button>
+      </>
+    )
+    return renderRowBase(row, actions)
+  }
+
+  const renderNdaRow = (row: DocRow) => {
     const actions = (
       <>
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
@@ -750,8 +768,61 @@ export function DocumentoListado({
         </>
       )}
 
-      {/* Vista genérica para ndas y reclamaciones */}
-      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && tipo !== 'albaranes' && tipo !== 'contratos' && (
+      {/* Vista con filtros para NDAs */}
+      {!loading && tipo === 'ndas' && (
+        <>
+          {rows.length === 0 && emptyState}
+          {rows.length > 0 && (() => {
+            const NDA_FILTERS: { key: typeof ndaFilter; label: string }[] = [
+              { key: 'todos',       label: 'Todos' },
+              { key: 'borrador',    label: 'Borrador' },
+              { key: 'enviado',     label: 'Enviado' },
+              { key: 'firmado',     label: 'Firmado' },
+            ]
+            const rowsFiltrados = ndaFilter === 'todos' ? rows : rows.filter(r => r.estado === ndaFilter)
+            return (
+              <>
+                <div className="filter-row">
+                  {NDA_FILTERS.map(({ key, label }) => {
+                    const n = key === 'todos' ? rows.length : rows.filter(r => r.estado === key).length
+                    if (key !== 'todos' && n === 0) return null
+                    return (
+                      <button
+                        key={key}
+                        className={`filter-pill${ndaFilter === key ? ' active' : ''}`}
+                        aria-selected={ndaFilter === key}
+                        onClick={() => setNdaFilter(key)}
+                      >
+                        {label}{key !== 'todos' && n > 0 ? ` (${n})` : ''}
+                      </button>
+                    )
+                  })}
+                </div>
+                {rowsFiltrados.length === 0
+                  ? <p className="section-sub list-empty-msg">No hay NDAs en este estado.</p>
+                  : (() => {
+                    const { items, totalPages } = paginar(rowsFiltrados)
+                    return (
+                      <>
+                        <div className="card card-no-pad">
+                          <table className="data-table">
+                            {renderTableHeader()}
+                            <tbody>{items.map(row => renderNdaRow(row))}</tbody>
+                          </table>
+                        </div>
+                        {renderPaginacion(totalPages)}
+                      </>
+                    )
+                  })()
+                }
+              </>
+            )
+          })()}
+        </>
+      )}
+
+      {/* Vista genérica para reclamaciones */}
+      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && tipo !== 'albaranes' && tipo !== 'contratos' && tipo !== 'ndas' && (
         <>
           {rows.length === 0 && emptyState}
           {rows.length > 0 && (
@@ -862,6 +933,25 @@ export function DocumentoListado({
             )}
             <div className="dropdown-divider" />
             <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailContratoListadoRow(row) }}>
+              <Mail size={13} /> {row.estado === 'enviado' ? 'Reenviar por correo' : 'Enviar por correo'}
+            </button>
+            <div className="dropdown-divider" />
+            <button role="menuitem" className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+              <Trash2 size={13} /> Eliminar
+            </button>
+          </>
+        ) : tipo === 'ndas' ? (
+          <>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onOpen?.(row.id) }}><Pencil size={13} /> Editar</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            {row.estado === 'borrador' && (
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onEnviarNda?.(row.id) }}>
+                <CheckCircle2 size={13} /> Marcar como enviado
+              </button>
+            )}
+            <div className="dropdown-divider" />
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailNdaListadoRow(row) }}>
               <Mail size={13} /> {row.estado === 'enviado' ? 'Reenviar por correo' : 'Enviar por correo'}
             </button>
             <div className="dropdown-divider" />
@@ -1032,6 +1122,20 @@ export function DocumentoListado({
           }
           onSent={async () => { await onEnviarContrato?.(emailContratoListadoRow.id) }}
           onClose={() => setEmailContratoListadoRow(null)}
+        />
+      )}
+
+      {/* Email NDA desde listado — marca como enviado al enviar */}
+      {emailNdaListadoRow && (
+        <EmailModal
+          emailCliente={getClienteEmail(emailNdaListadoRow)}
+          nombreDocumento={
+            emailNdaListadoRow.numero
+              ? `NDA ${emailNdaListadoRow.numero as string}`
+              : 'NDA'
+          }
+          onSent={async () => { await onEnviarNda?.(emailNdaListadoRow.id) }}
+          onClose={() => setEmailNdaListadoRow(null)}
         />
       )}
 

@@ -62,6 +62,13 @@ async function writeRowWithRetry(params: {
       return { data: null, error }
     }
 
+    // Columnas críticas: si faltan, rechazar el guardado (no eliminar nunca)
+    const CRITICAL_COLUMNS = new Set(['datos_json'])
+    if (CRITICAL_COLUMNS.has(missing)) {
+      return { data: null, error }
+    }
+
+    console.warn(`[writeRowWithRetry] Columna '${missing}' no existe en '${table}', eliminando del payload. Ejecuta una migración de reparación.`)
     delete payload[missing]
   }
 
@@ -88,6 +95,7 @@ const getNextFacturaNumero = (userId: string) => getNextNumero(userId, 'factura'
 const getNextAlbaranNumero = (userId: string) => getNextNumero(userId, 'albaran', 'ALB')
 const getNextRectificativaNumero = (userId: string) => getNextNumero(userId, 'rectificativa', 'R')
 const getNextContratoNumero = (userId: string) => getNextNumero(userId, 'contrato', 'CON')
+const getNextNdaNumero = (userId: string) => getNextNumero(userId, 'nda', 'NDA')
 
 export async function saveBusinessDocument(params: {
   table: 'facturas' | 'presupuestos' | 'albaranes'
@@ -363,16 +371,30 @@ export async function saveLegalDocument(params: {
     payload = basePayload
   } else if (table === 'ndas') {
     const nda = document as NdaDoc
+    let numeroNda: string | null = nda.metadatos.referencia || null
+
+    if (!id && !numeroNda) {
+      const { numero, error: nextError } = await getNextNdaNumero(userId)
+      if (nextError) {
+        return { data: null, error: nextError as { message: string }, numero: null as string | null }
+      }
+      numeroNda = numero
+    }
+
+    const updatedMetadatos = { ...nda.metadatos, referencia: numeroNda ?? nda.metadatos.referencia }
     payload = {
       user_id: userId,
-      titulo: nda.metadatos.referencia || `NDA ${nda.parteB.nombre || ''}`.trim() || 'NDA',
+      titulo: numeroNda || `NDA ${nda.parteB.nombre || ''}`.trim() || 'NDA',
       fecha: nda.metadatos.fecha,
       otra_parte_nombre: nda.parteB.nombre,
       otra_parte_nif: nda.parteB.nif,
       otra_parte_email: nda.parteB.email,
-      estado: 'borrador',
+      estado: finalizar ? 'enviado' : 'borrador',
       notas: nda.notas,
-      datos_json: nda,
+      datos_json: { ...nda, metadatos: updatedMetadatos },
+    }
+    if (!id || numeroNda) {
+      payload.numero = numeroNda
     }
   } else {
     const reclamacion = document as ReclamacionPagoDoc
@@ -393,7 +415,7 @@ export async function saveLegalDocument(params: {
   const result = await writeRowWithRetry({ table, id, payload })
   return {
     ...result,
-    numero: table === 'contratos' ? (payload.numero as string | null) : null,
+    numero: table === 'contratos' || table === 'ndas' ? (payload.numero as string | null) : null,
   }
 }
 
@@ -430,6 +452,44 @@ export async function enviarContrato(userId: string, id: string) {
     // Fallback: marcar como enviado sin columna numero
     const { error: updateError } = await supabase
       .from('contratos')
+      .update({ estado: 'enviado' })
+      .eq('id', id)
+
+    return { error: updateError, numero: null as string | null }
+  }
+}
+
+export async function enviarNda(userId: string, id: string) {
+  try {
+    const { data: current, error: fetchError } = await supabase
+      .from('ndas')
+      .select('numero, datos_json')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    let numero = (current?.numero as string | null) || null
+    if (!numero) {
+      const { numero: nextNumero, error: nextError } = await getNextNdaNumero(userId)
+      if (nextError) throw nextError
+      numero = nextNumero
+    }
+
+    const datosJson = current?.datos_json as NdaDoc | null
+    const updatedDatosJson = datosJson
+      ? { ...datosJson, metadatos: { ...datosJson.metadatos, referencia: numero ?? datosJson.metadatos.referencia } }
+      : datosJson
+
+    const { error: updateError } = await supabase
+      .from('ndas')
+      .update({ numero, estado: 'enviado', datos_json: updatedDatosJson })
+      .eq('id', id)
+
+    return { error: updateError, numero }
+  } catch {
+    const { error: updateError } = await supabase
+      .from('ndas')
       .update({ estado: 'enviado' })
       .eq('id', id)
 
@@ -521,7 +581,7 @@ export async function convertirPresupuestoAFactura(userId: string, id: string) {
 export async function getStoredUserDocument(table: UserDocumentTable, id: string) {
   const { data, error } = await supabase
     .from(table)
-    .select('id, datos_json, estado, numero')
+    .select('*')
     .eq('id', id)
     .single()
 

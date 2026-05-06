@@ -22,7 +22,7 @@ import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, enviarContrato, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, enviarContrato, enviarNda, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -40,7 +40,7 @@ type EditorState =
   | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null; estado?: string | null; autoDownload?: boolean }
-  | { section: 'ndas'; id?: string; data?: NdaDoc | null; autoDownload?: boolean }
+  | { section: 'ndas'; id?: string; data?: NdaDoc | null; estado?: string | null; autoDownload?: boolean }
   | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null }
   | null
 
@@ -76,6 +76,9 @@ export function UserPage() {
   } | null>(null)
   const [emailContratoState, setEmailContratoState] = useState<{
     email?: string; nombre: string; doc: ContratoServiciosDoc; id?: string; isReenviar: boolean
+  } | null>(null)
+  const [emailNdaState, setEmailNdaState] = useState<{
+    email?: string; nombre: string; doc: NdaDoc; id?: string; isReenviar: boolean
   } | null>(null)
 
   useEffect(() => {
@@ -138,16 +141,32 @@ export function UserPage() {
     }
 
     setSearchParams({ s: targetSection })
-    const datosJson: DocumentoBase = { ...(result.data.datos_json as DocumentoBase) }
-    if (result.data.numero) {
-      datosJson.numero = result.data.numero
+
+    // Documentos legales: datos_json YA es el documento completo (NdaDoc, ContratoServiciosDoc, etc.)
+    // No hacer spread como DocumentoBase porque pierde los campos específicos
+    if (targetSection === 'ndas' || targetSection === 'contratos' || targetSection === 'reclamaciones') {
+      const datosJson = result.data.datos_json as Record<string, unknown>
+      if (result.data.numero) {
+        datosJson.numero = result.data.numero
+      }
+      setEditor({
+        section: targetSection,
+        id,
+        data: datosJson,
+        estado: result.data.estado,
+      } as EditorState)
+    } else {
+      const datosJson: DocumentoBase = { ...(result.data.datos_json as DocumentoBase) }
+      if (result.data.numero) {
+        datosJson.numero = result.data.numero
+      }
+      setEditor({
+        section: targetSection,
+        id,
+        data: datosJson,
+        estado: result.data.estado,
+      } as EditorState)
     }
-    setEditor({
-      section: targetSection,
-      id,
-      data: datosJson,
-      estado: result.data.estado,
-    } as EditorState)
   }
 
   const saveBusiness = async (table: 'facturas' | 'presupuestos' | 'albaranes', document: DocumentoBase, totals: TotalesDocumento, id?: string, finalizar?: boolean, skipClose?: boolean) => {
@@ -182,7 +201,10 @@ export function UserPage() {
 
   const handleViewDocument = async (targetSection: TipoDocumento, id: string) => {
     const result = await getStoredUserDocument(SECTION_TO_TABLE[targetSection], id)
-    if (result.error || !result.data?.datos_json) return
+    if (result.error || !result.data?.datos_json) {
+      setAlertState({ msg: 'Este documento no tiene datos guardados y no se puede abrir.', variant: 'warning' })
+      return
+    }
     setSearchParams({ s: targetSection })
     const isViewOnly = targetSection === 'facturas' || (targetSection === 'presupuestos' && result.data.estado === 'convertido')
     setEditor({
@@ -245,6 +267,19 @@ export function UserPage() {
       section: 'contratos',
       id,
       data: result.data.datos_json as ContratoServiciosDoc,
+      estado: result.data.estado,
+      autoDownload: true,
+    })
+  }
+
+  const handleDescargarNda = async (id: string) => {
+    const result = await getStoredUserDocument('ndas', id)
+    if (result.error || !result.data?.datos_json) return
+    setSearchParams({ s: 'ndas' })
+    setEditor({
+      section: 'ndas',
+      id,
+      data: result.data.datos_json as NdaDoc,
       estado: result.data.estado,
       autoDownload: true,
     })
@@ -398,6 +433,18 @@ export function UserPage() {
     bumpRefresh()
   }
 
+  const handleEnviarNdaDesdeListado = async (id: string) => {
+    if (!userId) return
+    const result = await enviarNda(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo enviar el NDA.', variant: 'danger' })
+      return
+    }
+    setFlashMessage(`NDA enviado${result.numero ? `: ${result.numero}` : ''}.`)
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
   const handleClienteGuardado = async (payload: RegularClientInput) => {
     if (!userId) throw new Error('No hay sesión activa')
     const result = await createRegularClient(userId, payload)
@@ -421,6 +468,7 @@ export function UserPage() {
             else if (section === 'presupuestos') void handleDescargarPresupuesto(id)
             else if (section === 'albaranes') void handleDescargarAlbaran(id)
             else if (section === 'contratos') void handleDescargarContrato(id)
+            else if (section === 'ndas') void handleDescargarNda(id)
           }}
           onEmitir={(id) => { void handleEmitirFactura(id) }}
           onDuplicar={(id) => { void handleDuplicarFactura(id) }}
@@ -431,6 +479,7 @@ export function UserPage() {
           onMarcarPresupuestoEntregado={(id) => { void handleMarcarPresupuestoEntregado(id) }}
           onEnviarAlbaran={(id) => { void handleEnviarAlbaranDesdeListado(id) }}
           onEnviarContrato={(id) => { void handleEnviarContratoDesdeListado(id) }}
+          onEnviarNda={(id) => { void handleEnviarNdaDesdeListado(id) }}
           onNavCalc={(s) => { setCalcOrigin(section as UserSection); setSearchParams({ s }) }}
           flashMessage={flashMessage}
         />
@@ -569,15 +618,28 @@ export function UserPage() {
     }
 
     if (section === 'ndas') {
+      const estadoNda = (editor as { estado?: string | null }).estado
       return (
         <NdaPage
-          key={editor?.id ?? 'new-nda'}
+          key={editor.id ?? 'new-nda'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as NdaDoc | undefined) ?? undefined}
           onSave={(document) => saveLegal('ndas', document, editor.id)}
           saving={saving}
           clientes={clientesDisponibles}
+          empresa={empresa}
+          estadoNda={estadoNda ?? undefined}
+          autoOpenPreview={'autoDownload' in editor ? editor.autoDownload : undefined}
+          onEmailNda={(doc) => {
+            setEmailNdaState({
+              email: doc.parteB?.email,
+              nombre: doc.metadatos?.referencia ? `NDA ${doc.metadatos.referencia}` : 'NDA',
+              doc,
+              id: editor.id,
+              isReenviar: Boolean(estadoNda && estadoNda !== 'borrador'),
+            })
+          }}
         />
       )
     }
@@ -715,6 +777,19 @@ export function UserPage() {
             bumpRefresh()
           }}
           onClose={() => setEmailContratoState(null)}
+        />
+      )}
+
+      {emailNdaState && (
+        <EmailModal
+          emailCliente={emailNdaState.email}
+          nombreDocumento={emailNdaState.nombre}
+          onSent={async () => {
+            if (!emailNdaState.id) return
+            await enviarNda(userId as string, emailNdaState.id)
+            bumpRefresh()
+          }}
+          onClose={() => setEmailNdaState(null)}
         />
       )}
     </>

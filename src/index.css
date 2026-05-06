@@ -1501,6 +1501,7 @@ body {
 }
 .modal-close-btn:hover    { background: var(--color-surface-offset); color: var(--color-text); }
 .modal-close-btn:disabled { opacity: 0.4; pointer-events: none; }
+.admin-modal-header .modal-close-btn { margin-left: auto; }
 
 /* ── Error inline dentro de modal ── */
 .error-box {

@@ -8,6 +8,7 @@ import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { NdaDoc, ParteLegal } from '../../types/legalDoc.types'
 import { DEFAULT_PARTE_LEGAL, DEFAULT_METADATOS } from '../../types/legalDoc.types'
 import type { RegularClient } from '../../types/regularClient.types'
+import type { Empresa } from '../../types/empresa.types'
 import { Seo } from '../../components/seo/Seo'
 
 // ─── Valores por defecto ─────────────────────────────────────────────────────
@@ -24,6 +25,27 @@ const DEFAULT_NDA: NdaDoc = {
   penalizacion: '',
   jurisdiccion: '',
   notas: '',
+}
+
+function buildDefaultValues(empresa: Empresa | null | undefined, existing?: NdaDoc): NdaDoc {
+  if (existing) return existing
+  const base = { ...DEFAULT_NDA }
+  if (empresa) {
+    base.parteA = {
+      ...DEFAULT_PARTE_LEGAL,
+      nombre: empresa.nombre,
+      nif: empresa.nif,
+      direccion: empresa.direccion,
+      cp: empresa.cp,
+      ciudad: empresa.ciudad,
+      provincia: empresa.provincia,
+      email: empresa.email,
+      telefono: empresa.telefono ?? '',
+    }
+    base.jurisdiccion = empresa.ciudad
+    base.metadatos.lugar = empresa.ciudad
+  }
+  return base
 }
 
 // ─── Sub-formulario de parte ────────────────────────────────────────────────────
@@ -69,6 +91,10 @@ function FormParte({
           <FormField label="Ciudad" {...register(`${prefix}.ciudad`)} />
         </div>
         <div className="form-row">
+          <FormField label="Provincia" {...register(`${prefix}.provincia`)} />
+          <FormField label="Teléfono" type="tel" {...register(`${prefix}.telefono`)} />
+        </div>
+        <div className="form-row">
           <FormField label="Representante" {...register(`${prefix}.representante`)} />
           <FormField label="Cargo" {...register(`${prefix}.cargo`)} />
         </div>
@@ -86,16 +112,30 @@ interface NdaPageProps {
   onSave?: (documento: NdaDoc) => Promise<void>
   saving?: boolean
   clientes?: RegularClient[]
+  empresa?: Empresa | null
+  onEmailNda?: (documento: NdaDoc) => void
+  estadoNda?: string
+  autoOpenPreview?: boolean
 }
 
 export function NdaPage({
   embedded = false,
   onBack,
-  defaultValues = DEFAULT_NDA,
+  defaultValues,
   onSave,
   saving = false,
   clientes = [],
+  empresa,
+  onEmailNda,
+  estadoNda,
+  autoOpenPreview,
 }: NdaPageProps) {
+  const resolvedDefaults = buildDefaultValues(empresa, defaultValues)
+
+  if (!onSave && !resolvedDefaults.metadatos?.referencia) {
+    resolvedDefaults.metadatos.referencia = `NDA-${new Date().getFullYear()}-001`
+  }
+
   return (
     <>
       <Seo
@@ -106,7 +146,7 @@ export function NdaPage({
         tipo="nda"
         titulo="Acuerdo de confidencialidad (NDA)"
         toolClass="tool-nda"
-        defaultValues={defaultValues}
+        defaultValues={resolvedDefaults}
         buildDoc={(v) => ({ ...v, tipo: 'nda' as const })}
         embedded={embedded}
         onBack={onBack}
@@ -114,6 +154,9 @@ export function NdaPage({
         saving={saving}
         clientes={clientes}
         clienteField="parteB"
+        onEmail={onEmailNda}
+        estadoDoc={estadoNda}
+        autoOpenPreview={autoOpenPreview}
       renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
         const err = errors as unknown as ErrorsObj
@@ -127,11 +170,28 @@ export function NdaPage({
               <legend className="fieldset-legend">Encabezado del NDA</legend>
               <div className="fieldset-v3-body">
                 <div className="form-row">
-                  <FormField
-                    label="Referencia *"
-                    {...reg('metadatos.referencia', { required: 'Obligatorio' })}
-                    error={metaErr['referencia']}
-                  />
+                  <div>
+                    <FormField
+                      label={onSave ? 'Nº NDA' : 'Nº NDA *'}
+                      readOnly={!!onSave}
+                      placeholder={onSave ? 'NDA-YYYY-XXX' : 'NDA-2026-001'}
+                      style={onSave ? {
+                        opacity: 0.55,
+                        cursor: 'default',
+                        borderStyle: 'dashed',
+                        boxShadow: 'none',
+                        transform: 'none',
+                        background: 'var(--color-surface-offset)',
+                      } : undefined}
+                      {...reg('metadatos.referencia', onSave ? {} : { required: 'Obligatorio' })}
+                      error={onSave ? undefined : metaErr['referencia']}
+                    />
+                    {onSave && !defaultValues?.metadatos?.referencia && (
+                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)', marginTop: 'var(--space-1)' }}>
+                        Se asignará al guardar
+                      </p>
+                    )}
+                  </div>
                   <FormField
                     label="Fecha *"
                     type="date"
@@ -194,9 +254,10 @@ export function NdaPage({
                     error={err['duracionMeses']}
                   />
                   <FormField
-                    label="Jurisdicción (ciudad)"
+                    label="Jurisdicción (ciudad) *"
                     placeholder="Ciudad competente en caso de conflicto"
-                    {...reg('jurisdiccion')}
+                    {...reg('jurisdiccion', { required: 'Obligatorio' })}
+                    error={err['jurisdiccion']}
                   />
                 </div>
                 <TextAreaField

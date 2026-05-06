@@ -168,3 +168,10 @@ Los documentos almacenan la estructura completa en `datos_json` mientras mantien
 - `useAuth()` expone sólo `{ user, isAuthenticated, loading }` (sesión Supabase).
 - `useProfile()` carga la fila de `profiles` y expone `{ profile, plan, isPremium, ... }`.
 - No leas `profile/plan/isPremium` desde `useAuth`. No están ahí.
+
+### 10. Migraciones de reparacion al añadir columnas — `writeRowWithRetry`
+`writeRowWithRetry` (`userDocuments.ts:44`) maneja columnas faltantes en la BD. Para columnas secundarias (`numero`, `notas`, etc.) las elimina del payload y reintenta (con `console.warn`). Pero **`datos_json` es una columna crítica**: si falta, el guardado se **rechaza** (devuelve error) para evitar corromper datos irreversiblemente.
+
+**Al añadir una columna nueva a una tabla existente, crear SIEMPRE una migracion de reparacion** (`NNNb_reparar_{tabla}.sql`) que ejecute `ALTER TABLE ADD COLUMN IF NOT EXISTS` para cada columna que pueda faltar. Patron: `010b_reparar_contratos.sql`, `012b_reparar_ndas.sql`.
+
+Si ves `console.warn('[writeRowWithRetry] Columna...')` en consola, la tabla no tiene la estructura esperada: crear migracion de reparacion.
