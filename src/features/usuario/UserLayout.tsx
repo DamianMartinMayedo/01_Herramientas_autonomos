@@ -4,7 +4,7 @@
  */
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
+import { useProfile } from '../../hooks/useProfile'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { ConfirmModal } from '../admin/components/ConfirmModal'
 import {
@@ -56,7 +56,7 @@ function UserSidebar({
   onClose?: () => void
   nombreEmpresa?: string | null
 }) {
-  const { profile } = useAuth()
+  const { profile } = useProfile()
   const navigate = useNavigate()
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const displayName = nombreEmpresa ?? profile?.display_name ?? profile?.email?.split('@')[0] ?? 'Usuario'

@@ -3,13 +3,13 @@
 // Refleja la tabla `profiles` de Supabase
 // ============================================
 
-export type UserPlan = 'free' | 'premium'
+export type Plan = 'free' | 'premium'
 
 export interface Profile {
   id: string              // UUID — mismo que auth.users.id
   email: string
   display_name: string | null
-  plan: UserPlan
+  plan: Plan
   created_at: string
   updated_at: string
 }

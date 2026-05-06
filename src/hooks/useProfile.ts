@@ -11,6 +11,8 @@ import { useAuth } from './useAuth'
 
 interface UseProfileReturn {
   profile: Profile | null
+  plan: Profile['plan'] | null
+  isPremium: boolean
   loading: boolean
   error: string | null
   updateProfile: (data: ProfileUpdate) => Promise<{ error: string | null }>
@@ -94,5 +96,8 @@ export function useProfile(): UseProfileReturn {
     return { error: updateError?.message ?? null }
   }
 
-  return { profile, loading, error, updateProfile, refetch: fetchProfile }
+  const plan = profile?.plan ?? null
+  const isPremium = plan === 'premium'
+
+  return { profile, plan, isPremium, loading, error, updateProfile, refetch: fetchProfile }
 }

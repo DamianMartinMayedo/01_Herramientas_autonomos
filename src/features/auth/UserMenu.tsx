@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import { signOut } from '../../store/authStore'
-import type { Plan } from '../../types/auth.types'
+import type { Plan } from '../../types/profile'
 import { LogOut } from 'lucide-react'
 
 interface UserMenuProps {

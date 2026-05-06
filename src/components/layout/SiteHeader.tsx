@@ -4,9 +4,11 @@ import { ThemeToggle } from '../ui/ThemeToggle'
 import { AuthModal } from '../../features/auth/AuthModal'
 import { UserMenu } from '../../features/auth/UserMenu'
 import { useAuth } from '../../hooks/useAuth'
+import { useProfile } from '../../hooks/useProfile'
 
 export function SiteHeader() {
-  const { user, plan, loading } = useAuth()
+  const { user, loading } = useAuth()
+  const { plan } = useProfile()
   const [modalOpen, setModalOpen] = useState(false)
   const [modalView, setModalView] = useState<'login' | 'register'>('login')
 
