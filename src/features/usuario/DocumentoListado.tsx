@@ -231,13 +231,7 @@ export function DocumentoListado({
           ? PRESUPUESTO_STATUS_LABELS[estado]
           : estado
     return (
-      <span style={{
-        fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-        color: estadoColor,
-        background: `color-mix(in oklch, ${estadoColor} 12%, var(--color-surface-2))`,
-        border: `1px solid color-mix(in oklch, ${estadoColor} 30%, var(--color-border))`,
-        borderRadius: 'var(--radius-full)', padding: '1px 7px',
-      }}>
+      <span className="status-pill" style={{ '--pill-color': estadoColor } as React.CSSProperties}>
         {estadoLabel}
       </span>
     )
@@ -273,16 +267,16 @@ export function DocumentoListado({
       <tr key={row.id} className="data-tr">
         <td className="data-td" style={{ fontWeight: 600 }}>{titulo || 'Sin número'}</td>
         <td className="data-td" style={{ color: 'var(--color-text-muted)' }}>{cliente}</td>
-        <td className="data-td" style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', whiteSpace: 'nowrap' }}>{fecha}</td>
+        <td className="data-td data-td--meta">{fecha}</td>
         {cfg.campoPrecio && (
-          <td className="data-td-right" style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          <td className="data-td-right data-td-right--strong">
             {precio !== null && precio !== undefined
               ? `${Number(precio).toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`
               : '—'}
           </td>
         )}
         <td className="data-td">
-          <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="status-cell">
             {overrideBadge ?? renderStatusBadge(row.estado ?? '')}
             {extraBadge}
           </div>
@@ -297,13 +291,7 @@ export function DocumentoListado({
   }
 
   const renderRectificativaBadge = () => (
-    <span style={{
-      fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-      color: 'var(--color-gold)',
-      background: 'color-mix(in oklch, var(--color-gold) 12%, var(--color-surface-2))',
-      border: '1px solid color-mix(in oklch, var(--color-gold) 30%, var(--color-border))',
-      borderRadius: 'var(--radius-full)', padding: '1px 7px',
-    }}>Rectificativa</span>
+    <span className="status-pill status-pill--gold">Rectificativa</span>
   )
 
   // ── Facturas ─────────────────────────────────────────────────────────────
@@ -349,13 +337,7 @@ export function DocumentoListado({
 
     if (estado === 'borrador') {
       return (
-        <span style={{
-          fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-          color: 'var(--color-error)',
-          background: 'color-mix(in oklch, var(--color-error) 12%, var(--color-surface-2))',
-          border: '1px solid color-mix(in oklch, var(--color-error) 30%, var(--color-border))',
-          borderRadius: 'var(--radius-full)', padding: '1px 7px',
-        }}>
+        <span className="status-pill status-pill--error">
           Sin enviar
         </span>
       )
@@ -456,7 +438,7 @@ export function DocumentoListado({
   const renderPaginacion = (totalPages: number) => {
     if (totalPages <= 1) return null
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
+      <div className="pagination-row">
         <button
           className="btn btn-secondary btn-sm"
           disabled={currentPage === 1}
@@ -464,7 +446,7 @@ export function DocumentoListado({
         >
           ← Anterior
         </button>
-        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+        <span className="pagination-info">
           {currentPage} / {totalPages}
         </span>
         <button
@@ -480,16 +462,13 @@ export function DocumentoListado({
 
   const emptyState = (
     <div className="empty-state empty-state--xl">
-      <div
-        className="icon-box icon-box-lg mx-auto"
-        style={{ background: 'var(--color-surface-offset)', marginBottom: 'var(--space-4)' }}
-      >
+      <div className="icon-box icon-box-lg mx-auto empty-state-icon-surface">
         <FileText size={24} style={{ color: 'var(--color-text-faint)' }} />
       </div>
-      <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
+      <p className="empty-state-title--display">
         Todavía no tienes {cfg.label.toLowerCase()}
       </p>
-      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-5)', maxWidth: '36ch', margin: '0 auto var(--space-5)' }}>
+      <p className="empty-state-text--narrow">
         Crea tu primer{cfg.articuloFemenino ? 'a' : ''} {cfg.labelSingular} con el generador de herramientas.
       </p>
       <button onClick={handleCrear} className="btn btn-primary">
@@ -539,7 +518,7 @@ export function DocumentoListado({
               : rows.filter(r => r.estado === factFilter)
             return (
               <>
-                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                <div className="filter-row">
                   {FACT_FILTERS.map(({ key, label }) => {
                     const n = key === 'todos'         ? rows.length
                       : key === 'rectificativa' ? rows.filter(r => r.datos_json?.esRectificativa).length
@@ -558,7 +537,7 @@ export function DocumentoListado({
                   })}
                 </div>
                 {rowsFiltrados.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay facturas en este estado.</p>
+                  ? <p className="section-sub list-empty-msg">No hay facturas en este estado.</p>
                   : (() => {
                     const { items, totalPages } = paginar(rowsFiltrados)
                     return (
@@ -600,7 +579,7 @@ export function DocumentoListado({
               : rows.filter(r => r.estado === presFilter)
             return (
               <>
-                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                <div className="filter-row">
                   {PRES_FILTERS.map(({ key, label }) => (
                     <button
                       key={key}
@@ -619,7 +598,7 @@ export function DocumentoListado({
                   ))}
                 </div>
                 {rowsFiltrados.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay presupuestos en este estado.</p>
+                  ? <p className="section-sub list-empty-msg">No hay presupuestos en este estado.</p>
                   : (() => {
                     const { items, totalPages } = paginar(rowsFiltrados)
                     return (
@@ -641,11 +620,11 @@ export function DocumentoListado({
 
           {/* Calculadoras útiles */}
           {onNavCalc && (
-            <div style={{ marginTop: 'var(--space-8)', borderTop: '1px solid var(--color-divider)', paddingTop: 'var(--space-5)' }}>
-              <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', marginBottom: 'var(--space-3)' }}>
+            <div className="calc-shortcuts-section">
+              <p className="calc-shortcuts-label">
                 Calculadoras útiles
               </p>
-              <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              <div className="calc-shortcuts-row">
                 {[
                   { label: 'Cuota autónomos', section: 'cuota-autonomos', color: 'var(--color-primary)',  Icon: Calculator },
                   { label: 'Precio / hora',   section: 'precio-hora',     color: 'var(--color-purple)',   Icon: TrendingUp },
@@ -679,7 +658,7 @@ export function DocumentoListado({
             const rowsFiltrados = albFilter === 'todos' ? rows : rows.filter(r => r.estado === albFilter)
             return (
               <>
-                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                <div className="filter-row">
                   {ALB_FILTERS.map(({ key, label }) => {
                     const n = key === 'todos' ? rows.length : rows.filter(r => r.estado === key).length
                     return (
@@ -695,7 +674,7 @@ export function DocumentoListado({
                   })}
                 </div>
                 {rowsFiltrados.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay albaranes en este estado.</p>
+                  ? <p className="section-sub list-empty-msg">No hay albaranes en este estado.</p>
                   : (() => {
                     const { items, totalPages } = paginar(rowsFiltrados)
                     return (
@@ -732,7 +711,7 @@ export function DocumentoListado({
             const rowsFiltrados = contrFilter === 'todos' ? rows : rows.filter(r => r.estado === contrFilter)
             return (
               <>
-                <div className="flex gap-2" style={{ marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                <div className="filter-row">
                   {CONTR_FILTERS.map(({ key, label }) => {
                     const n = key === 'todos' ? rows.length : rows.filter(r => r.estado === key).length
                     if (key !== 'todos' && n === 0) return null
@@ -749,7 +728,7 @@ export function DocumentoListado({
                   })}
                 </div>
                 {rowsFiltrados.length === 0
-                  ? <p className="section-sub" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>No hay contratos en este estado.</p>
+                  ? <p className="section-sub list-empty-msg">No hay contratos en este estado.</p>
                   : (() => {
                     const { items, totalPages } = paginar(rowsFiltrados)
                     return (
@@ -788,7 +767,7 @@ export function DocumentoListado({
 
       {/* Backdrop para cerrar el dropdown al hacer clic fuera */}
       {dropdownOpenId && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 29 }} onClick={closeDropdown} />
+        <div className="dropdown-overlay" onClick={closeDropdown} />
       )}
 
       {/* Portal dropdown — fuera del DOM de la tabla para evitar clipping */}
@@ -929,8 +908,7 @@ export function DocumentoListado({
           <div className="admin-modal-box admin-modal-sm" role="dialog" aria-modal="true" aria-label="Emitir factura">
             <div className="admin-modal-header">
               <div
-                className="icon-box icon-box-md"
-                style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}
+                className="icon-box icon-box-md icon-box--primary"
               >
                 <Send size={18} />
               </div>
@@ -940,7 +918,7 @@ export function DocumentoListado({
               </button>
             </div>
             <div className="admin-modal-body">
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+              <p className="modal-info-text">
                 Se asignará un <strong style={{ color: 'var(--color-text)' }}>número de factura definitivo</strong> y el documento
                 quedará registrado como emitido. Esta acción no se puede deshacer.
               </p>
@@ -983,8 +961,7 @@ export function DocumentoListado({
           <div className="admin-modal-box admin-modal-sm" role="dialog" aria-modal="true" aria-label="Convertir a factura">
             <div className="admin-modal-header">
               <div
-                className="icon-box icon-box-md"
-                style={{ background: 'var(--color-primary-highlight)', color: 'var(--color-primary)' }}
+                className="icon-box icon-box-md icon-box--primary"
               >
                 <ArrowRight size={18} />
               </div>
@@ -994,7 +971,7 @@ export function DocumentoListado({
               </button>
             </div>
             <div className="admin-modal-body">
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+              <p className="modal-info-text">
                 Se creará una <strong style={{ color: 'var(--color-text)' }}>factura en borrador</strong> con los datos del presupuesto.
                 El presupuesto quedará marcado como convertido.
               </p>

@@ -17,15 +17,25 @@ src/
 │   ├── auth/          # AuthModal, LoginForm, RegisterForm
 │   ├── calculadoras/   # CuotaAutónomos, PrecioHora, IvaIrpf
 │   └── home/
-├── hooks/             # useAuth, useDocumentEngine, useProfile
+├── hooks/             # useAuth, useProfile, useDocumentEngine, useClienteExteriorRules
 ├── lib/              # supabaseClient, userDocuments, empresa, regularClients
-├── store/            # authStore, documentStore, themeStore (Zustand)
-├── types/            # document.types, legalDoc.types, auth.types
+├── store/            # documentStore (persist), themeStore (persist), authStore (wrappers supabase)
+├── types/            # document.types, legalDoc.types, profile, docRow.types
 └── utils/            # formatters, calculos, cn, validarNif, exportPdf
 ```
 
 ## CSS — Regla dorada
-**`style={{}}` SOLO para valores runtime** (colores de estado, porcentajes, `--token`). Todo estático → clases CSS.
+
+**Estilos estáticos → clases CSS. `style={{}}` sólo cuando el valor lo justifica.**
+
+`style={{}}` permitido únicamente cuando:
+- El valor se calcula en runtime: colores de estado (`estadoColor`), porcentajes (`width: ${pct}%`), posición de un dropdown.
+- CSS custom property dinámica como token: `--pill-color: estadoColor`, `--i: index`, `--confirm-bg`.
+- `fontVariantNumeric: 'tabular-nums'` (excepción explícita).
+- Override de **una sola propiedad** sobre una clase base (ej. `marginTop: 2`, `color: meta.ctaColor`).
+- Componentes PDF — `DocumentEngine`, `LegalDocEngine`, `LegalDocPreview` están exentos del scrutiny normal porque su salida debe ser visualmente fija (papel) e independiente del tema.
+
+Antes de escribir `style={{}}` pregúntate: *¿este valor cambia entre renders?* Si no → va en una clase CSS.
 
 | Elemento | Clase(s) |
 |---|---|
@@ -35,9 +45,12 @@ src/
 | Modal admin | `.overlay.overlay-dark.overlay-z200` + `.admin-modal-box.admin-modal-{sm/md/lg}` |
 | Modal estándar | `.overlay.overlay-dark.overlay-z60` + `.modal-box.modal-{sm/lg}` |
 | Badge | `.badge` + `.badge-{primary/success/copper/purple/teal/gold/error/muted}` |
+| Pill de estado | `.status-pill` + `.status-pill--{gold/error}` (color custom: `style={{ '--pill-color': X } as React.CSSProperties}`) |
 | Empty state | `.empty-state` + `.empty-state--xl` |
+| Calculadora | `.calc-card-pad`, `.calc-grid` + `.calc-grid--{2/3/2-min0}`, `.calc-result--{copper/teal/purple}`, `.tool-icon-box--{copper/teal/purple}` |
+| Listado de docs | `.filter-row`, `.list-empty-msg`, `.pagination-row`, `.status-cell`, `.data-td--meta`, `.data-td-right--strong` |
 
-Tokens en `src/index.css`: `--color-*`, `--font-*`, `--text-*`, `--space-*`, `--radius-*`, `--transition`
+Tokens en `src/index.css`: `--color-*`, `--font-*`, `--text-*`, `--space-*`, `--radius-*`, `--transition`. Para inventario completo de clases → `/css-guide`.
 
 ## Guests vs Registrados
 - **Guest**: rutas públicas (`/factura`, `/presupuesto`, `/albaran`, `/contrato`, `/nda`, `/reclamacion-pago`). Sin numeración consecutive — número fijo pre-rellenado editable.
@@ -102,25 +115,25 @@ npm run lint     # eslint .
 
 Estas reglas, si se cambian, **rompen la app**:
 
-### 1. `select('*')` en listados — `DocumentoListado.tsx:142`
+### 1. `select('*')` en listados — `DocumentoListado.tsx:141`
 ```tsx
 .from(tipo).select('*')
 ```
 Las 6 tablas tienen esquemas distintos con columnas desnormalizadas. `*` funciona sin mantener 6 listas de columnas.
 
-### 2. `DocRow = Record<string, any>` — `DocumentoListado.tsx:32`
+### 2. `DocRow = Record<string, any>` — `types/docRow.types.ts:6`
 ```tsx
-type DocRow = Record<string, any>
+export type DocRow = Record<string, any>
 ```
-El `any` es **intencional y contenido**. `unknown` generaría 20+ errores de tipo en accesos como `row.numero`, `row.estado`.
+El `any` es **intencional y contenido** (con `eslint-disable` justificado). `unknown` generaría 20+ errores de tipo en accesos como `row.numero`, `row.estado`. `DocumentoListado` lo importa desde `types/`.
 
-### 3. `key={editorId ?? 'new-tipo'}` en editores — `UserPage.tsx:427,458,498,527,552,566`
+### 3. `key={editorId ?? 'new-tipo'}` en editores — `UserPage.tsx:447,478,519,...`
 ```tsx
 <FacturaPage key={editorId ?? 'new-factura'} ... />
 ```
 Fuerza remount del formulario al cambiar documento. Sin esto, el form conserva valores anteriores.
 
-### 4. Patrón `active` flag en useEffect async — `DocumentoListado.tsx:136`
+### 4. Patrón `active` flag en useEffect async — `DocumentoListado.tsx:135`
 ```tsx
 let active = true
 async function fetch() {
@@ -131,23 +144,27 @@ async function fetch() {
 ```
 Evita memory leaks cuando el componente se desmonta antes de que termine el async.
 
-### 5. `reset(defaultValues)` en LegalDocEngine — `LegalDocEngine.tsx:113`
+### 5. `reset(defaultValues)` en LegalDocEngine — `LegalDocEngine.tsx:121-123`
 ```tsx
-useEffect(() => { reset(defaultValues) }, [defaultValues, reset])
+useEffect(() => { reset(defaultValues as DefaultValues<T>) }, [defaultValues, reset])
 ```
 Sincroniza el form cuando `defaultValues` cambia al navegar entre documentos.
 
-### 6. `setEmisorGuardado` actualiza localStorage + store atómico — `documentStore.ts:47`
-```tsx
-setEmisorGuardado: (emisor) => {
-  localStorage.setItem(EMISOR_KEY, JSON.stringify(emisor))
-  set({ emisorGuardado: emisor })
-}
-```
-Si se desincronizan, los datos del emisor se pierden.
+### 6. `documentStore.emisorGuardado` persistido vía `persist` middleware — `documentStore.ts`
+Zustand `persist` con `partialize` restringe la persistencia a `emisorGuardado`. `onRehydrateStorage` migra la clave legacy `ha_emisor` (versión previa con `localStorage` manual) a la nueva `ha-document-store` y la borra. Tests cubren esa migración en `documentStore.test.ts`.
 
-### 7. RPC `next_document_number` para numeración — `userDocuments.ts`
-Todas las funciones de numeración usan este RPC para manejar concurrencia de forma segura.
+### 7. RPC `next_document_number` + factory `getNextNumero` — `userDocuments.ts:70-89`
+```tsx
+async function getNextNumero(userId, tipo, prefijo) { /* RPC */ }
+const getNextPresupuestoNumero = (uid) => getNextNumero(uid, 'presupuesto', 'PRE')
+// + 4 wrappers más (factura, albaran, rectificativa, contrato)
+```
+La RPC garantiza concurrencia segura. La factory evita duplicación entre los 5 tipos.
 
 ### 8. `datos_json` JSONB como estructura completa — todas las tablas
 Los documentos almacenan la estructura completa en `datos_json` mientras mantienen columnas desnormalizadas (`cliente_nombre`, etc.) para listados.
+
+### 9. `useAuth` vs `useProfile` — separación de responsabilidades
+- `useAuth()` expone sólo `{ user, isAuthenticated, loading }` (sesión Supabase).
+- `useProfile()` carga la fila de `profiles` y expone `{ profile, plan, isPremium, ... }`.
+- No leas `profile/plan/isPremium` desde `useAuth`. No están ahí.
