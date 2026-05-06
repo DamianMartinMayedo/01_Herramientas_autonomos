@@ -61,7 +61,6 @@ export function UserMenu({ user, plan }: UserMenuProps) {
           <button
             className="user-menu__item"
             onClick={handleSignOut}
-            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-2) var(--space-3)', color: 'var(--color-text)', fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', borderRadius: 'var(--radius-md)' }}
           >
             <LogOut size={14} /> Cerrar sesión
           </button>

@@ -157,7 +157,7 @@ function ToolCard({ h }: { h: Herramienta }) {
           </div>
           {h.id === 'factura' && (
             <div className="tooltip-wrap">
-              <AlertTriangle style={{ color: 'var(--color-gold)', width: 20, height: 20 }} />
+              <AlertTriangle className="tooltip-warn-icon" />
               <div className="tooltip-content">
                 Esta herramienta genera facturas en formato PDF pero
                 <strong> no está conectada a Verifactu</strong>. En el futuro
@@ -359,7 +359,7 @@ export function HomePage() {
             </div>
           ) : blogPosts.length === 0 ? (
             <div className="blog-empty">
-              <BookOpen size={28} style={{ color: 'var(--color-text-faint)', margin: '0 auto var(--space-3)' }} />
+              <BookOpen size={28} className="blog-empty-icon" />
               <p>Próximamente publicaremos guías y consejos útiles.</p>
             </div>
           ) : (

@@ -49,7 +49,7 @@ export function CuotaCalculator() {
         description="Calcula tu cuota mensual de autónomos según el sistema de tramos por ingresos reales. Actualizado a 2026."
       />
       <div className="tool-page-header">
-        <div className="tool-icon-box" style={{ background: 'var(--color-copper-highlight)', color: 'var(--color-copper)' }}>
+        <div className="tool-icon-box tool-icon-box--copper">
           <Calculator size={24} />
         </div>
         <div>
@@ -58,8 +58,8 @@ export function CuotaCalculator() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: '1fr 1fr' }}>
+      <div className="card calc-card-pad">
+        <div className="calc-grid calc-grid--2">
           <div className="input-group">
             <label className="input-label">Ingresos mensuales (€)</label>
             <input type="number" className="input-v3" placeholder="0" value={ingresos} onChange={e => handleInput(e.target.value, setIngresos)} />
@@ -77,12 +77,9 @@ export function CuotaCalculator() {
 
         <div className="calc-summary">
           <h3 className="calc-summary-title">Tu cuota estimada (2024)</h3>
-          <div className="calc-result" style={{
-            background: 'var(--color-copper-highlight)',
-            border: '2px solid var(--color-copper)',
-          }}>
+          <div className="calc-result calc-result--copper">
             <span className="calc-result-value">{tramo.cuota}€</span>
-            <span className="calc-result-unit" style={{ color: 'var(--color-copper)' }}>/ mes</span>
+            <span className="calc-result-unit calc-result-unit--copper">/ mes</span>
           </div>
           <p className="calc-result-note">
             Estimación basada en los tramos de rendimiento neto vigentes. La cuota final puede variar según circunstancias personales.

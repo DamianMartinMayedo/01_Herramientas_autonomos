@@ -41,7 +41,7 @@ export function PrecioHoraCalculator() {
         description="Calcula cuánto debes cobrar por hora para cubrir tus gastos y alcanzar tu salario deseado como autónomo."
       />
       <div className="tool-page-header">
-        <div className="tool-icon-box" style={{ background: 'var(--color-purple-highlight)', color: 'var(--color-purple)' }}>
+        <div className="tool-icon-box tool-icon-box--purple">
           <Calculator size={24} />
         </div>
         <div>
@@ -50,9 +50,9 @@ export function PrecioHoraCalculator() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-          <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)' }}>
+      <div className="card calc-card-pad">
+        <div className="calc-grid">
+          <div className="calc-grid calc-grid--2-min0">
             <div className="input-group">
               <label className="input-label">Sueldo neto deseado (€/mes)</label>
               <input type="number" className="input-v3" placeholder="1500" value={salarioNeto} onChange={e => handleInput(e.target.value, setSalarioNeto)} />
@@ -65,7 +65,7 @@ export function PrecioHoraCalculator() {
 
           <div className="calc-divider" />
 
-          <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: '1fr 1fr 1fr' }}>
+          <div className="calc-grid calc-grid--3">
             <div className="input-group">
               <label className="input-label">Horas/sem</label>
               <input type="number" className="input-v3" placeholder="40" value={horasSemanales} onChange={e => handleInput(e.target.value, setHorasSemanales)} />
@@ -79,27 +79,24 @@ export function PrecioHoraCalculator() {
               <input type="number" className="input-v3" placeholder="4" title="Semanas de vacaciones al año" value={vacacionesSemanas} onChange={e => handleInput(e.target.value, setVacacionesSemanas)} />
             </div>
           </div>
-          <p style={{ fontSize: '11px', color: 'var(--color-text-faint)' }}>
+          <p className="calc-help-note">
             *% Facturable: parte del tiempo dedicado a clientes (facturable). El resto va a gestión, formación, ventas, etc. Un estimado razonable es 60%.
           </p>
         </div>
 
         <div className="calc-summary">
           <h3 className="calc-summary-title">Tu tarifa mínima recomendada</h3>
-          <div className="calc-result" style={{
-            background: 'var(--color-purple-highlight)',
-            border: '2px solid var(--color-purple)',
-          }}>
+          <div className="calc-result calc-result--purple">
             <span className="calc-result-value">{precioHora.toFixed(2)}€</span>
-            <span className="calc-result-unit" style={{ color: 'var(--color-purple)' }}>/ hora</span>
+            <span className="calc-result-unit calc-result-unit--purple">/ hora</span>
           </div>
-          <div className="calc-row" style={{ marginTop: 'var(--space-4)' }}>
-            <span style={{ color: 'var(--color-text-muted)' }}>Mínimo facturación mensual:</span>
-            <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{gastosTotalMensual.toFixed(2)} €</span>
+          <div className="calc-row calc-row-mt">
+            <span className="text-muted">Mínimo facturación mensual:</span>
+            <span className="calc-row-value--strong">{gastosTotalMensual.toFixed(2)} €</span>
           </div>
           <div className="calc-row">
-            <span style={{ color: 'var(--color-text-muted)' }}>Horas facturables al mes:</span>
-            <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{(horasFacturablesAnuales / 12).toFixed(1)} h</span>
+            <span className="text-muted">Horas facturables al mes:</span>
+            <span className="calc-row-value--strong">{(horasFacturablesAnuales / 12).toFixed(1)} h</span>
           </div>
         </div>
       </div>

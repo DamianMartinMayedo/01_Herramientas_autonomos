@@ -2697,3 +2697,59 @@ body {
   background: var(--color-divider);
   margin: var(--space-1) 0;
 }
+
+/* ============================================================
+   Calculadoras — variantes temáticas y layout helpers
+============================================================ */
+.tool-icon-box--copper { background: var(--color-copper-highlight); color: var(--color-copper); }
+.tool-icon-box--teal   { background: var(--color-teal-highlight);   color: var(--color-teal); }
+.tool-icon-box--purple { background: var(--color-purple-highlight); color: var(--color-purple); }
+
+.calc-result--copper { background: var(--color-copper-highlight); border: 2px solid var(--color-copper); }
+.calc-result--teal   { background: var(--color-teal-highlight);   border: 2px solid var(--color-teal); }
+.calc-result--purple { background: var(--color-purple-highlight); border: 2px solid var(--color-purple); }
+
+.calc-result-unit--copper { color: var(--color-copper); }
+.calc-result-unit--teal   { color: var(--color-teal); }
+.calc-result-unit--purple { color: var(--color-purple); }
+.calc-result-label--teal  { color: var(--color-teal); }
+
+.calc-card-pad   { padding: var(--space-6); }
+.calc-grid       { display: grid; gap: var(--space-4); }
+.calc-grid--2    { grid-template-columns: 1fr 1fr; }
+.calc-grid--3    { grid-template-columns: 1fr 1fr 1fr; }
+.calc-grid--2-min0 { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+
+.calc-breakdown       { display: flex; flex-direction: column; gap: var(--space-3); }
+.calc-breakdown-title { font-size: var(--text-base); font-weight: 700; margin-bottom: var(--space-1); }
+
+.calc-row-value         { font-family: var(--font-mono); font-weight: 500; }
+.calc-row-value--bold   { font-family: var(--font-mono); font-weight: 700; }
+.calc-row-value--strong { font-family: var(--font-mono); font-weight: 600; }
+.calc-row-label-bold    { font-weight: 700; }
+.calc-row-mt            { margin-top: var(--space-4); }
+
+.calc-help-note { font-size: var(--text-xs); color: var(--color-text-faint); }
+
+/* Utility — color de texto secundario */
+.text-muted { color: var(--color-text-muted); }
+
+/* HomePage — icon utilities */
+.tooltip-warn-icon { color: var(--color-gold); width: 20px; height: 20px; }
+.blog-empty-icon   { color: var(--color-text-faint); margin: 0 auto var(--space-3); }
+
+/* UserMenu — botón "Cerrar sesión" del dropdown */
+.user-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-md);
+}

@@ -33,7 +33,7 @@ export function IvaIrpfCalculator() {
         description="Calcula el IVA a repercutir y la retención de IRPF de tus facturas. Herramienta gratuita para autónomos."
       />
       <div className="tool-page-header">
-        <div className="tool-icon-box" style={{ background: 'var(--color-teal-highlight)', color: 'var(--color-teal)' }}>
+        <div className="tool-icon-box tool-icon-box--teal">
           <Calculator size={24} />
         </div>
         <div>
@@ -42,13 +42,13 @@ export function IvaIrpfCalculator() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+      <div className="card calc-card-pad">
+        <div className="calc-grid">
           <div className="input-group">
             <label className="input-label">Base imponible (€)</label>
             <input type="number" className="input-v3" placeholder="1000" value={baseImponible} onChange={e => handleInput(e.target.value, setBaseImponible)} />
           </div>
-          <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: '1fr 1fr' }}>
+          <div className="calc-grid calc-grid--2">
             <div className="input-group">
               <label className="input-label">Tipo de IVA (%)</label>
               <select className="select-v3" value={tipoIva} onChange={e => handleInput(e.target.value, setTipoIva)}>
@@ -70,8 +70,8 @@ export function IvaIrpfCalculator() {
         </div>
 
         {/* Desglose */}
-        <div className="calc-summary" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-1)' }}>Desglose de la factura</h3>
+        <div className="calc-summary calc-breakdown">
+          <h3 className="calc-breakdown-title">Desglose de la factura</h3>
 
           {[
             { label: 'Base imponible',              value: vBase,        muted: true },
@@ -80,18 +80,15 @@ export function IvaIrpfCalculator() {
             { label: `Retención IRPF (${vIrpf}%)`,  value: -retencion,   muted: true },
           ].map(({ label, value, muted, bold }) => (
             <div key={label} className="calc-row">
-              <span style={{ color: muted ? 'var(--color-text-muted)' : 'var(--color-text)', fontWeight: bold ? 700 : 400 }}>{label}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: bold ? 700 : 500 }}>
+              <span className={bold ? 'calc-row-label-bold' : muted ? 'text-muted' : ''}>{label}</span>
+              <span className={bold ? 'calc-row-value--bold' : 'calc-row-value'}>
                 {value >= 0 ? '' : '−'}{Math.abs(value).toFixed(2)} €
               </span>
             </div>
           ))}
 
-          <div className="calc-result" style={{
-            background: 'var(--color-teal-highlight)',
-            border: '2px solid var(--color-teal)',
-          }}>
-            <p className="calc-result-label" style={{ color: 'var(--color-teal)' }}>Líquido a percibir</p>
+          <div className="calc-result calc-result--teal">
+            <p className="calc-result-label calc-result-label--teal">Líquido a percibir</p>
             <span className="calc-result-value">{liquidoPercibir.toFixed(2)}€</span>
           </div>
 
