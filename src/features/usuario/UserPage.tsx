@@ -22,7 +22,7 @@ import { AlbaranPage } from '../albaran/AlbaranPage'
 import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
-import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, enviarContrato, enviarNda, type UserDocumentTable } from '../../lib/userDocuments'
+import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, enviarContrato, enviarNda, enviarReclamacion, type UserDocumentTable } from '../../lib/userDocuments'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -41,7 +41,7 @@ type EditorState =
   | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
   | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null; estado?: string | null; autoDownload?: boolean }
   | { section: 'ndas'; id?: string; data?: NdaDoc | null; estado?: string | null; autoDownload?: boolean }
-  | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null }
+  | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null; estado?: string | null; autoDownload?: boolean }
   | null
 
 const SECTION_TO_TABLE: Record<TipoDocumento, UserDocumentTable> = {
@@ -79,6 +79,9 @@ export function UserPage() {
   } | null>(null)
   const [emailNdaState, setEmailNdaState] = useState<{
     email?: string; nombre: string; doc: NdaDoc; id?: string; isReenviar: boolean
+  } | null>(null)
+  const [emailReclamacionState, setEmailReclamacionState] = useState<{
+    email?: string; nombre: string; doc: ReclamacionPagoDoc; id?: string; isReenviar: boolean
   } | null>(null)
 
   useEffect(() => {
@@ -285,6 +288,19 @@ export function UserPage() {
     })
   }
 
+  const handleDescargarReclamacion = async (id: string) => {
+    const result = await getStoredUserDocument('reclamaciones', id)
+    if (result.error || !result.data?.datos_json) return
+    setSearchParams({ s: 'reclamaciones' })
+    setEditor({
+      section: 'reclamaciones',
+      id,
+      data: result.data.datos_json as ReclamacionPagoDoc,
+      estado: result.data.estado,
+      autoDownload: true,
+    })
+  }
+
   const handleEmitirFactura = async (id: string) => {
     if (!userId) return
     const result = await emitirFactura(userId, id)
@@ -445,6 +461,18 @@ export function UserPage() {
     bumpRefresh()
   }
 
+  const handleEnviarReclamacionDesdeListado = async (id: string) => {
+    if (!userId) return
+    const result = await enviarReclamacion(userId, id)
+    if (result.error) {
+      setAlertState({ msg: 'No se pudo enviar la reclamación.', variant: 'danger' })
+      return
+    }
+    setFlashMessage(`Reclamación enviada${result.numero ? `: ${result.numero}` : ''}.`)
+    setTimeout(() => setFlashMessage(null), 3000)
+    bumpRefresh()
+  }
+
   const handleClienteGuardado = async (payload: RegularClientInput) => {
     if (!userId) throw new Error('No hay sesión activa')
     const result = await createRegularClient(userId, payload)
@@ -469,6 +497,7 @@ export function UserPage() {
             else if (section === 'albaranes') void handleDescargarAlbaran(id)
             else if (section === 'contratos') void handleDescargarContrato(id)
             else if (section === 'ndas') void handleDescargarNda(id)
+            else if (section === 'reclamaciones') void handleDescargarReclamacion(id)
           }}
           onEmitir={(id) => { void handleEmitirFactura(id) }}
           onDuplicar={(id) => { void handleDuplicarFactura(id) }}
@@ -480,6 +509,7 @@ export function UserPage() {
           onEnviarAlbaran={(id) => { void handleEnviarAlbaranDesdeListado(id) }}
           onEnviarContrato={(id) => { void handleEnviarContratoDesdeListado(id) }}
           onEnviarNda={(id) => { void handleEnviarNdaDesdeListado(id) }}
+          onEnviarReclamacion={(id) => { void handleEnviarReclamacionDesdeListado(id) }}
           onNavCalc={(s) => { setCalcOrigin(section as UserSection); setSearchParams({ s }) }}
           flashMessage={flashMessage}
         />
@@ -645,15 +675,29 @@ export function UserPage() {
     }
 
     if (section === 'reclamaciones') {
+      const estadoReclamacion = (editor as { estado?: string | null }).estado
       return (
         <ReclamacionPage
-          key={editor?.id ?? 'new-reclamacion'}
+          key={editor.id ?? 'new-reclamacion'}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as ReclamacionPagoDoc | undefined) ?? undefined}
           onSave={(document) => saveLegal('reclamaciones', document, editor.id)}
           saving={saving}
           clientes={clientesDisponibles}
+          empresa={empresa}
+          userId={userId}
+          estadoReclamacion={estadoReclamacion ?? undefined}
+          autoOpenPreview={'autoDownload' in editor ? editor.autoDownload : undefined}
+          onEmailReclamacion={(doc) => {
+            setEmailReclamacionState({
+              email: doc.deudor?.email,
+              nombre: doc.metadatos?.referencia ? `Reclamación ${doc.metadatos.referencia}` : 'Reclamación',
+              doc,
+              id: editor.id,
+              isReenviar: Boolean(estadoReclamacion && estadoReclamacion !== 'borrador'),
+            })
+          }}
         />
       )
     }
@@ -790,6 +834,19 @@ export function UserPage() {
             bumpRefresh()
           }}
           onClose={() => setEmailNdaState(null)}
+        />
+      )}
+
+      {emailReclamacionState && (
+        <EmailModal
+          emailCliente={emailReclamacionState.email}
+          nombreDocumento={emailReclamacionState.nombre}
+          onSent={async () => {
+            if (!emailReclamacionState.id) return
+            await enviarReclamacion(userId as string, emailReclamacionState.id)
+            bumpRefresh()
+          }}
+          onClose={() => setEmailReclamacionState(null)}
         />
       )}
     </>

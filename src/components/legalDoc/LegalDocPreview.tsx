@@ -261,38 +261,50 @@ function PreviewNda({ doc }: { doc: NdaDoc }) {
 
 function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
   const diasLabel = doc.plazoRespuesta === 1 ? '1 día hábil' : `${doc.plazoRespuesta} días hábiles`
+  const tieneVencimiento = Boolean(doc.fechaVencimiento)
+  const acreedorId = doc.acreedor.nif ? ` (NIF ${doc.acreedor.nif})` : ''
 
   const parrafoIntro: Record<string, React.ReactNode> = {
     amistoso: (
       <>
-        Me pongo en contacto contigo para recordarte, de forma amistosa, que la factura n.º{' '}
+        Nos ponemos en contacto contigo para informarte de que la factura n.º{' '}
         <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
-        <strong>{formatFecha(doc.fechaFactura)}</strong> por un importe de{' '}
-        <strong>{formatEuro(doc.importeDeuda)}</strong>, venció el{' '}
-        <strong>{formatFecha(doc.fechaVencimiento)}</strong> y aún no hemos recibido el pago.
-        Entiendo que puede ser un simple olvido o un cruce de fechas, así que te lo comento
-        antes de que vaya a más.
+        <strong>{formatFecha(doc.fechaFactura)}</strong> por importe de{' '}
+        <strong>{formatEuro(doc.importeDeuda)}</strong>,{' '}
+        {tieneVencimiento ? (
+          <>venció el <strong>{formatFecha(doc.fechaVencimiento!)}</strong> y aún no consta el pago.</>
+        ) : (
+          <>está pendiente de pago.</>
+        )}{' '}
+        Confiamos en que se trate de un simple despiste y por eso te lo recordamos antes
+        de tomar otras medidas.
       </>
     ),
     formal: (
       <>
-        Por medio de la presente, <strong>{doc.acreedor.nombre}</strong>{doc.acreedor.nif ? `, con NIF ${doc.acreedor.nif},` : ','}{' '}
-        le comunica formalmente que la factura n.º <strong>{doc.referenciaFactura}</strong>,
-        emitida el <strong>{formatFecha(doc.fechaFactura)}</strong> por un importe de{' '}
-        <strong>{formatEuro(doc.importeDeuda)}</strong>, venció el{' '}
-        <strong>{formatFecha(doc.fechaVencimiento)}</strong> sin que se haya hecho
-        efectivo el pago correspondiente, a pesar de las gestiones previas realizadas.
+        Por medio de la presente,{' '}
+        <strong>{doc.acreedor.nombre}</strong>{acreedorId}{' '}
+        comunica formalmente que la factura n.º{' '}
+        <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
+        <strong>{formatFecha(doc.fechaFactura)}</strong> por un importe de{' '}
+        <strong>{formatEuro(doc.importeDeuda)}</strong>,{' '}
+        {tieneVencimiento ? (
+          <>venció el <strong>{formatFecha(doc.fechaVencimiento!)}</strong> sin que se haya recibido el pago.</>
+        ) : (
+          <>se encuentra pendiente de pago.</>
+        )}
       </>
     ),
     urgente: (
       <>
-        Mediante la presente comunicación, y con carácter urgente,{' '}
-        <strong>{doc.acreedor.nombre}</strong>{doc.acreedor.nif ? `, con NIF ${doc.acreedor.nif},` : ''}{' '}
-        le requiere el abono inmediato de la factura n.º{' '}
+        Por medio de la presente y con carácter de requerimiento urgente,{' '}
+        <strong>{doc.acreedor.nombre}</strong>{acreedorId}{' '}
+        requiere el pago inmediato de la factura n.º{' '}
         <strong>{doc.referenciaFactura}</strong>, emitida el{' '}
-        <strong>{formatFecha(doc.fechaFactura)}</strong> y vencida el{' '}
-        <strong>{formatFecha(doc.fechaVencimiento)}</strong>, por un importe de{' '}
-        <strong>{formatEuro(doc.importeDeuda)}</strong>, importe que continúa impagado.
+        <strong>{formatFecha(doc.fechaFactura)}</strong>
+        {tieneVencimiento && <> y vencida el <strong>{formatFecha(doc.fechaVencimiento!)}</strong></>}
+        , por importe de{' '}
+        <strong>{formatEuro(doc.importeDeuda)}</strong>, que continúa impagada a día de hoy.
       </>
     ),
   }
@@ -300,24 +312,25 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
   const parrafoCierre: Record<string, React.ReactNode> = {
     amistoso: (
       <>
-        Te agradeceré que efectúes el pago en los próximos{' '}
-        <strong>{diasLabel}</strong>. Si ya lo has realizado o tienes alguna duda,
-        no dudes en contactarme y lo aclaramos enseguida.
+        Te agradeceríamos que regularizaras el pago en los próximos{' '}
+        <strong>{diasLabel}</strong>. Si ya lo has hecho o tienes cualquier duda,
+        escríbenos y lo aclaramos sin problema.
       </>
     ),
     formal: (
       <>
-        Le rogamos proceda a la liquidación del importe pendiente en un plazo máximo de{' '}
-        <strong>{diasLabel}</strong> desde la recepción de esta comunicación. De no recibir
-        el pago en dicho plazo, nos veremos en la obligación de adoptar las medidas
+        Se ruega procedan a la liquidación del importe adeudado en un plazo máximo de{' '}
+        <strong>{diasLabel}</strong> desde la recepción de este escrito. De no recibirse
+        el pago en dicho plazo, esta parte se reserva el derecho de ejercitar las acciones
         que correspondan para la reclamación de la deuda.
       </>
     ),
     urgente: (
       <>
-        Le concedemos un plazo improrrogable de <strong>{diasLabel}</strong> para regularizar
-        la situación. Transcurrido dicho plazo sin que se haya recibido el pago,
-        procederemos sin demora adicional a ejercitar las acciones que correspondan.
+        Se concede un plazo improrrogable de <strong>{diasLabel}</strong> para regularizar
+        esta situación. Transcurrido dicho plazo sin haberse recibido el pago,
+        se ejercitarán sin más aviso las acciones legales y extrajudiciales que
+        asisten a esta parte.
       </>
     ),
   }
@@ -354,9 +367,9 @@ function PreviewReclamacion({ doc }: { doc: ReclamacionPagoDoc }) {
             borderLeft: '3px solid #fca5a5',
             paddingLeft: '0.6rem',
           }}>
-            Entre dichas acciones se incluye la reclamación judicial de la deuda más los intereses
+            Dichas acciones incluyen la reclamación judicial de la deuda más los intereses
             de demora legalmente aplicables, así como la comunicación de la incidencia a los
-            ficheros de solvencia patrimonial y crédito, todo ello sin necesidad de previo aviso adicional.
+            ficheros de solvencia patrimonial y crédito, sin necesidad de previo aviso adicional.
           </p>
         )}
 

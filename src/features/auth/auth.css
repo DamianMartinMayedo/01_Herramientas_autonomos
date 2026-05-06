@@ -97,10 +97,6 @@
   font-weight: 500;
   color: var(--color-error);
   margin-bottom: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-error-highlight);
-  border-radius: var(--radius-md);
-  border: 1.5px solid var(--color-error);
 }
 
 .auth-form__success {

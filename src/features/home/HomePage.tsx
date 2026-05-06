@@ -308,7 +308,7 @@ export function HomePage() {
               <div className="how-it-works-icon how-it-works-icon--simple">
                 <UserPlus size={18} />
               </div>
-              <h3 className="how-it-works-title how-it-works-title--simple">Descarga o guarda</h3>
+              <h3 className="how-it-works-title how-it-works-title--simple">Descarga o regístrate</h3>
               <p className="how-it-works-desc how-it-works-desc--simple">Descarga en PDF o regístrate para guardar y gestionar después.</p>
             </div>
           </div>
@@ -335,7 +335,7 @@ export function HomePage() {
               className="btn btn-white-copper"
               onClick={() => window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'register' } }))}
             >
-              Guardar mis documentos
+              Registrarme ahora
             </button>
           </div>
         </section>

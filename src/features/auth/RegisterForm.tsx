@@ -78,6 +78,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
             placeholder="Repite la contraseña"
             required
             autoComplete="new-password"
+            onKeyDown={e => { if (e.key === 'Enter' && !loading) handleSubmit(e) }}
           />
         </div>
         {error && <p className="auth-form__error">{error}</p>}

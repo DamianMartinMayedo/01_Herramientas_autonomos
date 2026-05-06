@@ -15,5 +15,13 @@ export function getClienteEmail(row: DocRow): string | undefined {
     if (typeof cliente.email === 'string') return cliente.email
     if (typeof cliente.correo === 'string') return cliente.correo
   }
+  if (datos?.parteB && typeof datos.parteB === 'object') {
+    const parteB = datos.parteB as Record<string, unknown>
+    if (typeof parteB.email === 'string') return parteB.email
+  }
+  if (datos?.deudor && typeof datos.deudor === 'object') {
+    const deudor = datos.deudor as Record<string, unknown>
+    if (typeof deudor.email === 'string') return deudor.email
+  }
   return undefined
 }

@@ -46,7 +46,7 @@ const TABLA_CONFIG: Record<TipoDocumento, {
   albaranes:     { label: 'Albaranes',     labelSingular: 'albarán',      articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/albaran' },
   contratos:     { label: 'Contratos',     labelSingular: 'contrato',     articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/contrato' },
   ndas:          { label: 'NDAs',          labelSingular: 'NDA',          articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'otra_parte_nombre', campoPrecio: undefined, routeCrear: '/nda' },
-  reclamaciones: { label: 'Reclamaciones', labelSingular: 'reclamación',  articuloFemenino: true,  campoTitulo: 'titulo',  campoSecundario: 'deudor_nombre',     campoPrecio: 'importe', routeCrear: '/reclamacion-pago' },
+  reclamaciones: { label: 'Reclamaciones', labelSingular: 'reclamación',  articuloFemenino: true,  campoTitulo: 'numero',  campoSecundario: 'deudor_nombre',     campoPrecio: 'importe', routeCrear: '/reclamacion-pago' },
 }
 
 const ESTADO_COLORS: Record<string, string> = {
@@ -85,6 +85,7 @@ interface Props {
   onEnviarAlbaran?: (id: string) => Promise<void> | void
   onEnviarContrato?: (id: string) => Promise<void> | void
   onEnviarNda?: (id: string) => Promise<void> | void
+  onEnviarReclamacion?: (id: string) => Promise<void> | void
   onNavCalc?: (section: string) => void
   flashMessage?: string | null
 }
@@ -94,7 +95,7 @@ interface Props {
 export function DocumentoListado({
   tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir,
   onEnviarPresupuesto, onAprobarPresupuesto, onConvertirAFactura,
-  onMarcarPresupuestoEntregado, onEnviarAlbaran, onEnviarContrato, onEnviarNda, onNavCalc,
+  onMarcarPresupuestoEntregado, onEnviarAlbaran, onEnviarContrato, onEnviarNda, onEnviarReclamacion, onNavCalc,
   flashMessage,
 }: Props) {
   const { user } = useAuth()
@@ -117,6 +118,8 @@ export function DocumentoListado({
   const [emailContratoListadoRow, setEmailContratoListadoRow] = useState<DocRow | null>(null)
   const [ndaFilter, setNdaFilter] = useState<'todos' | 'borrador' | 'enviado' | 'firmado'>('todos')
   const [emailNdaListadoRow, setEmailNdaListadoRow] = useState<DocRow | null>(null)
+  const [recFilter, setRecFilter] = useState<'todos' | 'borrador' | 'enviada' | 'resuelta'>('todos')
+  const [emailReclamacionListadoRow, setEmailReclamacionListadoRow] = useState<DocRow | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [alertState, setAlertState] = useState<{ title?: string; msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const userId = user?.id
@@ -129,10 +132,11 @@ export function DocumentoListado({
     setAlbFilter('todos')
     setContrFilter('todos')
     setNdaFilter('todos')
+    setRecFilter('todos')
     setCurrentPage(1)
   }, [tipo])
 
-  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter, albFilter, contrFilter, ndaFilter])
+  useEffect(() => { setCurrentPage(1) }, [factFilter, presFilter, albFilter, contrFilter, ndaFilter, recFilter])
 
   useEffect(() => {
     if (!userId) return
@@ -262,7 +266,7 @@ export function DocumentoListado({
   }
 
   const renderRowBase = (row: DocRow, actions: React.ReactNode, extraBadge?: React.ReactNode, overrideBadge?: React.ReactNode) => {
-    const titulo  = row[cfg.campoTitulo] || ((tipo === 'contratos' || tipo === 'ndas') ? row.titulo : null) || '—'
+    const titulo  = row[cfg.campoTitulo] || ((tipo === 'contratos' || tipo === 'ndas' || tipo === 'reclamaciones') ? row.titulo : null) || '—'
     const cliente = row[cfg.campoSecundario] ?? '—'
     const precio  = cfg.campoPrecio ? row[cfg.campoPrecio] : null
     const fecha   = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES') : ''
@@ -405,6 +409,20 @@ export function DocumentoListado({
   }
 
   const renderNdaRow = (row: DocRow) => {
+    const actions = (
+      <>
+        <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
+          <Pencil size={13} />
+        </button>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+          <MoreHorizontal size={13} />
+        </button>
+      </>
+    )
+    return renderRowBase(row, actions)
+  }
+
+  const renderReclamacionRow = (row: DocRow) => {
     const actions = (
       <>
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
@@ -821,8 +839,61 @@ export function DocumentoListado({
         </>
       )}
 
-      {/* Vista genérica para reclamaciones */}
-      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && tipo !== 'albaranes' && tipo !== 'contratos' && tipo !== 'ndas' && (
+      {/* Vista con filtros para reclamaciones */}
+      {!loading && tipo === 'reclamaciones' && (
+        <>
+          {rows.length === 0 && emptyState}
+          {rows.length > 0 && (() => {
+            const REC_FILTERS: { key: typeof recFilter; label: string }[] = [
+              { key: 'todos',       label: 'Todas' },
+              { key: 'borrador',    label: 'Borrador' },
+              { key: 'enviada',     label: 'Enviada' },
+              { key: 'resuelta',    label: 'Resuelta' },
+            ]
+            const rowsFiltrados = recFilter === 'todos' ? rows : rows.filter(r => r.estado === recFilter)
+            return (
+              <>
+                <div className="filter-row">
+                  {REC_FILTERS.map(({ key, label }) => {
+                    const n = key === 'todos' ? rows.length : rows.filter(r => r.estado === key).length
+                    if (key !== 'todos' && n === 0) return null
+                    return (
+                      <button
+                        key={key}
+                        className={`filter-pill${recFilter === key ? ' active' : ''}`}
+                        aria-selected={recFilter === key}
+                        onClick={() => setRecFilter(key)}
+                      >
+                        {label}{key !== 'todos' && n > 0 ? ` (${n})` : ''}
+                      </button>
+                    )
+                  })}
+                </div>
+                {rowsFiltrados.length === 0
+                  ? <p className="section-sub list-empty-msg">No hay reclamaciones en este estado.</p>
+                  : (() => {
+                    const { items, totalPages } = paginar(rowsFiltrados)
+                    return (
+                      <>
+                        <div className="card card-no-pad">
+                          <table className="data-table">
+                            {renderTableHeader()}
+                            <tbody>{items.map(row => renderReclamacionRow(row))}</tbody>
+                          </table>
+                        </div>
+                        {renderPaginacion(totalPages)}
+                      </>
+                    )
+                  })()
+                }
+              </>
+            )
+          })()}
+        </>
+      )}
+
+      {/* Vista genérica (sin uso actual, todos los tipos tienen vista propia) */}
+      {!loading && tipo !== 'facturas' && tipo !== 'presupuestos' && tipo !== 'albaranes' && tipo !== 'contratos' && tipo !== 'ndas' && tipo !== 'reclamaciones' && (
         <>
           {rows.length === 0 && emptyState}
           {rows.length > 0 && (
@@ -953,6 +1024,34 @@ export function DocumentoListado({
             <div className="dropdown-divider" />
             <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailNdaListadoRow(row) }}>
               <Mail size={13} /> {row.estado === 'enviado' ? 'Reenviar por correo' : 'Enviar por correo'}
+            </button>
+            <div className="dropdown-divider" />
+            <button role="menuitem" className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
+              <Trash2 size={13} /> Eliminar
+            </button>
+          </>
+        ) : tipo === 'reclamaciones' ? (
+          <>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onOpen?.(row.id) }}><Pencil size={13} /> Editar</button>
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onDescargar?.(row.id) }}><Download size={13} /> Descargar</button>
+            {row.estado === 'borrador' && (
+              <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onEnviarReclamacion?.(row.id) }}>
+                <CheckCircle2 size={13} /> Marcar como enviada
+              </button>
+            )}
+            {row.estado === 'enviada' && (
+              <button role="menuitem" className="dropdown-item" onClick={async () => {
+                closeDropdown()
+                const { error } = await supabase.from('reclamaciones').update({ estado: 'resuelta' }).eq('id', row.id)
+                if (!error) setRows(prev => prev.map(r => r.id === row.id ? { ...r, estado: 'resuelta' } : r))
+              }}>
+                <CheckCircle2 size={13} /> Marcar como resuelta
+              </button>
+            )}
+            <div className="dropdown-divider" />
+            <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); setEmailReclamacionListadoRow(row) }}>
+              <Mail size={13} /> {row.estado === 'enviada' ? 'Reenviar por correo' : 'Enviar por correo'}
             </button>
             <div className="dropdown-divider" />
             <button role="menuitem" className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); handleDeleteRequest(row.id) }}>
@@ -1136,6 +1235,20 @@ export function DocumentoListado({
           }
           onSent={async () => { await onEnviarNda?.(emailNdaListadoRow.id) }}
           onClose={() => setEmailNdaListadoRow(null)}
+        />
+      )}
+
+      {/* Email reclamación desde listado — marca como enviada al enviar */}
+      {emailReclamacionListadoRow && (
+        <EmailModal
+          emailCliente={getClienteEmail(emailReclamacionListadoRow)}
+          nombreDocumento={
+            emailReclamacionListadoRow.numero
+              ? `Reclamación ${emailReclamacionListadoRow.numero as string}`
+              : 'Reclamación'
+          }
+          onSent={async () => { await onEnviarReclamacion?.(emailReclamacionListadoRow.id) }}
+          onClose={() => setEmailReclamacionListadoRow(null)}
         />
       )}
 

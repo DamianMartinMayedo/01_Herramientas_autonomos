@@ -51,6 +51,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
             placeholder="••••••••"
             required
             autoComplete="current-password"
+            onKeyDown={e => { if (e.key === 'Enter') handleSubmit(e) }}
           />
         </div>
         {error && <p className="auth-form__error">{error}</p>}

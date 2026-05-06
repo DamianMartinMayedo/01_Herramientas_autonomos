@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient'
 import type { PostgrestError } from '@supabase/supabase-js'
 import type { DocumentoBase, TotalesDocumento } from '../types/document.types'
 import type { ContratoServiciosDoc, LegalDoc, NdaDoc, ReclamacionPagoDoc } from '../types/legalDoc.types'
+import type { DocRow } from '../types/docRow.types'
 
 export type UserDocumentTable =
   | 'facturas'
@@ -96,6 +97,7 @@ const getNextAlbaranNumero = (userId: string) => getNextNumero(userId, 'albaran'
 const getNextRectificativaNumero = (userId: string) => getNextNumero(userId, 'rectificativa', 'R')
 const getNextContratoNumero = (userId: string) => getNextNumero(userId, 'contrato', 'CON')
 const getNextNdaNumero = (userId: string) => getNextNumero(userId, 'nda', 'NDA')
+const getNextReclamacionNumero = (userId: string) => getNextNumero(userId, 'reclamacion', 'REC')
 
 export async function saveBusinessDocument(params: {
   table: 'facturas' | 'presupuestos' | 'albaranes'
@@ -398,24 +400,38 @@ export async function saveLegalDocument(params: {
     }
   } else {
     const reclamacion = document as ReclamacionPagoDoc
+    let numeroRec: string | null = reclamacion.metadatos.referencia || null
+
+    if (!id && !numeroRec) {
+      const { numero, error: nextError } = await getNextReclamacionNumero(userId)
+      if (nextError) {
+        return { data: null, error: nextError as { message: string }, numero: null as string | null }
+      }
+      numeroRec = numero
+    }
+
+    const updatedMetadatos = { ...reclamacion.metadatos, referencia: numeroRec ?? reclamacion.metadatos.referencia }
     payload = {
       user_id: userId,
-      titulo: reclamacion.metadatos.referencia || `Reclamacion ${reclamacion.deudor.nombre || ''}`.trim() || 'Reclamación',
+      titulo: numeroRec || `Reclamacion ${reclamacion.deudor.nombre || ''}`.trim() || 'Reclamación',
       fecha: reclamacion.metadatos.fecha,
       deudor_nombre: reclamacion.deudor.nombre,
       deudor_nif: reclamacion.deudor.nif,
       deudor_email: reclamacion.deudor.email,
       importe: reclamacion.importeDeuda,
-      estado: 'borrador',
+      estado: finalizar ? 'enviada' : 'borrador',
       notas: reclamacion.notas,
-      datos_json: reclamacion,
+      datos_json: { ...reclamacion, metadatos: updatedMetadatos },
+    }
+    if (!id || numeroRec) {
+      payload.numero = numeroRec
     }
   }
 
   const result = await writeRowWithRetry({ table, id, payload })
   return {
     ...result,
-    numero: table === 'contratos' || table === 'ndas' ? (payload.numero as string | null) : null,
+    numero: table === 'contratos' || table === 'ndas' || table === 'reclamaciones' ? (payload.numero as string | null) : null,
   }
 }
 
@@ -491,6 +507,44 @@ export async function enviarNda(userId: string, id: string) {
     const { error: updateError } = await supabase
       .from('ndas')
       .update({ estado: 'enviado' })
+      .eq('id', id)
+
+    return { error: updateError, numero: null as string | null }
+  }
+}
+
+export async function enviarReclamacion(userId: string, id: string) {
+  try {
+    const { data: current, error: fetchError } = await supabase
+      .from('reclamaciones')
+      .select('numero, datos_json')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    let numero = (current?.numero as string | null) || null
+    if (!numero) {
+      const { numero: nextNumero, error: nextError } = await getNextReclamacionNumero(userId)
+      if (nextError) throw nextError
+      numero = nextNumero
+    }
+
+    const datosJson = current?.datos_json as ReclamacionPagoDoc | null
+    const updatedDatosJson = datosJson
+      ? { ...datosJson, metadatos: { ...datosJson.metadatos, referencia: numero ?? datosJson.metadatos.referencia } }
+      : datosJson
+
+    const { error: updateError } = await supabase
+      .from('reclamaciones')
+      .update({ numero, estado: 'enviada', datos_json: updatedDatosJson })
+      .eq('id', id)
+
+    return { error: updateError, numero }
+  } catch {
+    const { error: updateError } = await supabase
+      .from('reclamaciones')
+      .update({ estado: 'enviada' })
       .eq('id', id)
 
     return { error: updateError, numero: null as string | null }
@@ -586,4 +640,26 @@ export async function getStoredUserDocument(table: UserDocumentTable, id: string
     .single()
 
   return { data: data as UserDocumentRow | null, error }
+}
+
+export async function getFacturasEmitidas(
+  userId: string,
+  clienteNombre?: string,
+  clienteEmail?: string,
+) {
+  let query = supabase
+    .from('facturas')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('estado', 'emitida')
+
+  if (clienteNombre) {
+    query = query.ilike('cliente_nombre', `%${clienteNombre}%`)
+  }
+  if (clienteEmail) {
+    query = query.eq('cliente_email', clienteEmail)
+  }
+
+  const { data, error } = await query.order('fecha', { ascending: false })
+  return { data: data as DocRow[] | null, error }
 }

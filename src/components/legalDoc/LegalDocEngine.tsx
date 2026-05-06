@@ -15,6 +15,7 @@ import { Button } from '../ui/Button'
 import { AuthModal } from '../../features/auth/AuthModal'
 import type { RegularClient } from '../../types/regularClient.types'
 import { regularClientToParteLegal } from '../../types/regularClient.types'
+import { useDocumentStore } from '../../store/documentStore'
 
 export interface LegalDocEngineProps<T extends LegalDoc> {
   tipo: TipoLegalDoc
@@ -92,6 +93,8 @@ export function LegalDocEngine<T extends LegalDoc>({
     if (autoOpenPreview) setModalAbierto(true)
   }, [autoOpenPreview])
 
+  const { emisorGuardado, setEmisorGuardado } = useDocumentStore()
+
   useEffect(() => {
     const raw = defaultValues as Partial<Record<'cliente' | 'parteB' | 'deudor', { nombre?: string; nif?: string }>>
     const parteNombre = raw.cliente?.nombre ?? raw.parteB?.nombre ?? raw.deudor?.nombre
@@ -120,7 +123,12 @@ export function LegalDocEngine<T extends LegalDoc>({
 
   useEffect(() => {
     reset(defaultValues as DefaultValues<T>)
-  }, [defaultValues, reset])
+    if (!emisorGuardado) return
+    const emisorField = tipo === 'nda' ? 'parteA' : tipo === 'reclamacion' ? 'acreedor' : 'prestador'
+    const current = getValues(emisorField as never) as Record<string, unknown> | undefined
+    if (current?.nombre) return
+    setValue(emisorField as never, { ...current, ...emisorGuardado } as never)
+  }, [defaultValues, reset, emisorGuardado, tipo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const rawValues = useWatch({ control: form.control }) as T
   const docPreview = buildDoc(rawValues) as T
@@ -154,22 +162,18 @@ export function LegalDocEngine<T extends LegalDoc>({
     if (!allFormValues) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
-      try {
-        const values = form.getValues()
-        const source =
-          (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).prestador ??
-          (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).parteA ??
-          (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).acreedor
+      const values = form.getValues()
+      const source =
+        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).prestador ??
+        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).parteA ??
+        (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).acreedor
 
-        if (source) {
-          localStorage.setItem(`ha-legal-emisor-${tipo}`, JSON.stringify(source))
-        }
-      } catch {
-        // localStorage puede estar bloqueado
+      if (source) {
+        setEmisorGuardado(source as Record<string, string>)
       }
     }, 1000)
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
-  }, [allFormValues, form, tipo])
+  }, [allFormValues, form, setEmisorGuardado])
 
   const handleGuardarDocumento = handleSubmit(async (values) => {
     if (!onSave) return
