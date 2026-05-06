@@ -76,8 +76,8 @@ export function IvaIrpfCalculator() {
           {[
             { label: 'Base imponible',              value: vBase,        muted: true },
             { label: `IVA (${vIva}%)`,               value: cuotaIva,     muted: true },
-            { label: 'Total factura',                value: totalFactura, bold: true },
             { label: `Retención IRPF (${vIrpf}%)`,  value: -retencion,   muted: true },
+            { label: 'Total factura',                value: totalFactura, bold: true },
           ].map(({ label, value, muted, bold }) => (
             <div key={label} className="calc-row">
               <span className={bold ? 'calc-row-label-bold' : muted ? 'text-muted' : ''}>{label}</span>
