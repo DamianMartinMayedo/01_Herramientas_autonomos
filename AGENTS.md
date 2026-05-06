@@ -78,6 +78,8 @@ RPC `next_document_number(p_tipo, p_prefijo, p_user_id, p_fecha)` → `{PREFIJO}
 
 **1. Documento formal**: tabla Supabase + `types/*.types.ts` + `features/{tool}/{Tool}Page.tsx` (usa `DocumentEngine` o `LegalDocEngine`) + ruta en router
 
+> **Si la herramienta es documental con tabla propia**: ver Regla #10 abajo para el checklist completo. Resumen: copiar `supabase/migrations/_TEMPLATE_nueva_tabla_documental.sql` + dejar `NOTIFY pgrst, 'reload schema';` al final + añadir la tabla a `UserDocumentTable` en `userDocuments.ts` + correr `npm run test`.
+
 **2. Calculadora**: `features/calculadoras/` — estado local, sin Supabase, sin auth
 
 ```tsx
@@ -169,9 +171,27 @@ Los documentos almacenan la estructura completa en `datos_json` mientras mantien
 - `useProfile()` carga la fila de `profiles` y expone `{ profile, plan, isPremium, ... }`.
 - No leas `profile/plan/isPremium` desde `useAuth`. No están ahí.
 
-### 10. Migraciones de reparacion al añadir columnas — `writeRowWithRetry`
-`writeRowWithRetry` (`userDocuments.ts:44`) maneja columnas faltantes en la BD. Para columnas secundarias (`numero`, `notas`, etc.) las elimina del payload y reintenta (con `console.warn`). Pero **`datos_json` es una columna crítica**: si falta, el guardado se **rechaza** (devuelve error) para evitar corromper datos irreversiblemente.
+### 10. Crear tabla documental nueva — checklist anti-corrupción
 
-**Al añadir una columna nueva a una tabla existente, crear SIEMPRE una migracion de reparacion** (`NNNb_reparar_{tabla}.sql`) que ejecute `ALTER TABLE ADD COLUMN IF NOT EXISTS` para cada columna que pueda faltar. Patron: `010b_reparar_contratos.sql`, `012b_reparar_ndas.sql`.
+**Causa raíz del bug histórico**: cuando se añadía una columna a una tabla y `writeRowWithRetry` (`userDocuments.ts:45-77`) recibía `400 Could not find the '<col>' column` de PostgREST, eliminaba la columna del payload y reintentaba. Resultado: documentos guardados sin `datos_json`, `numero` o `notas`, silenciosamente. El error real era doble: (a) la tabla nacía sin esas columnas, y (b) PostgREST cacheaba el schema y no veía las columnas aunque ya existieran en Postgres.
 
-Si ves `console.warn('[writeRowWithRetry] Columna...')` en consola, la tabla no tiene la estructura esperada: crear migracion de reparacion.
+**Toda tabla documental nueva DEBE seguir este checklist, sin excepciones**:
+
+1. **Copiar la plantilla**: `supabase/migrations/_TEMPLATE_nueva_tabla_documental.sql` → `NNN_create_<tabla>.sql`. La plantilla ya incluye TODAS las columnas que `userDocuments.ts` espera (`datos_json`, `numero`, `notas`, `estado`, `cliente_*`, `fecha`) + RLS + trigger `updated_at`. **Imposible olvidar `datos_json` porque ya está en la plantilla.**
+2. **Toda migración con DDL termina con** `NOTIFY pgrst, 'reload schema';`. Sin esta línea, PostgREST sigue con la caché vieja y `writeRowWithRetry` detecta la columna como inexistente — el bug histórico vuelve. La plantilla ya la incluye.
+3. **Añadir la tabla** al union type `UserDocumentTable` en `src/lib/userDocuments.ts:7-13`.
+4. **Ejecutar** `npm run test`. El smoke test (`src/lib/userDocuments.smoke.test.ts`) verifica vía PostgREST que la tabla tenga `id`, `user_id`, `datos_json`, `numero`, `notas`, `estado`. Si falla, la migración no es válida y NO se sube a producción.
+5. **Decidir para cada campo nuevo: ¿columna desnormalizada o solo en `datos_json`?**
+   - **Solo en `datos_json` (default)** → si el campo NO se usa para listar, filtrar, ordenar, ni mostrar en columnas de tabla. Cero coste: no toca SQL ni payload.
+   - **Columna desnormalizada + `datos_json`** → si el campo aparece en `DocumentoListado.tsx` (columna visible), se filtra/ordena en BD, o lo lee `EmailModal` directamente (`cliente_email`, `cliente_nombre`). Añadir la columna en el bloque "Específicas de esta herramienta" de la plantilla SQL **y** incluirla en el payload del paso 6. La fuente de verdad sigue siendo `datos_json`; la columna es solo un espejo para queries.
+6. **Construir el payload de guardado** en `src/lib/userDocuments.ts`. Tres opciones, en orden de preferencia:
+   - **Si la herramienta es legal-doc-like** (contrato/NDA/reclamación): añadir un `else if (table === '<tabla>')` en `saveLegalDocument` (línea ~414) siguiendo el patrón de `ndas`/`reclamaciones`. Reusa `getNextNumero` para numeración.
+   - **Si es business-doc-like** (factura/presupuesto/albarán): igual pero en `saveBusinessDocument`.
+   - **Si no encaja en ninguno**: escribir `save<Herramienta>Document(params)` siguiendo el mismo patrón. Construir `payload` SOLO con columnas desnormalizadas declaradas en la migración + `datos_json: { ...document }`. Llamar a `writeRowWithRetry({ table, id, payload })` al final. **Nunca** invocar `supabase.from(...).insert(...)` directamente — perderías las defensas de `CRITICAL_COLUMNS`.
+
+**Si añades una columna a una tabla EXISTENTE** (no es una tabla nueva): escribir `NNNb_reparar_<tabla>.sql` con `ALTER TABLE ADD COLUMN IF NOT EXISTS` para cada columna nueva, terminando con `NOTIFY pgrst, 'reload schema';`. Patrón existente: `010b_reparar_contratos.sql`, `012b_reparar_ndas.sql`. Y actualizar el payload en la `save*Document` correspondiente (paso 6).
+
+**Defensas activas** en `writeRowWithRetry`:
+- `CRITICAL_COLUMNS = new Set(['datos_json'])` → si falta, **rechaza** el guardado con error. Nunca corrompe.
+- `EXPECTED_DOC_COLUMNS = new Set(['numero', 'notas', 'estado'])` → si falta, sigue eliminando+retrying (no rompe el flujo) pero loguea con `console.error` con el SQL listo para copiar. **Si ves un `[writeRowWithRetry]` rojo en consola, hay una migración que falta.**
+- Cualquier otra columna no listada → `console.warn` y elimina del payload (compatibilidad con tablas legacy).

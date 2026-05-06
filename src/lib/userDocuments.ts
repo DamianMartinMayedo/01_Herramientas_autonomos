@@ -69,7 +69,20 @@ async function writeRowWithRetry(params: {
       return { data: null, error }
     }
 
-    console.warn(`[writeRowWithRetry] Columna '${missing}' no existe en '${table}', eliminando del payload. Ejecuta una migración de reparación.`)
+    // Columnas documentales esperadas: el flujo no se rompe (se elimina y se reintenta),
+    // pero el log es ruidoso para forzar a crear la migración de reparación.
+    const EXPECTED_DOC_COLUMNS = new Set(['numero', 'notas', 'estado'])
+    if (EXPECTED_DOC_COLUMNS.has(missing)) {
+      console.error(
+        `[writeRowWithRetry] Tabla '${table}' no tiene la columna esperada '${missing}'. ` +
+          `Crear migración: ALTER TABLE public.${table} ADD COLUMN IF NOT EXISTS ${missing} ...; ` +
+          `NOTIFY pgrst, 'reload schema';`,
+      )
+    } else {
+      console.warn(
+        `[writeRowWithRetry] Columna '${missing}' no existe en '${table}', eliminando del payload. Ejecuta una migración de reparación.`,
+      )
+    }
     delete payload[missing]
   }
 
