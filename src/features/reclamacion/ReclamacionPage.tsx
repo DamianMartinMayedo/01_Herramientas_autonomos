@@ -2,6 +2,7 @@
  * ReclamacionPage.tsx
  * Generador de carta de reclamación de pago.
  */
+import type { FieldError } from 'react-hook-form'
 import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { ReclamacionPagoDoc, ParteLegal } from '../../types/legalDoc.types'
@@ -28,7 +29,7 @@ const DEFAULT_RECLAMACION: ReclamacionPagoDoc = {
 
 // ─── Sub-formulario de parte ─────────────────────────────────────────────────
 type RegisterFn = (name: string, opts?: Record<string, unknown>) => Record<string, unknown>
-type ErrorsObj = Record<string, { message?: string } | undefined>
+type ErrorsObj = Record<string, FieldError | undefined>
 
 function FormParte({
   titulo,
@@ -41,7 +42,7 @@ function FormParte({
   register: RegisterFn
   errors: ErrorsObj
 }) {
-  const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, { message?: string }>>
+  const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, FieldError>>
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
@@ -49,20 +50,20 @@ function FormParte({
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
-          error={e.nombre as never}
+          error={e.nombre}
         />
         <div className="form-row">
           <FormField
             label="NIF / CIF / NIE *"
             {...register(`${prefix}.nif`, { required: 'Obligatorio' })}
-            error={e.nif as never}
+            error={e.nif}
           />
           <FormField label="Email" type="email" {...register(`${prefix}.email`)} />
         </div>
         <FormField
           label="Dirección *"
           {...register(`${prefix}.direccion`, { required: 'Obligatorio' })}
-          error={e.direccion as never}
+          error={e.direccion}
         />
         <div className="form-row">
           <FormField label="Código postal" {...register(`${prefix}.cp`)} />
@@ -112,8 +113,8 @@ export function ReclamacionPage({
         clienteField="deudor"
       renderForm={({ register, getValues, errors, setValue }) => {
         const reg = register as RegisterFn
-        const err = errors as ErrorsObj
-        const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
+        const err = errors as unknown as ErrorsObj
+        const metaErr = (err['metadatos'] ?? {}) as Record<string, FieldError | undefined>
         const tono = getValues('tono') as string
 
         // Cuando se selecciona «urgente» se activa el checkbox automáticamente;
@@ -136,14 +137,14 @@ export function ReclamacionPage({
                     label="Fecha de la carta *"
                     type="date"
                     {...reg('metadatos.fecha', { required: 'Obligatorio' })}
-                    error={metaErr['fecha'] as never}
+                    error={metaErr['fecha']}
                   />
                 </div>
                 <FormField
                   label="Lugar *"
                   placeholder="Ciudad desde donde envías la carta"
                   {...reg('metadatos.lugar', { required: 'Obligatorio' })}
-                  error={metaErr['lugar'] as never}
+                  error={metaErr['lugar']}
                 />
               </div>
             </fieldset>
@@ -161,7 +162,7 @@ export function ReclamacionPage({
                     label="Nº de factura *"
                     placeholder="FAC-2026-001"
                     {...reg('referenciaFactura', { required: 'Obligatorio' })}
-                    error={err['referenciaFactura'] as never}
+                    error={err['referenciaFactura']}
                   />
                   <FormField
                     label="Importe (€) *"
@@ -173,7 +174,7 @@ export function ReclamacionPage({
                       required: 'Obligatorio',
                       min: { value: 0.01, message: 'Debe ser mayor que 0' },
                     })}
-                    error={err['importeDeuda'] as never}
+                    error={err['importeDeuda']}
                   />
                 </div>
                 <div className="form-row">
@@ -181,13 +182,13 @@ export function ReclamacionPage({
                     label="Fecha de la factura *"
                     type="date"
                     {...reg('fechaFactura', { required: 'Obligatorio' })}
-                    error={err['fechaFactura'] as never}
+                    error={err['fechaFactura']}
                   />
                   <FormField
                     label="Fecha de vencimiento *"
                     type="date"
                     {...reg('fechaVencimiento', { required: 'Obligatorio' })}
-                    error={err['fechaVencimiento'] as never}
+                    error={err['fechaVencimiento']}
                   />
                 </div>
               </div>
@@ -214,7 +215,7 @@ export function ReclamacionPage({
                     required: 'Obligatorio',
                     min: { value: 1, message: 'Mínimo 1 día' },
                   })}
-                  error={err['plazoRespuesta'] as never}
+                  error={err['plazoRespuesta']}
                 />
                 {tono === 'urgente' && (
                   <label className="input-toggle">

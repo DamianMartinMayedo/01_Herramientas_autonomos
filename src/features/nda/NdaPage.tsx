@@ -2,6 +2,7 @@
  * NdaPage.tsx
  * Generador de acuerdo de confidencialidad (NDA).
  */
+import type { FieldError } from 'react-hook-form'
 import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
 import type { NdaDoc, ParteLegal } from '../../types/legalDoc.types'
@@ -27,7 +28,7 @@ const DEFAULT_NDA: NdaDoc = {
 
 // ─── Sub-formulario de parte ────────────────────────────────────────────────────
 type RegisterFn = (name: string, opts?: Record<string, unknown>) => Record<string, unknown>
-type ErrorsObj = Record<string, { message?: string } | undefined>
+type ErrorsObj = Record<string, FieldError | undefined>
 
 function FormParte({
   titulo,
@@ -40,7 +41,7 @@ function FormParte({
   register: RegisterFn
   errors: ErrorsObj
 }) {
-  const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, { message?: string }>>
+  const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, FieldError>>
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
@@ -48,20 +49,20 @@ function FormParte({
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
-          error={e.nombre as never}
+          error={e.nombre}
         />
         <div className="form-row">
           <FormField
             label="NIF / CIF / NIE *"
             {...register(`${prefix}.nif`, { required: 'Obligatorio' })}
-            error={e.nif as never}
+            error={e.nif}
           />
           <FormField label="Email" type="email" {...register(`${prefix}.email`)} />
         </div>
         <FormField
           label="Dirección *"
           {...register(`${prefix}.direccion`, { required: 'Obligatorio' })}
-          error={e.direccion as never}
+          error={e.direccion}
         />
         <div className="form-row">
           <FormField label="Código postal" {...register(`${prefix}.cp`)} />
@@ -115,8 +116,8 @@ export function NdaPage({
         clienteField="parteB"
       renderForm={({ register, getValues, errors }) => {
         const reg = register as RegisterFn
-        const err = errors as ErrorsObj
-        const metaErr = (err['metadatos'] ?? {}) as Record<string, { message?: string }>
+        const err = errors as unknown as ErrorsObj
+        const metaErr = (err['metadatos'] ?? {}) as Record<string, FieldError | undefined>
         const direction = getValues('direction') as string
 
         return (
@@ -129,20 +130,20 @@ export function NdaPage({
                   <FormField
                     label="Referencia *"
                     {...reg('metadatos.referencia', { required: 'Obligatorio' })}
-                    error={metaErr['referencia'] as never}
+                    error={metaErr['referencia']}
                   />
                   <FormField
                     label="Fecha *"
                     type="date"
                     {...reg('metadatos.fecha', { required: 'Obligatorio' })}
-                    error={metaErr['fecha'] as never}
+                    error={metaErr['fecha']}
                   />
                 </div>
                 <FormField
                   label="Lugar de firma *"
                   placeholder="Ciudad donde se firma"
                   {...reg('metadatos.lugar', { required: 'Obligatorio' })}
-                  error={metaErr['lugar'] as never}
+                  error={metaErr['lugar']}
                 />
                 <div className="input-group">
                   <label className="input-label">Tipo de acuerdo</label>
@@ -190,7 +191,7 @@ export function NdaPage({
                     type="number"
                     min={1}
                     {...reg('duracionMeses', { valueAsNumber: true, required: 'Obligatorio', min: { value: 1, message: 'Mínimo 1 mes' } })}
-                    error={err['duracionMeses'] as never}
+                    error={err['duracionMeses']}
                   />
                   <FormField
                     label="Jurisdicción (ciudad)"
