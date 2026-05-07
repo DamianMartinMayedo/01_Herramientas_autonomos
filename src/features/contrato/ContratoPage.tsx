@@ -3,6 +3,7 @@
  * Generador de contrato de prestación de servicios.
  * Usa LegalDocEngine como orquestador.
  */
+import { useMemo } from 'react'
 import type { FieldError } from 'react-hook-form'
 import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
@@ -140,12 +141,19 @@ export function ContratoPage({
   estadoContrato,
   autoOpenPreview,
 }: ContratoPageProps) {
-  const resolvedDefaults = buildDefaultValues(empresa, defaultValues)
-
-  // Modo guest: inyectar número editable
-  if (!onSave && !resolvedDefaults.metadatos?.referencia) {
-    resolvedDefaults.metadatos.referencia = `CON-${new Date().getFullYear()}-001`
-  }
+  // useMemo estabiliza la referencia para evitar que `useEffect` en LegalDocEngine
+  // dispare un reset() del form cada vez que el padre re-renderiza (p.ej. cuando
+  // Supabase refresca el token al volver el foco a la pestaña).
+  // IMPORTANTE: `onSave` no va en deps porque UserPage lo crea inline en cada render
+  // (`onSave={(d) => saveLegal(...)}`); solo nos interesa SU EXISTENCIA (modo guest vs registrado).
+  const isGuest = !onSave
+  const resolvedDefaults = useMemo(() => {
+    const base = buildDefaultValues(empresa, defaultValues)
+    if (isGuest && !base.metadatos?.referencia) {
+      base.metadatos.referencia = `CON-${new Date().getFullYear()}-001`
+    }
+    return base
+  }, [empresa, defaultValues, isGuest])
 
   return (
     <>

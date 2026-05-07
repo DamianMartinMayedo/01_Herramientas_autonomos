@@ -27,12 +27,11 @@ import {
   isPresupuestoStatus,
 } from '../../types/presupuestoStatus'
 import { getClienteEmail, type DocRow } from '../../types/docRow.types'
+import { documentRegistry, type UserDocumentTable } from '../../lib/documentRegistry'
 
-export type TipoDocumento =
-  | 'facturas' | 'presupuestos' | 'albaranes'
-  | 'contratos' | 'ndas' | 'reclamaciones'
+export type TipoDocumento = UserDocumentTable
 
-const TABLA_CONFIG: Record<TipoDocumento, {
+interface TablaConfig {
   label: string
   labelSingular: string
   articuloFemenino: boolean
@@ -40,14 +39,22 @@ const TABLA_CONFIG: Record<TipoDocumento, {
   campoSecundario: string
   campoPrecio?: string
   routeCrear: string
-}> = {
-  facturas:      { label: 'Facturas',      labelSingular: 'factura',      articuloFemenino: true,  campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: 'total',   routeCrear: '/factura' },
-  presupuestos:  { label: 'Presupuestos',  labelSingular: 'presupuesto',  articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: 'total',   routeCrear: '/presupuesto' },
-  albaranes:     { label: 'Albaranes',     labelSingular: 'albarán',      articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/albaran' },
-  contratos:     { label: 'Contratos',     labelSingular: 'contrato',     articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'cliente_nombre',    campoPrecio: undefined, routeCrear: '/contrato' },
-  ndas:          { label: 'NDAs',          labelSingular: 'NDA',          articuloFemenino: false, campoTitulo: 'numero',  campoSecundario: 'otra_parte_nombre', campoPrecio: undefined, routeCrear: '/nda' },
-  reclamaciones: { label: 'Reclamaciones', labelSingular: 'reclamación',  articuloFemenino: true,  campoTitulo: 'numero',  campoSecundario: 'deudor_nombre',     campoPrecio: 'importe', routeCrear: '/reclamacion-pago' },
 }
+
+const TABLA_CONFIG: Record<TipoDocumento, TablaConfig> = Object.fromEntries(
+  (Object.keys(documentRegistry) as TipoDocumento[]).map((tipo) => {
+    const entry = documentRegistry[tipo]
+    return [tipo, {
+      label: entry.label.plural,
+      labelSingular: entry.label.singular,
+      articuloFemenino: entry.listado.articuloFemenino,
+      campoTitulo: entry.listado.campoTitulo,
+      campoSecundario: entry.listado.campoSecundario,
+      campoPrecio: entry.listado.campoPrecio,
+      routeCrear: entry.routePath,
+    }]
+  }),
+) as Record<TipoDocumento, TablaConfig>
 
 const ESTADO_COLORS: Record<string, string> = {
   borrador:   'var(--color-text-faint)',

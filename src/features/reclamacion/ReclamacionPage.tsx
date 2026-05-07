@@ -2,7 +2,7 @@
  * ReclamacionPage.tsx
  * Generador de carta de reclamación de pago.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FieldError, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import { LegalDocEngine } from '../../components/legalDoc/LegalDocEngine'
 import { FormField, TextAreaField } from '../../components/ui/FormField'
@@ -131,11 +131,19 @@ export function ReclamacionPage({
   autoOpenPreview,
   userId,
 }: ReclamacionPageProps) {
-  const resolvedDefaults = buildDefaultValues(empresa, defaultValues)
-
-  if (!onSave && !resolvedDefaults.metadatos?.referencia) {
-    resolvedDefaults.metadatos.referencia = `REC-${new Date().getFullYear()}-001`
-  }
+  // useMemo estabiliza la referencia para evitar que `useEffect` en LegalDocEngine
+  // dispare un reset() del form cada vez que el padre re-renderiza (p.ej. cuando
+  // Supabase refresca el token al volver el foco a la pestaña).
+  // IMPORTANTE: `onSave` no va en deps porque UserPage lo crea inline en cada render
+  // (`onSave={(d) => saveLegal(...)}`); solo nos interesa SU EXISTENCIA (modo guest vs registrado).
+  const isGuest = !onSave
+  const resolvedDefaults = useMemo(() => {
+    const base = buildDefaultValues(empresa, defaultValues)
+    if (isGuest && !base.metadatos?.referencia) {
+      base.metadatos.referencia = `REC-${new Date().getFullYear()}-001`
+    }
+    return base
+  }, [empresa, defaultValues, isGuest])
 
   return (
     <>

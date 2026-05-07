@@ -3,14 +3,9 @@ import type { PostgrestError } from '@supabase/supabase-js'
 import type { DocumentoBase, TotalesDocumento } from '../types/document.types'
 import type { ContratoServiciosDoc, LegalDoc, NdaDoc, ReclamacionPagoDoc } from '../types/legalDoc.types'
 import type { DocRow } from '../types/docRow.types'
+import { documentRegistry, type UserDocumentTable } from './documentRegistry'
 
-export type UserDocumentTable =
-  | 'facturas'
-  | 'presupuestos'
-  | 'albaranes'
-  | 'contratos'
-  | 'ndas'
-  | 'reclamaciones'
+export type { UserDocumentTable }
 
 export type UserDocumentDraft =
   | DocumentoBase
@@ -23,18 +18,6 @@ export interface UserDocumentRow {
   datos_json?: UserDocumentDraft | null
   estado?: string | null
   numero?: string | null
-}
-
-function resumenConcepto(lineas: DocumentoBase['lineas']) {
-  return lineas
-    .map((linea) => linea.descripcion.trim())
-    .filter(Boolean)
-    .join(' · ')
-}
-
-function firstNumber(values: number[], fallback: number) {
-  const value = values.find((item) => Number.isFinite(item))
-  return typeof value === 'number' ? value : fallback
 }
 
 function extractMissingColumn(message: string): string | null {
@@ -106,7 +89,6 @@ async function getNextNumero(
 
 const getNextPresupuestoNumero = (userId: string) => getNextNumero(userId, 'presupuesto', 'PRE')
 const getNextFacturaNumero = (userId: string) => getNextNumero(userId, 'factura', 'FAC')
-const getNextAlbaranNumero = (userId: string) => getNextNumero(userId, 'albaran', 'ALB')
 const getNextRectificativaNumero = (userId: string) => getNextNumero(userId, 'rectificativa', 'R')
 const getNextContratoNumero = (userId: string) => getNextNumero(userId, 'contrato', 'CON')
 const getNextNdaNumero = (userId: string) => getNextNumero(userId, 'nda', 'NDA')
@@ -121,97 +103,19 @@ export async function saveBusinessDocument(params: {
   finalizar?: boolean
 }) {
   const { table, userId, document, totals, id, finalizar = false } = params
-  const isAutoNumbered = table === 'facturas' || table === 'presupuestos'
-  let numeroFinal: string | null = isAutoNumbered ? null : document.numero
+  const entry = documentRegistry[table] as typeof documentRegistry.facturas
 
-  if (table === 'facturas' && finalizar) {
-    const { numero, error: nextError } = document.esRectificativa
-      ? await getNextRectificativaNumero(userId)
-      : await getNextFacturaNumero(userId)
-    if (nextError) {
-      return { data: null, error: nextError as { message: string }, numero: null as string | null }
-    }
-    numeroFinal = numero
+  const { numero, error: numError } = await entry.assignNumero({
+    document, finalizar, userId, id,
+  })
+  if (numError) {
+    return { data: null, error: numError as { message: string }, numero: null as string | null }
   }
 
-  // Presupuestos: asignar número al crear (sin id) O al enviar (finalizar)
-  const asignarNumPre = table === 'presupuestos' && (finalizar || !id)
-  if (asignarNumPre) {
-    const { numero, error: nextError } = await getNextPresupuestoNumero(userId)
-    if (nextError) {
-      return { data: null, error: nextError as { message: string }, numero: null as string | null }
-    }
-    numeroFinal = numero
-  }
-
-  // Albaranes: asignar número al crear (sin id)
-  let numeroAlb: string | null = document.numero
-  if (table === 'albaranes' && !id) {
-    const { numero, error: nextError } = await getNextAlbaranNumero(userId)
-    if (nextError) {
-      return { data: null, error: nextError as { message: string }, numero: null as string | null }
-    }
-    numeroAlb = numero
-  }
-
-  const payload: Record<string, unknown> =
-    table === 'albaranes'
-      ? {
-          user_id: userId,
-          numero: numeroAlb,
-          fecha: document.fecha,
-          cliente_nombre: document.cliente.nombre,
-          cliente_nif: document.cliente.nif,
-          cliente_email: document.cliente.email,
-          cliente_direccion: document.cliente.direccion,
-          descripcion: resumenConcepto(document.lineas),
-          estado: finalizar ? 'enviado' : 'pendiente',
-          notas: document.notas,
-          datos_json: { ...document, numero: numeroAlb ?? '' },
-        }
-      : {
-          user_id: userId,
-          ...(isAutoNumbered
-            ? ((finalizar || asignarNumPre) ? { numero: numeroFinal } : {})
-            : { numero: document.numero }),
-          fecha: document.fecha,
-          cliente_nombre: document.cliente.nombre,
-          cliente_nif: document.cliente.nif,
-          cliente_email: document.cliente.email,
-          cliente_direccion: document.cliente.direccion,
-          concepto: resumenConcepto(document.lineas),
-          base_imponible: totals.baseImponible,
-          tipo_iva: firstNumber(document.lineas.map((linea) => linea.iva), 21),
-          tipo_irpf: document.mostrarIrpf
-            ? firstNumber(document.lineas.map((linea) => linea.irpf), 15)
-            : 0,
-          total: totals.total,
-          // Para presupuestos existentes sin finalizar: no tocar el estado (ya puede ser enviado/aprobado)
-          ...(table === 'presupuestos' && !finalizar && id
-            ? {}
-            : {
-                estado: table === 'facturas'
-                  ? (finalizar ? 'emitida' : 'borrador')
-                  : table === 'presupuestos'
-                    ? (finalizar ? 'enviado' : 'borrador')
-                    : 'borrador',
-              }),
-          notas: document.notas,
-          datos_json: {
-            ...document,
-            numero: isAutoNumbered
-              ? ((finalizar || asignarNumPre) ? (numeroFinal ?? '') : (document.numero ?? ''))
-              : document.numero,
-          },
-        }
-
+  const payload = entry.buildPayload({ document, numero, finalizar, userId, id, totals })
   const result = await writeRowWithRetry({ table, id, payload })
-  return {
-    ...result,
-    numero: table === 'albaranes'
-      ? numeroAlb
-      : isAutoNumbered ? ((finalizar || asignarNumPre) ? numeroFinal : null) : document.numero,
-  }
+
+  return { ...result, numero: (payload.numero as string | null | undefined) ?? null }
 }
 
 export async function enviarAlbaran(id: string) {
@@ -352,100 +256,25 @@ export async function saveLegalDocument(params: {
   finalizar?: boolean
 }) {
   const { table, userId, document, id, finalizar = false } = params
+  const entry = documentRegistry[table]
 
-  let payload: Record<string, unknown>
+  type AnyEntry = {
+    assignNumero: (ctx: { document: unknown; finalizar: boolean; userId: string; id?: string }) => Promise<{ numero: string | null; error: unknown }>
+    buildPayload: (ctx: { document: unknown; numero: string | null; finalizar: boolean; userId: string; id?: string }) => Record<string, unknown>
+  }
+  const anyEntry = entry as AnyEntry
 
-  if (table === 'contratos') {
-    const contrato = document as ContratoServiciosDoc
-    let numeroContrato: string | null = contrato.metadatos.referencia || null
-
-    if (!id && !numeroContrato) {
-      const { numero, error: nextError } = await getNextContratoNumero(userId)
-      if (nextError) {
-        return { data: null, error: nextError as { message: string }, numero: null as string | null }
-      }
-      numeroContrato = numero
-    }
-
-    const basePayload: Record<string, unknown> = {
-      user_id: userId,
-      titulo: contrato.objetoContrato.slice(0, 80) || 'Contrato',
-      fecha: contrato.metadatos.fecha,
-      cliente_nombre: contrato.cliente.nombre,
-      cliente_nif: contrato.cliente.nif,
-      cliente_email: contrato.cliente.email,
-      tipo: 'servicios',
-      estado: finalizar ? 'enviado' : 'borrador',
-      notas: contrato.notas,
-      datos_json: { ...contrato, metadatos: { ...contrato.metadatos, referencia: numeroContrato ?? contrato.metadatos.referencia } },
-    }
-    // Solo tocar numero si se está creando o si el usuario introdujo una referencia explícita
-    if (!id || numeroContrato) {
-      basePayload.numero = numeroContrato
-    }
-    payload = basePayload
-  } else if (table === 'ndas') {
-    const nda = document as NdaDoc
-    let numeroNda: string | null = nda.metadatos.referencia || null
-
-    if (!id && !numeroNda) {
-      const { numero, error: nextError } = await getNextNdaNumero(userId)
-      if (nextError) {
-        return { data: null, error: nextError as { message: string }, numero: null as string | null }
-      }
-      numeroNda = numero
-    }
-
-    const updatedMetadatos = { ...nda.metadatos, referencia: numeroNda ?? nda.metadatos.referencia }
-    payload = {
-      user_id: userId,
-      titulo: numeroNda || `NDA ${nda.parteB.nombre || ''}`.trim() || 'NDA',
-      fecha: nda.metadatos.fecha,
-      otra_parte_nombre: nda.parteB.nombre,
-      otra_parte_nif: nda.parteB.nif,
-      otra_parte_email: nda.parteB.email,
-      estado: finalizar ? 'enviado' : 'borrador',
-      notas: nda.notas,
-      datos_json: { ...nda, metadatos: updatedMetadatos },
-    }
-    if (!id || numeroNda) {
-      payload.numero = numeroNda
-    }
-  } else {
-    const reclamacion = document as ReclamacionPagoDoc
-    let numeroRec: string | null = reclamacion.metadatos.referencia || null
-
-    if (!id && !numeroRec) {
-      const { numero, error: nextError } = await getNextReclamacionNumero(userId)
-      if (nextError) {
-        return { data: null, error: nextError as { message: string }, numero: null as string | null }
-      }
-      numeroRec = numero
-    }
-
-    const updatedMetadatos = { ...reclamacion.metadatos, referencia: numeroRec ?? reclamacion.metadatos.referencia }
-    payload = {
-      user_id: userId,
-      titulo: numeroRec || `Reclamacion ${reclamacion.deudor.nombre || ''}`.trim() || 'Reclamación',
-      fecha: reclamacion.metadatos.fecha,
-      deudor_nombre: reclamacion.deudor.nombre,
-      deudor_nif: reclamacion.deudor.nif,
-      deudor_email: reclamacion.deudor.email,
-      importe: reclamacion.importeDeuda,
-      estado: finalizar ? 'enviada' : 'borrador',
-      notas: reclamacion.notas,
-      datos_json: { ...reclamacion, metadatos: updatedMetadatos },
-    }
-    if (!id || numeroRec) {
-      payload.numero = numeroRec
-    }
+  const { numero, error: numError } = await anyEntry.assignNumero({
+    document, finalizar, userId, id,
+  })
+  if (numError) {
+    return { data: null, error: numError as { message: string }, numero: null as string | null }
   }
 
+  const payload = anyEntry.buildPayload({ document, numero, finalizar, userId, id })
   const result = await writeRowWithRetry({ table, id, payload })
-  return {
-    ...result,
-    numero: table === 'contratos' || table === 'ndas' || table === 'reclamaciones' ? (payload.numero as string | null) : null,
-  }
+
+  return { ...result, numero: (payload.numero as string | null | undefined) ?? null }
 }
 
 export async function enviarContrato(userId: string, id: string) {

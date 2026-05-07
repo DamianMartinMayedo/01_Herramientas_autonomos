@@ -353,7 +353,7 @@ export function UserPage() {
     if (result.data?.id) {
       setEditor((current) => (current ? { ...current, id: result.data?.id } : current))
     }
-    setFlashMessage(`${table === 'contratos' ? 'Contrato' : table === 'ndas' ? 'NDA' : 'Reclamación'} guardado.`)
+    setFlashMessage(`${table === 'contratos' ? 'Contrato guardado' : table === 'ndas' ? 'NDA guardado' : 'Reclamación guardada'}.`)
     setTimeout(() => setFlashMessage(null), 3000)
     closeEditor()
     bumpRefresh()

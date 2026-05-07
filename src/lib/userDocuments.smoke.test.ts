@@ -1,15 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { supabase } from './supabaseClient'
-import type { UserDocumentTable } from './userDocuments'
-
-const TABLES: UserDocumentTable[] = [
-  'facturas',
-  'presupuestos',
-  'albaranes',
-  'contratos',
-  'ndas',
-  'reclamaciones',
-]
+import { userDocumentTables } from './documentRegistry'
 
 const REQUIRED_COLUMNS = ['id', 'user_id', 'datos_json', 'numero', 'notas', 'estado']
 
@@ -19,7 +10,7 @@ const hasSupabaseEnv =
   import.meta.env.VITE_SUPABASE_URL.length > 0
 
 describe.skipIf(!hasSupabaseEnv)('schema smoke — tablas documentales', () => {
-  it.each(TABLES)('%s tiene todas las columnas requeridas por userDocuments.ts', async (tabla) => {
+  it.each(userDocumentTables)('%s tiene todas las columnas requeridas por userDocuments.ts', async (tabla) => {
     const { error } = await supabase
       .from(tabla)
       .select(REQUIRED_COLUMNS.join(','))

@@ -102,10 +102,29 @@ function getClienteEmail(row: DocRow): string | undefined {
 
 ## Comandos
 ```bash
-npm run dev      # Dev
-npm run build    # tsc -b && vite build
-npm run lint     # eslint .
+npm run dev        # Dev
+npm run build      # tsc -b && vite build
+npm run lint       # eslint .
+npm run test       # vitest (incluye smoke test contra Supabase real)
+npm run gen:types  # regenera src/types/database.types.ts desde el schema de Supabase
 ```
+
+### Tipos de Supabase generados
+
+El tipo `Database` vive en `src/types/database.types.ts` y se **regenera** desde el schema real de la BD con `npm run gen:types`. El script (`scripts/gen-types.mjs`) llama directamente a la Management API de Supabase (no al binario CLI, que se cuelga en algunos entornos sandbox).
+
+**Setup inicial (una vez por máquina)**:
+1. Generar Personal Access Token en https://supabase.com/dashboard/account/tokens (recomendado: 90 días).
+2. Añadir a `.env.local`:
+   ```
+   SUPABASE_PROJECT_ID=<project-id>
+   SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxx
+   ```
+3. `npm run gen:types`
+
+**Después de cada migración** (añadir columna, crear tabla, modificar RPC): correr `npm run gen:types` y commitear el archivo regenerado.
+
+**Estado actual del tipado del cliente**: `supabase` está SIN tipar (`createClient(...)` sin `<Database>`). La razón está documentada en [src/lib/supabaseClient.ts](src/lib/supabaseClient.ts): tipar el cliente revela ~29 errores TS latentes en código existente (uso de `userId` opcional, interfaces locales divergentes del schema). Cuando se limpien, cambiar a `createClient<Database>(...)` para ganar type safety completo. Mientras tanto, código nuevo puede opt-in casteando: `(supabase as SupabaseClient<Database>).from('tabla')`.
 
 ## Reglas
 1. NO comentarios salvo que se pidan
@@ -184,10 +203,32 @@ Los documentos almacenan la estructura completa en `datos_json` mientras mantien
 5. **Decidir para cada campo nuevo: ¿columna desnormalizada o solo en `datos_json`?**
    - **Solo en `datos_json` (default)** → si el campo NO se usa para listar, filtrar, ordenar, ni mostrar en columnas de tabla. Cero coste: no toca SQL ni payload.
    - **Columna desnormalizada + `datos_json`** → si el campo aparece en `DocumentoListado.tsx` (columna visible), se filtra/ordena en BD, o lo lee `EmailModal` directamente (`cliente_email`, `cliente_nombre`). Añadir la columna en el bloque "Específicas de esta herramienta" de la plantilla SQL **y** incluirla en el payload del paso 6. La fuente de verdad sigue siendo `datos_json`; la columna es solo un espejo para queries.
-6. **Construir el payload de guardado** en `src/lib/userDocuments.ts`. Tres opciones, en orden de preferencia:
-   - **Si la herramienta es legal-doc-like** (contrato/NDA/reclamación): añadir un `else if (table === '<tabla>')` en `saveLegalDocument` (línea ~414) siguiendo el patrón de `ndas`/`reclamaciones`. Reusa `getNextNumero` para numeración.
-   - **Si es business-doc-like** (factura/presupuesto/albarán): igual pero en `saveBusinessDocument`.
-   - **Si no encaja en ninguno**: escribir `save<Herramienta>Document(params)` siguiendo el mismo patrón. Construir `payload` SOLO con columnas desnormalizadas declaradas en la migración + `datos_json: { ...document }`. Llamar a `writeRowWithRetry({ table, id, payload })` al final. **Nunca** invocar `supabase.from(...).insert(...)` directamente — perderías las defensas de `CRITICAL_COLUMNS`.
+6. **Añadir una entrada en `src/lib/documentRegistry.ts`** con todos los metadatos y los dos callbacks (`assignNumero`, `buildPayload`). Este es el ÚNICO sitio donde se declara la lógica de guardado de la herramienta:
+   ```ts
+   const miHerramientaEntry: DocumentRegistryEntry<MiTipoDoc> = {
+     table: 'mi_tabla',
+     family: 'legal',                     // o 'business'
+     sequenceTipo: 'mi_tipo',             // alta en next_document_number
+     sequencePrefijo: 'MIT',              // p.ej. CON, NDA, FAC
+     label: { singular: 'mi herramienta', plural: 'Mis Herramientas' },
+     routePath: '/mi-herramienta',
+     estados: ['borrador', 'enviado'] as const,
+     estadoBorrador: 'borrador',
+     estadoFinalizado: 'enviado',
+     listado: {
+       articuloFemenino: false,
+       campoTitulo: 'numero',
+       campoSecundario: 'cliente_nombre', // columna desnormalizada para la lista
+     },
+     async assignNumero({ document, finalizar, userId, id }) { /* … */ },
+     buildPayload({ document, numero, finalizar, userId, id }) { /* devuelve {} */ },
+   }
+   ```
+   `saveBusinessDocument` y `saveLegalDocument` ya delegan al registry vía `documentRegistry[table]`, así que NO hay que tocarlas. **Nunca** invocar `supabase.from(...).insert(...)` directamente — perderías las defensas de `CRITICAL_COLUMNS`.
+7. **Añadir un render por tipo** en `src/features/usuario/DocumentoListado.tsx` (los `renderXRow` por tabla y la rama del dropdown de acciones). Hoy no hay forma elegante de generarlos automáticamente porque la UI por tipo varía bastante.
+8. **Añadir una rama del editor** en `src/features/usuario/UserPage.tsx` (`if (section === 'mi_tabla') return <MiHerramientaPage ... />`). Las APIs de las páginas-editor son intencionalmente divergentes; este punto se mantiene manual.
+
+> **Atajo (recomendado)**: en lugar de los pasos 1-3+6-8, ejecuta `npm run new:doc-tool -- --name mi-herramienta --family legal`. El scaffolder genera la migración SQL, el types stub, el page stub, la entrada del registry, y deja TODOs claros en `DocumentoListado.tsx` y `UserPage.tsx`.
 
 **Si añades una columna a una tabla EXISTENTE** (no es una tabla nueva): escribir `NNNb_reparar_<tabla>.sql` con `ALTER TABLE ADD COLUMN IF NOT EXISTS` para cada columna nueva, terminando con `NOTIFY pgrst, 'reload schema';`. Patrón existente: `010b_reparar_contratos.sql`, `012b_reparar_ndas.sql`. Y actualizar el payload en la `save*Document` correspondiente (paso 6).
 

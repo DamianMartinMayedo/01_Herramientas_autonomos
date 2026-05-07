@@ -121,14 +121,23 @@ export function LegalDocEngine<T extends LegalDoc>({
     reset,
   } = form
 
+  // Resetear el form cuando cambia defaultValues (navegar entre documentos) — Regla #5
   useEffect(() => {
     reset(defaultValues as DefaultValues<T>)
+  }, [defaultValues, reset])
+
+  // Pre-rellenar emisor desde el store SI el campo está vacío.
+  // Separado del reset para no borrar el form cuando `emisorGuardado` se actualiza
+  // por el auto-save tras rellenar cliente — ese flujo borraba todo a 1s del click.
+  // Incluye `defaultValues` en deps para que tras un reset (navegación entre docs)
+  // el emisor vuelva a rellenarse desde el store.
+  useEffect(() => {
     if (!emisorGuardado) return
     const emisorField = tipo === 'nda' ? 'parteA' : tipo === 'reclamacion' ? 'acreedor' : 'prestador'
     const current = getValues(emisorField as never) as Record<string, unknown> | undefined
     if (current?.nombre) return
     setValue(emisorField as never, { ...current, ...emisorGuardado } as never)
-  }, [defaultValues, reset, emisorGuardado, tipo]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [defaultValues, emisorGuardado, tipo, getValues, setValue])
 
   const rawValues = useWatch({ control: form.control }) as T
   const docPreview = buildDoc(rawValues) as T
