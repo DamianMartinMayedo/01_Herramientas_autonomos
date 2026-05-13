@@ -62,6 +62,45 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          contenido: string
+          created_at: string
+          extracto: string
+          id: string
+          published_at: string | null
+          slug: string
+          status: string
+          tags: string[]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          contenido?: string
+          created_at?: string
+          extracto?: string
+          id?: string
+          published_at?: string | null
+          slug: string
+          status?: string
+          tags?: string[]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          contenido?: string
+          created_at?: string
+          extracto?: string
+          id?: string
+          published_at?: string | null
+          slug?: string
+          status?: string
+          tags?: string[]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clientes_frecuentes: {
         Row: {
           ciudad: string
@@ -290,6 +329,57 @@ export type Database = {
           total?: number | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      herramientas: {
+        Row: {
+          activa: boolean
+          anon_available: boolean
+          categoria: string
+          created_at: string
+          descripcion: string
+          id: string
+          mantenimiento: boolean
+          nombre: string
+          orden: number
+          plan_required: string
+          proximamente: boolean
+          ruta: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          activa?: boolean
+          anon_available?: boolean
+          categoria: string
+          created_at?: string
+          descripcion?: string
+          id: string
+          mantenimiento?: boolean
+          nombre: string
+          orden?: number
+          plan_required?: string
+          proximamente?: boolean
+          ruta: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          activa?: boolean
+          anon_available?: boolean
+          categoria?: string
+          created_at?: string
+          descripcion?: string
+          id?: string
+          mantenimiento?: boolean
+          nombre?: string
+          orden?: number
+          plan_required?: string
+          proximamente?: boolean
+          ruta?: string
+          updated_at?: string
+          visible?: boolean
         }
         Relationships: []
       }
