@@ -25,10 +25,10 @@ interface StatsState {
 
 const STAT_CARDS = [
   { key: 'facturas',      label: 'Facturas',      Icon: Receipt,       section: 'facturas' as UserSection,      color: 'var(--color-primary)' },
-  { key: 'presupuestos',  label: 'Presupuestos',  Icon: FileText,      section: 'presupuestos' as UserSection,  color: 'var(--color-blue)' },
+  { key: 'presupuestos',  label: 'Presupuestos',  Icon: FileText,      section: 'presupuestos' as UserSection,  color: 'var(--color-teal)' },
   { key: 'albaranes',     label: 'Albaranes',     Icon: Package,       section: 'albaranes' as UserSection,     color: 'var(--color-gold)' },
   { key: 'contratos',     label: 'Contratos',     Icon: FileSignature, section: 'contratos' as UserSection,     color: 'var(--color-success)' },
-  { key: 'ndas',          label: 'NDAs',          Icon: ShieldOff,     section: 'ndas' as UserSection,          color: 'var(--color-warning)' },
+  { key: 'ndas',          label: 'NDAs',          Icon: ShieldOff,     section: 'ndas' as UserSection,          color: 'var(--color-purple)' },
   { key: 'reclamaciones', label: 'Reclamaciones', Icon: AlertCircle,   section: 'reclamaciones' as UserSection, color: 'var(--color-error)' },
 ]
 

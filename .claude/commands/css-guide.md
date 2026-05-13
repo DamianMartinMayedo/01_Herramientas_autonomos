@@ -12,9 +12,15 @@ Las reglas de cuándo usar inline vs clase están en `CLAUDE.md` (siempre activo
 <button className="btn btn-secondary">Cancelar</button>
 <button className="btn btn-danger">Eliminar</button>
 <button className="btn btn-success">Publicar</button>
+<button className="btn btn-warning">Avisar</button>
+<button className="btn btn-copper">Acción cobre</button>
 <button className="btn btn-ghost">Ver más</button>
 
-// Tamaños
+// Sobre fondos de COLOR (hero azul, register-cta copper) — siempre blancos en ambos modos
+<button className="btn btn-white">Crear cuenta gratis</button>
+<button className="btn btn-white-copper">Registrarme ahora</button>
+
+// Tamaños y modificadores
 <button className="btn btn-primary btn-sm">Pequeño</button>
 <button className="btn btn-primary btn-lg">Grande</button>
 <button className="btn btn-primary btn-center">Centrado</button>
@@ -463,6 +469,50 @@ className="link-block"    // display:block, no text-decoration (para Link wrappe
 
 ---
 
+## Modo oscuro
+
+### Cómo se activa
+
+Toggle vía Zustand `useThemeStore` (`src/store/themeStore.ts`). `App.tsx` aplica clase `.dark` y atributo `data-theme="dark"` en `<html>`. Los tokens cambian automáticamente entre `:root, [data-theme="light"]` y `.dark, [data-theme="dark"]` — casi todo el CSS funciona sin overrides.
+
+### Comportamiento de hovers
+
+**En dark, los botones NO cambian background al hover.** El efecto "lift" lo da:
+- `box-shadow: 3px 3px 0 → 5px 5px 0`
+- `transform: translate(-2px, -2px)`
+
+Si tu botón nuevo define `:hover { background: ... }` para light, en dark queda neutralizado por overrides genéricos en `index.css`. No hace falta hacer nada extra.
+
+### `color-scheme`
+
+Se aplica `color-scheme: light` por defecto y `color-scheme: dark` en `html.dark`. Esto hace que iconos nativos del navegador (calendario en `<input type="date">`, time pickers, scrollbars) se inviertan automáticamente en dark.
+
+### Tokens nuevos (post-redesign)
+
+`--color-error-hover`, `--color-error-active`, `--color-error-subtle` — disponibles en ambos modos.
+
+### Cuándo añadir un override explícito `[data-theme="dark"] .clase`
+
+Solo cuando los tokens no bastan:
+
+- **SVG hardcoded en data-URI** que no responde a tokens (ver `.select-v3` chevron).
+- **Sombras `rgba(0,0,0,...)`** que se pierden sobre fondo oscuro: añadir ring blanco tenue + sombra negra profunda.
+  ```css
+  [data-theme="dark"] .mi-modal {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+  ```
+- **Background sólido** cuyo token claro pierde fuerza como botón (`.btn-danger` usa rojo saturado `#DA3D3D` en dark, no el `--color-error` claro).
+- **Botones blancos sobre fondos de color** (`.btn-white`, `.btn-white-copper`): `#FFFFFF` literal, no `var(--color-white)` (que en dark se oscurece).
+
+### Tokens que NO existen
+
+⚠ Si ves `var(--color-blue)`, `var(--color-warning)`, `var(--color-orange)` en código — son **bugs**: en runtime se descartan y los SVGs caen a negro. Usar paleta principal (`--color-primary`, `--color-gold`, `--color-copper`, etc.).
+
+---
+
 ## Añadir clases nuevas
 
 Si ninguna clase existente cubre el caso:
@@ -482,10 +532,24 @@ Si ninguna clase existente cubre el caso:
 2. Nomenclatura: `.bloque`, `.bloque-elemento`, `.bloque--modificador`
 
 3. Tokens disponibles:
-   - Colores: `--color-{bg|surface|surface-2|surface-offset|divider|border|text|text-muted|text-faint}`
-   - Paleta: `--color-{primary|success|copper|purple|teal|gold|error}` (con `-hover|-active|-highlight|-subtle`)
-   - Espacio: `--space-{1|2|3|4|5|6|8|10|12|16|20|24}`
-   - Texto: `--text-{xs|sm|base|lg|xl|2xl|3xl}`
-   - Fuentes: `--font-{display|body|mono}`
-   - Radio: `--radius-{sm|md|lg|xl|2xl|full}`
-   - Ancho: `--content-{narrow|default|wide}`
+   - **Superficies:** `--color-bg`, `--color-surface`, `--color-surface-2`,
+     `--color-surface-offset`, `--color-surface-offset-2`, `--color-surface-dynamic`
+   - **Bordes:** `--color-divider`, `--color-border`
+   - **Texto:** `--color-text`, `--color-text-muted`, `--color-text-faint`,
+     `--color-text-inverse`
+   - **Blanco contextual:** `--color-white` (en dark se oscurece a un gris cálido;
+     usar `#FFFFFF` literal solo en botones que vivan sobre fondos de color)
+   - **Paleta principal** (cada uno con `-hover|-active|-highlight|-subtle`):
+     `--color-primary`, `--color-success`, `--color-copper`, `--color-purple`,
+     `--color-teal`, `--color-gold`, `--color-error`
+   - **Variantes específicas de primary:** `--color-primary-mid`, `--color-primary-light`
+     (no tienen sub-variantes -hover/-active)
+   - **Espacio:** `--space-{1|2|3|4|5|6|8|10|12|16|20|24}`
+   - **Texto:** `--text-{xs|sm|base|lg|xl|2xl|3xl}` (fluid clamps)
+   - **Fuentes:** `--font-{display|body|mono}`
+   - **Radio:** `--radius-{sm|md|lg|xl|2xl|full}`
+   - **Ancho:** `--content-{narrow|default|wide}`
+   - **Transiciones:** `--transition`, `--transition-slow`
+
+   ⚠ Tokens que NO existen — no usar: `--color-blue`, `--color-warning`,
+   `--color-orange`. Usa la paleta principal (`--color-primary`, `--color-gold`, etc.).

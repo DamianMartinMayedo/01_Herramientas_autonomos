@@ -68,6 +68,11 @@ CREATE POLICY "<TABLA>_own" ON public.<TABLA>
 
 CREATE INDEX IF NOT EXISTS idx_<TABLA>_user ON public.<TABLA>(user_id);
 
+-- ─── GRANTs (requerido desde Supabase Mayo 2026) ──────────
+GRANT SELECT                             ON public.<TABLA> TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE     ON public.<TABLA> TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE     ON public.<TABLA> TO service_role;
+
 -- ─── Trigger updated_at ───────────────────────
 -- La función public.set_updated_at() ya existe (definida en 002_create_documentos.sql).
 -- Si por alguna razón no existe en este entorno, descomenta el bloque siguiente:
