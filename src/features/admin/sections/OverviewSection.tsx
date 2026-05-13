@@ -1,28 +1,26 @@
 /**
  * OverviewSection.tsx
- * Dashboard principal: KPIs, actividad reciente, estado del sistema.
+ * Dashboard principal: KPIs, uso por herramienta, actividad reciente.
  */
 import { useAdminStore } from '../../../store/adminStore'
 import { useBlogStore } from '../../../store/blogStore'
 import { FileText, Wrench, Activity, TrendingUp, Clock, CheckCircle, Circle } from 'lucide-react'
 
-function StatCard({
-  label, value, sub, icon: Icon, accent = 'primary',
-}: {
-  label: string; value: string | number; sub?: string
-  icon: React.ElementType; accent?: 'primary' | 'success' | 'copper'
-}) {
-  const colors = {
-    primary: { bg: 'var(--color-primary-highlight)', color: 'var(--color-primary)' },
-    success: { bg: 'var(--color-success-highlight)', color: 'var(--color-success)' },
-    copper:  { bg: 'var(--color-copper-highlight)',  color: 'var(--color-copper)'  },
-  }
-  const c = colors[accent]
+type Accent = 'primary' | 'success' | 'copper'
 
+interface StatCardProps {
+  label: string
+  value: string | number
+  sub?: string
+  icon: React.ElementType
+  accent?: Accent
+}
+
+function StatCard({ label, value, sub, icon: Icon, accent = 'primary' }: StatCardProps) {
   return (
     <div className="card flex flex-col gap-4">
-      <div className="icon-box icon-box-md" style={{ background: c.bg }}>
-        <Icon size={16} style={{ color: c.color }} />
+      <div className={`icon-box icon-box-md icon-box--${accent}`}>
+        <Icon size={16} />
       </div>
       <div>
         <p className="stat-label">{label}</p>
@@ -59,71 +57,63 @@ export function OverviewSection() {
   const herramientas = useAdminStore((s) => s.herramientas)
   const events       = useAdminStore((s) => s.events)
 
-  const published     = posts.filter(p => p.status === 'published').length
-  const drafts        = posts.filter(p => p.status === 'draft').length
-  const activasCount  = herramientas.filter(h => h.activa).length
-  const totalUsos     = herramientas.reduce((acc, h) => acc + h.usosRegistrados, 0)
-  const recentEvents  = events.slice(0, 15)
+  const published    = posts.filter(p => p.status === 'published').length
+  const drafts       = posts.filter(p => p.status === 'draft').length
+  const activasCount = herramientas.filter(h => h.activa).length
+  const totalUsos    = herramientas.reduce((acc, h) => acc + h.usosRegistrados, 0)
+  const recentEvents = events.slice(0, 15)
 
-  const h24 = new Date(); h24.setDate(h24.getDate() - 1)
-  const eventos24h = events.filter(e => new Date(e.timestamp) > h24).length
+  const h24Ago = new Date(); h24Ago.setDate(h24Ago.getDate() - 1)
+  const eventos24h = events.filter(e => new Date(e.timestamp) > h24Ago).length
 
   return (
     <div className="section-stack">
 
-      {/* Header */}
       <div>
         <h1 className="section-title">Resumen general</h1>
         <p className="section-sub">Estado de la plataforma en tiempo real</p>
       </div>
 
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
-        <StatCard label="Eventos (24h)"    value={eventos24h}    sub="actividad propia"       icon={Activity}   accent="primary" />
-        <StatCard label="Usos totales"     value={totalUsos}     sub="desde inicio"           icon={TrendingUp} accent="success" />
-        <StatCard label="Herramientas"     value={`${activasCount}/${herramientas.length}`} sub="activas"  icon={Wrench}     accent="copper"  />
-        <StatCard label="Posts publicados" value={published}     sub={`${drafts} en borrador`} icon={FileText}  accent="primary" />
+      <div className="kpi-grid">
+        <StatCard label="Eventos (24h)"    value={eventos24h}    sub="actividad propia"        icon={Activity}   accent="primary" />
+        <StatCard label="Usos totales"     value={totalUsos}     sub="desde inicio"            icon={TrendingUp} accent="success" />
+        <StatCard label="Herramientas"     value={`${activasCount}/${herramientas.length}`} sub="activas" icon={Wrench} accent="copper" />
+        <StatCard label="Posts publicados" value={published}     sub={`${drafts} en borrador`} icon={FileText}   accent="primary" />
       </div>
 
-      {/* Uso por herramienta */}
       <div>
         <p className="section-block-label">Uso por herramienta</p>
         <div className="flex flex-col gap-2">
           {herramientas.map(h => {
             const pct = totalUsos > 0 ? Math.round((h.usosRegistrados / totalUsos) * 100) : 0
             return (
-              <div key={h.id} className="row-item" style={{ border: '1.5px solid var(--color-border)', padding: 'var(--space-3) var(--space-4)' }}>
-                <div className="flex items-center gap-2" style={{ width: '180px', flexShrink: 0 }}>
+              <div key={h.id} className="row-item usage-row">
+                <div className="usage-row-label">
                   {h.activa
-                    ? <CheckCircle size={13} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
-                    : <Circle size={13} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
+                    ? <CheckCircle size={13} className="text-success shrink-0" />
+                    : <Circle      size={13} className="text-faint shrink-0" />
                   }
-                  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {h.nombre}
-                  </span>
+                  <span className="usage-row-name">{h.nombre}</span>
                 </div>
                 <div className="progress-bar">
-                  <div className="progress-bar-fill" style={{
-                    width: `${pct}%`,
-                    background: h.activa ? 'var(--color-primary)' : 'var(--color-border)',
-                  }} />
+                  <div
+                    className={`progress-bar-fill ${h.activa ? 'progress-bar-fill--active' : 'progress-bar-fill--inactive'}`}
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', width: '48px', textAlign: 'right', flexShrink: 0 }}>
-                  {h.usosRegistrados} usos
-                </span>
+                <span className="usage-row-count">{h.usosRegistrados} usos</span>
               </div>
             )
           })}
         </div>
       </div>
 
-      {/* Actividad reciente */}
       <div>
         <p className="section-block-label">Actividad reciente</p>
 
         {recentEvents.length === 0 ? (
           <div className="empty-state">
-            <Activity size={24} style={{ color: 'var(--color-text-faint)', margin: '0 auto var(--space-3)', display: 'block' }} />
+            <Activity size={24} className="empty-state-icon" />
             <p className="empty-state-text">
               Sin eventos registrados aún.<br />
               Los eventos se generan automáticamente cuando los usuarios usan la app.
@@ -132,16 +122,12 @@ export function OverviewSection() {
         ) : (
           <div className="flex flex-col gap-1">
             {recentEvents.map(ev => (
-              <div key={ev.id} className="row-item" style={{ justifyContent: 'space-between' }}>
+              <div key={ev.id} className="row-item activity-row">
                 <div className="flex items-center gap-3">
                   <EventBadge tipo={ev.tipo} />
-                  {ev.herramienta && (
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                      /{ev.herramienta}
-                    </span>
-                  )}
+                  {ev.herramienta && <span className="activity-row-tool">/{ev.herramienta}</span>}
                 </div>
-                <span className="flex items-center gap-1" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>
+                <span className="activity-row-time">
                   <Clock size={11} />
                   {formatRelative(ev.timestamp)}
                 </span>

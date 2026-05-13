@@ -32,17 +32,15 @@ export function ConfirmModal({
       <div className="admin-modal-box admin-modal-sm">
 
         <div className="admin-modal-header">
-          <AlertTriangle size={18} style={{ color: 'var(--color-gold)', flexShrink: 0 }} />
+          <AlertTriangle size={18} className="admin-modal-header-icon admin-modal-header-icon--gold" />
           <h2 className="admin-modal-title">{title}</h2>
-          <button onClick={onCancel} className="modal-close-btn">
+          <button onClick={onCancel} className="modal-close-btn" aria-label="Cerrar">
             <X size={16} />
           </button>
         </div>
 
         <div className="admin-modal-body">
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
-            {description}
-          </p>
+          <p className="modal-body-text">{description}</p>
         </div>
 
         <div className="admin-modal-footer">

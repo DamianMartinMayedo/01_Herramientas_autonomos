@@ -107,12 +107,10 @@ function LoginGate() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="icon-box icon-box-md mb-2" style={{ background: 'var(--color-primary-highlight)' }}>
-            <Lock size={18} style={{ color: 'var(--color-primary)' }} />
+          <div className="icon-box icon-box-md mb-2 login-icon-box">
+            <Lock size={18} className="login-icon" />
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-text)' }}>
-            Panel de administración
-          </h1>
+          <h1 className="login-title">Panel de administración</h1>
           <p className="section-sub">Acceso restringido a HerramientasAutonomos.es</p>
         </div>
 
@@ -125,8 +123,7 @@ function LoginGate() {
               onChange={(e) => setPin(e.target.value)}
               placeholder="••••••••"
               autoFocus
-              className={`input-v3${error ? ' is-error' : ''}`}
-              style={{ paddingRight: '2.5rem' }}
+              className={`input-v3 has-icon-right${error ? ' is-error' : ''}`}
             />
             <button type="button" onClick={() => setShow(!show)} className="input-password-toggle">
               {show ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -157,17 +154,17 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
   if (!isAuthenticated) return <LoginGate />
 
   return (
-    <div className="layout-root" style={{ alignItems: 'flex-start' }}>
+    <div className="layout-root admin-layout-shell">
 
       {/* Sidebar desktop */}
-      <div className="show-lg" style={{ position: 'sticky', top: 0, alignSelf: 'flex-start', height: '100vh' }}>
+      <div className="show-lg admin-layout-sidebar">
         <AdminSidebar section={section} onNav={onNav} onLogout={() => setLogoutConfirmOpen(true)} />
       </div>
 
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="mobile-drawer" onClick={() => setMobileOpen(false)}>
-          <div style={{ height: '100vh' }} onClick={e => e.stopPropagation()}>
+          <div className="admin-mobile-drawer-panel" onClick={e => e.stopPropagation()}>
             <AdminSidebar
               section={section}
               onNav={onNav}
@@ -180,15 +177,15 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
       )}
 
       {/* Contenido principal */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <div className="admin-layout-content">
 
         {/* Topbar */}
         <div className="admin-topbar">
-          <div className="flex items-center gap-3" style={{ minWidth: 0 }}>
+          <div className="admin-topbar-left">
             <button
-              className="hide-lg"
+              className="hide-lg admin-menu-btn"
               onClick={() => setMobileOpen(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', flexShrink: 0 }}
+              aria-label="Abrir menú"
             >
               <Menu size={18} />
             </button>
@@ -199,7 +196,7 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
         </div>
 
         {/* Área de contenido */}
-        <main style={{ flex: 1, padding: 'var(--space-8)' }}>
+        <main className="admin-layout-main">
           {children}
         </main>
       </div>
