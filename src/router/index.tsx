@@ -23,25 +23,30 @@ import { RouteErrorPage }  from '../components/routing/RouteErrorPage'
 import { RouteLoading }    from '../components/routing/RouteLoading'
 import { NotFoundPage }    from '../components/routing/NotFoundPage'
 import { ProtectedRoute }  from '../components/routing/ProtectedRoute'
+import { ToolAccessGuard } from '../components/routing/ToolAccessGuard'
 import { HomePage }        from '../features/home/HomePage'
 
 function withRouteSuspense(element: ReactNode) {
   return <Suspense fallback={<RouteLoading />}>{element}</Suspense>
 }
 
+function tool(id: string, element: ReactNode) {
+  return <ToolAccessGuard herramientaId={id}>{withRouteSuspense(element)}</ToolAccessGuard>
+}
+
 export const router = createBrowserRouter([
   { path: '/',                  element: <HomePage />,                               errorElement: <RouteErrorPage /> },
   { path: '/usuario',           element: <ProtectedRoute>{withRouteSuspense(<UserPage />)}</ProtectedRoute>, errorElement: <RouteErrorPage /> },
-  { path: '/factura',           element: withRouteSuspense(<FacturaPage />),         errorElement: <RouteErrorPage /> },
-  { path: '/presupuesto',       element: withRouteSuspense(<PresupuestoPage />),     errorElement: <RouteErrorPage /> },
-  { path: '/albaran',           element: withRouteSuspense(<AlbaranPage />),         errorElement: <RouteErrorPage /> },
-  { path: '/contrato',          element: withRouteSuspense(<ContratoPage />),        errorElement: <RouteErrorPage /> },
-  { path: '/nda',               element: withRouteSuspense(<NdaPage />),             errorElement: <RouteErrorPage /> },
-  { path: '/reclamacion-pago',  element: withRouteSuspense(<ReclamacionPage />),     errorElement: <RouteErrorPage /> },
+  { path: '/factura',           element: tool('factura',         <FacturaPage />),       errorElement: <RouteErrorPage /> },
+  { path: '/presupuesto',       element: tool('presupuesto',     <PresupuestoPage />),   errorElement: <RouteErrorPage /> },
+  { path: '/albaran',           element: tool('albaran',         <AlbaranPage />),       errorElement: <RouteErrorPage /> },
+  { path: '/contrato',          element: tool('contrato',        <ContratoPage />),      errorElement: <RouteErrorPage /> },
+  { path: '/nda',               element: tool('nda',             <NdaPage />),           errorElement: <RouteErrorPage /> },
+  { path: '/reclamacion-pago',  element: tool('reclamacion',     <ReclamacionPage />),   errorElement: <RouteErrorPage /> },
   { path: '/admin',             element: withRouteSuspense(<AdminPage />),           errorElement: <RouteErrorPage /> },
-  { path: '/cuota-autonomos',   element: withRouteSuspense(<CuotaAutonomosPage />),  errorElement: <RouteErrorPage /> },
-  { path: '/precio-hora',       element: withRouteSuspense(<PrecioHoraPage />),      errorElement: <RouteErrorPage /> },
-  { path: '/iva-irpf',          element: withRouteSuspense(<IvaIrpfPage />),         errorElement: <RouteErrorPage /> },
+  { path: '/cuota-autonomos',   element: tool('cuota-autonomos', <CuotaAutonomosPage />), errorElement: <RouteErrorPage /> },
+  { path: '/precio-hora',       element: tool('precio-hora',     <PrecioHoraPage />),    errorElement: <RouteErrorPage /> },
+  { path: '/iva-irpf',          element: tool('iva-irpf',        <IvaIrpfPage />),       errorElement: <RouteErrorPage /> },
   { path: '/blog',              element: withRouteSuspense(<BlogPage />),            errorElement: <RouteErrorPage /> },
   { path: '/blog/:slug',        element: withRouteSuspense(<BlogPostPage />),        errorElement: <RouteErrorPage /> },
   { path: '/privacidad',        element: withRouteSuspense(<PrivacidadPage />),      errorElement: <RouteErrorPage /> },
