@@ -9,6 +9,7 @@
  * El padre maneja el refetch tras la acción.
  */
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { MoreVertical, Crown, User, MailCheck, KeyRound, Ban, ShieldCheck, Trash2, Eye } from 'lucide-react'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { AdminModal } from '../../components/AdminModal'
@@ -24,6 +25,8 @@ interface Props {
   onOpenDetail?: () => void
   /** Llamado después de cualquier acción exitosa (refetch). */
   onChanged: () => void
+  /** Llamado tras eliminar el usuario en vez de onChanged. */
+  onDeleted?: () => void
 }
 
 type AsyncAction =
@@ -34,22 +37,45 @@ type AsyncAction =
   | { kind: 'unban' }
   | { kind: 'delete' }
 
-export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChanged }: Props) {
+export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChanged, onDeleted }: Props) {
   const dev = useAdminDev()
   const [open, setOpen]         = useState(false)
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null)
   const [confirm, setConfirm]   = useState<AsyncAction | null>(null)
   const [linkResult, setLinkResult] = useState<{ title: string; link: string } | null>(null)
   const [busy, setBusy]         = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const btnRef  = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const isPremium = user.plan === 'premium'
+  // eslint-disable-next-line react-hooks/purity
   const isBanned  = !!user.banned_until && new Date(user.banned_until).getTime() > Date.now()
+
+  const toggleOpen = () => {
+    if (open) {
+      setOpen(false)
+      return
+    }
+    const rect = btnRef.current?.getBoundingClientRect()
+    if (rect) {
+      setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+    setOpen(true)
+  }
+
+  const closeDropdown = () => {
+    setOpen(false)
+  }
 
   /* Cerrar dropdown al hacer click fuera */
   useEffect(() => {
     if (!open) return
     const onDoc = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (wrapRef.current?.contains(target)) return
+      if (menuRef.current?.contains(target)) return
+      closeDropdown()
     }
     window.addEventListener('mousedown', onDoc)
     return () => window.removeEventListener('mousedown', onDoc)
@@ -77,7 +103,11 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
         link,
       })
     }
-    onChanged()
+    if (action.kind === 'delete' && onDeleted) {
+      onDeleted()
+    } else {
+      onChanged()
+    }
   }
 
   const confirmTexts: Record<AsyncAction['kind'], { title: string; description: string; confirmLabel: string; variant: 'danger' | 'warning' | 'success' }> = {
@@ -119,21 +149,26 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
     },
   }
 
+  const closeAnd = (fn: () => void) => () => {
+    closeDropdown()
+    fn()
+  }
+
   /* Items del menú */
   const items = [
-    onOpenDetail && { id: 'detail',  label: 'Ver detalle',                    Icon: Eye,         onClick: () => { onOpenDetail(); setOpen(false) } },
+    onOpenDetail && { id: 'detail',  label: 'Ver detalle',                    Icon: Eye,         onClick: closeAnd(onOpenDetail) },
     {
       id: 'set-plan',
       label: isPremium ? 'Cambiar a Free' : 'Cambiar a Premium',
       Icon: isPremium ? User : Crown,
-      onClick: () => { setOpen(false); setConfirm({ kind: 'set-plan', plan: isPremium ? 'free' : 'premium' }) },
+      onClick: closeAnd(() => setConfirm({ kind: 'set-plan', plan: isPremium ? 'free' : 'premium' })),
     },
-    { id: 'resend',  label: 'Reenviar confirmación',  Icon: MailCheck, onClick: () => { setOpen(false); setConfirm({ kind: 'resend-confirmation' }) } },
-    { id: 'reset',   label: 'Resetear contraseña',    Icon: KeyRound,  onClick: () => { setOpen(false); setConfirm({ kind: 'reset-password' }) } },
+    { id: 'resend',  label: 'Reenviar confirmación',  Icon: MailCheck, onClick: closeAnd(() => setConfirm({ kind: 'resend-confirmation' })) },
+    { id: 'reset',   label: 'Resetear contraseña',    Icon: KeyRound,  onClick: closeAnd(() => setConfirm({ kind: 'reset-password' })) },
     isBanned
-      ? { id: 'unban', label: 'Reactivar usuario',  Icon: ShieldCheck, onClick: () => { setOpen(false); setConfirm({ kind: 'unban' }) } }
-      : { id: 'ban',   label: 'Suspender usuario',  Icon: Ban,         onClick: () => { setOpen(false); setConfirm({ kind: 'ban' }) } },
-    dev && { id: 'delete', label: 'Eliminar usuario', Icon: Trash2, danger: true, onClick: () => { setOpen(false); setConfirm({ kind: 'delete' }) } },
+      ? { id: 'unban', label: 'Reactivar usuario',  Icon: ShieldCheck, onClick: closeAnd(() => setConfirm({ kind: 'unban' })) }
+      : { id: 'ban',   label: 'Suspender usuario',  Icon: Ban,         onClick: closeAnd(() => setConfirm({ kind: 'ban' })) },
+    dev && { id: 'delete', label: 'Eliminar usuario', Icon: Trash2, danger: true, onClick: closeAnd(() => setConfirm({ kind: 'delete' })) },
   ].filter(Boolean) as Array<{ id: string; label: string; Icon: React.ElementType; onClick: () => void; danger?: boolean }>
 
   /* Render */
@@ -155,15 +190,27 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
       ) : (
         <div className="user-actions-menu-wrap" ref={wrapRef} onClick={e => e.stopPropagation()}>
           <button
+            ref={btnRef}
             className="icon-btn"
-            onClick={() => setOpen(o => !o)}
+            onClick={toggleOpen}
             aria-label="Acciones de usuario"
             disabled={busy}
           >
             <MoreVertical size={14} />
           </button>
-          {open && (
-            <div className="user-actions-menu">
+          {createPortal(
+            <div
+              ref={menuRef}
+              className="user-actions-menu"
+              style={{
+                position: 'fixed',
+                top: dropdownPos?.top ?? 0,
+                right: dropdownPos?.right ?? 0,
+                margin: 0,
+                display: open ? undefined : 'none',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
               {items.map(it => (
                 <button
                   key={it.id}
@@ -173,26 +220,30 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
                   <it.Icon size={13} /> {it.label}
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body,
           )}
         </div>
       )}
 
-      {confirm && (() => {
-        const t = confirmTexts[confirm.kind]
-        return (
-          <ConfirmModal
-            title={t.title}
-            description={t.description}
-            confirmLabel={t.confirmLabel}
-            confirmVariant={t.variant}
-            onConfirm={() => { void runAction(confirm) }}
-            onCancel={() => setConfirm(null)}
-          />
-        )
-      })()}
+      {confirm && createPortal(
+        (() => {
+          const t = confirmTexts[confirm.kind]
+          return (
+            <ConfirmModal
+              title={t.title}
+              description={t.description}
+              confirmLabel={t.confirmLabel}
+              confirmVariant={t.variant}
+              onConfirm={() => { void runAction(confirm) }}
+              onCancel={() => setConfirm(null)}
+            />
+          )
+        })(),
+        document.body,
+      )}
 
-      {linkResult && (
+      {linkResult && createPortal(
         <AdminModal
           open
           size="lg"
@@ -212,7 +263,8 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
               Copiar
             </button>
           </div>
-        </AdminModal>
+        </AdminModal>,
+        document.body,
       )}
     </>
   )

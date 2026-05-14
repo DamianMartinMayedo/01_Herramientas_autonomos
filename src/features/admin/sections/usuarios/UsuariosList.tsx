@@ -14,6 +14,7 @@ interface Props {
   onSelectUser: (u: UserProfile) => void
   onCreateClick: () => void
   onUserChanged: () => void
+  onUserDeleted?: (userId: string) => void
 }
 
 type Filter = 'all' | 'premium' | 'free' | 'new7d' | 'no-login'
@@ -33,7 +34,7 @@ function relative(iso: string | null | undefined) {
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
-export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUserChanged }: Props) {
+export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUserChanged, onUserDeleted }: Props) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -43,6 +44,7 @@ export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUs
       if (q && !u.email?.toLowerCase().includes(q)) return false
       if (filter === 'premium' && u.plan !== 'premium') return false
       if (filter === 'free'    && u.plan !== 'free')    return false
+      // eslint-disable-next-line react-hooks/purity
       if (filter === 'new7d'   && (Date.now() - new Date(u.created_at).getTime()) > SEVEN_DAYS_MS) return false
       if (filter === 'no-login' && u.last_sign_in_at) return false
       return true
@@ -112,6 +114,7 @@ export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUs
             ) : (
               filtered.map(user => {
                 const isPremium = user.plan === 'premium'
+                // eslint-disable-next-line react-hooks/purity
                 const isBanned  = !!user.banned_until && new Date(user.banned_until).getTime() > Date.now()
                 return (
                   <tr
@@ -140,12 +143,13 @@ export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUs
                     <td className="data-td-right data-td--bold">{user.documents_count ?? 0}</td>
                     <td className="data-td data-td--muted">{relative(user.last_sign_in_at)}</td>
                     <td className="data-td data-td--muted">{new Date(user.created_at).toLocaleDateString('es-ES')}</td>
-                    <td className="data-td-right">
+                    <td className="data-td-right" onClick={e => e.stopPropagation()}>
                       <UserActionsMenu
                         user={user}
                         variant="menu"
                         onOpenDetail={() => onSelectUser(user)}
                         onChanged={onUserChanged}
+                        onDeleted={onUserDeleted ? () => onUserDeleted(user.id) : undefined}
                       />
                     </td>
                   </tr>

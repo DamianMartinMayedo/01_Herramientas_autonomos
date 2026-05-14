@@ -38,6 +38,10 @@ export function useProfile(): UseProfileReturn {
       .single()
 
     if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        await supabase.auth.signOut()
+        return
+      }
       setError(fetchError.message)
     } else {
       setProfile(data as Profile)
@@ -66,6 +70,10 @@ export function useProfile(): UseProfileReturn {
       if (!active) return
 
       if (fetchError) {
+        if (fetchError.code === 'PGRST116') {
+          await supabase.auth.signOut()
+          return
+        }
         setError(fetchError.message)
       } else {
         setProfile(data as Profile)
@@ -80,6 +88,16 @@ export function useProfile(): UseProfileReturn {
       active = false
     }
   }, [user])
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && user) {
+        void fetchProfile()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [user, fetchProfile])
 
   const updateProfile = async (data: ProfileUpdate) => {
     if (!user) return { error: 'No hay sesión activa' }

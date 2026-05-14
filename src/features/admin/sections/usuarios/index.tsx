@@ -2,7 +2,7 @@
  * UsuariosSection — orquestador.
  * Mantiene el estado de vista (lista | detalle) y delega en sub-componentes.
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAdminFetch } from '../../hooks/useAdminFetch'
 import { UsuariosList } from './UsuariosList'
 import { UsuarioDetail } from './UsuarioDetail'
@@ -21,6 +21,21 @@ export function UsuariosSection() {
 
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [crearOpen,    setCrearOpen]    = useState(false)
+  const [deletedIds,   setDeletedIds]   = useState<Set<string>>(new Set())
+
+  const displayedUsers = useMemo(
+    () => (data ?? []).filter(u => !deletedIds.has(u.id)),
+    [data, deletedIds],
+  )
+
+  const handleUserDeleted = (userId: string) => {
+    setDeletedIds(prev => {
+      const next = new Set(prev)
+      next.add(userId)
+      return next
+    })
+    void refetch()
+  }
 
   if (selectedUser) {
     return (
@@ -35,11 +50,12 @@ export function UsuariosSection() {
   return (
     <div className="section-stack">
       <UsuariosList
-        users={data ?? []}
+        users={displayedUsers}
         loading={loading}
         onSelectUser={setSelectedUser}
         onCreateClick={() => setCrearOpen(true)}
         onUserChanged={() => { void refetch() }}
+        onUserDeleted={handleUserDeleted}
       />
 
       <CrearUsuarioModal

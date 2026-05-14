@@ -60,6 +60,11 @@ export function UsuarioDetail({ user, onBack, onUserChanged }: Props) {
     onUserChanged()
   }
 
+  const handleDeleted = () => {
+    onUserChanged()
+    onBack()
+  }
+
   if (loading) {
     return (
       <div className="section-stack">
@@ -89,6 +94,7 @@ export function UsuarioDetail({ user, onBack, onUserChanged }: Props) {
 
   const { profile, auth, empresa, counts, totales_facturas } = data
   const isPremium = profile.plan === 'premium'
+  // eslint-disable-next-line react-hooks/purity
   const isBanned  = !!auth.banned_until && new Date(auth.banned_until).getTime() > Date.now()
 
   return (
@@ -116,6 +122,7 @@ export function UsuarioDetail({ user, onBack, onUserChanged }: Props) {
         user={{ ...user, plan: profile.plan, banned_until: auth.banned_until }}
         variant="bar"
         onChanged={handleChanged}
+        onDeleted={handleDeleted}
       />
 
       {/* KPIs */}
@@ -134,8 +141,8 @@ export function UsuarioDetail({ user, onBack, onUserChanged }: Props) {
           <p className="section-block-label">Cuenta</p>
           <div className="card">
             <div className="user-data-row">
-              <span className="user-data-label">Nombre</span>
-              <span className="user-data-value">{profile.display_name || <em className="text-faint">Sin nombre</em>}</span>
+              <span className="user-data-label">Email</span>
+              <span className="user-data-value">{profile.email}</span>
             </div>
             <div className="user-data-row">
               <span className="user-data-label">Email confirmado</span>

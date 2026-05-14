@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
   const supabase = adminClient()
 
   const [profileRes, empresaRes, authRes, facturasRes, presupuestosRes, albaranesRes, contratosRes, ndasRes, reclamacionesRes] = await Promise.all([
-    supabase.from('profiles').select('id, email, display_name, plan, created_at').eq('id', id).maybeSingle(),
+    supabase.from('profiles').select('id, email, plan, created_at').eq('id', id).maybeSingle(),
     supabase.from('empresa').select('*').eq('id', id).maybeSingle(),
     supabase.auth.admin.getUserById(id),
     supabase.from('facturas')     .select('id, numero, fecha, cliente_nombre, total, estado').eq('user_id', id).order('fecha', { ascending: false }).limit(LIMIT),

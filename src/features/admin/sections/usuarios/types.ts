@@ -38,7 +38,7 @@ export interface EmpresaInfo {
 }
 
 export interface UserDetailPayload {
-  profile: { id: string; email: string; display_name: string | null; plan: Plan; created_at: string }
+  profile: { id: string; email: string; plan: Plan; created_at: string }
   auth:    { last_sign_in_at: string | null; email_confirmed_at: string | null; banned_until: string | null }
   empresa: EmpresaInfo | null
   counts:  { facturas: number; presupuestos: number; albaranes: number; contratos: number; ndas: number; reclamaciones: number; total: number }
