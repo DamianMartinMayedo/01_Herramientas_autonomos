@@ -55,6 +55,7 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
   const toggleOpen = () => {
     if (open) {
       setOpen(false)
+      setDropdownPos(null)
       return
     }
     const rect = btnRef.current?.getBoundingClientRect()
@@ -66,6 +67,7 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
 
   const closeDropdown = () => {
     setOpen(false)
+    setDropdownPos(null)
   }
 
   /* Cerrar dropdown al hacer click fuera */
@@ -198,17 +200,11 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
           >
             <MoreVertical size={14} />
           </button>
-          {createPortal(
+          {open && dropdownPos && createPortal(
             <div
               ref={menuRef}
               className="user-actions-menu"
-              style={{
-                position: 'fixed',
-                top: dropdownPos?.top ?? 0,
-                right: dropdownPos?.right ?? 0,
-                margin: 0,
-                display: open ? undefined : 'none',
-              }}
+              style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, margin: 0 }}
               onClick={e => e.stopPropagation()}
             >
               {items.map(it => (
