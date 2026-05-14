@@ -133,7 +133,7 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
 function ToolCard({ h }: { h: Herramienta }) {
   const meta = HERRAMIENTA_META[h.id] ?? FALLBACK_META
   const Icon = meta.icon
-  const isActive = h.activa && !h.proximamente && !h.mantenimiento
+  const isActive = h.estado === 'active'
 
   const cardEl = (
     <div className={`card tool-card-inner ${meta.accentClass} ${isActive ? 'card-interactive' : 'card-disabled'}`}>
@@ -148,11 +148,11 @@ function ToolCard({ h }: { h: Herramienta }) {
           {h.plan_required === 'free' && !h.anon_available && (
             <span className="badge badge-primary">Registro</span>
           )}
-          {(!h.activa || h.proximamente || h.mantenimiento) && (
-            <span className={`badge ${h.mantenimiento ? 'badge-gold' : 'badge-muted'}`}>
-              {h.mantenimiento ? <AlertTriangle size={10} /> : <Clock size={10} />}
-              {h.mantenimiento ? 'Mejorando' : 'Próximamente'}
-            </span>
+          {h.estado === 'maintenance' && (
+            <span className="badge badge-gold"><AlertTriangle size={10} /> Mejorando</span>
+          )}
+          {h.estado === 'coming_soon' && (
+            <span className="badge badge-muted"><Clock size={10} /> Próximamente</span>
           )}
         </div>
       </div>
@@ -212,8 +212,8 @@ export function HomePage() {
     const bPrio = priorityIds.includes(b.id)
     if (aPrio && !bPrio) return -1
     if (!aPrio && bPrio) return 1
-    if (a.activa && !b.activa) return -1
-    if (!a.activa && b.activa) return 1
+    if (a.estado === 'active' && b.estado !== 'active') return -1
+    if (a.estado !== 'active' && b.estado === 'active') return 1
     return 0
   }
 
@@ -221,7 +221,7 @@ export function HomePage() {
   for (const h of visibles) {
     if (!byCategoria[h.categoria]) byCategoria[h.categoria] = { items: [], hasActive: false }
     byCategoria[h.categoria].items.push(h)
-    if (h.activa && !h.proximamente && !h.mantenimiento) byCategoria[h.categoria].hasActive = true
+    if (h.estado === 'active') byCategoria[h.categoria].hasActive = true
   }
 
   const categoriasOrdenadas = Object.entries(byCategoria)

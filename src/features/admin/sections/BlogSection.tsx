@@ -9,7 +9,7 @@ import { useAdminFetch, adminPatch, adminDelete, adminPost } from '../hooks/useA
 import { ConfirmModal } from '../components/ConfirmModal'
 import { PostEditor } from './blog/PostEditor'
 import { deleteTexts, publishTexts, emptyConfirm } from '../utils/modalTexts'
-import { Plus, Pencil, Trash2, Eye, EyeOff, FileText, Tag, Calendar, Upload, Loader2 } from 'lucide-react'
+import { Plus, FileText, Upload, Loader2, MoreVertical, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
 import type { BlogPost, BlogStatus } from '../../../types/blog'
 
 type ModalTarget = { post: BlogPost; accion: 'visibilidad' | 'eliminar' } | null
@@ -58,6 +58,7 @@ export function BlogSection() {
   const [modalTarget, setModalTarget] = useState<ModalTarget>(null)
   const [importing,   setImporting]   = useState(false)
   const [importMsg,   setImportMsg]   = useState<string | null>(null)
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
 
   const posts = useMemo(() => data ?? [], [data])
 
@@ -206,54 +207,69 @@ export function BlogSection() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {filtered.map(post => {
-            const publicado = post.status === 'published'
-            return (
-              <div key={post.id} className="card card-raised-sm post-card">
-
-                <div className="post-card-body">
-                  <div className="post-card-tags">
-                    <span className={`badge ${publicado ? 'badge-success' : 'badge-muted'}`}>
-                      {publicado ? 'Publicado' : 'Borrador'}
-                    </span>
-                    {post.tags.slice(0, 3).map(t => (
-                      <span key={t} className="tag-tiny">
-                        <Tag size={9} />{t}
+        <div className="card card-no-pad">
+          <table className="data-table">
+            <thead>
+              <tr className="data-thead-row">
+                <th className="data-th">Título</th>
+                <th className="data-th">Estado</th>
+                <th className="data-th">Tags</th>
+                <th className="data-th">Fecha</th>
+                <th className="data-th-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(post => {
+                const publicado = post.status === 'published'
+                return (
+                  <tr key={post.id} className="data-tr">
+                    <td className="data-td">
+                      <span className="data-td--bold">{post.titulo || 'Sin título'}</span>
+                    </td>
+                    <td className="data-td">
+                      <span className={`badge ${publicado ? 'badge-success' : 'badge-muted'}`}>
+                        {publicado ? 'Publicado' : 'Borrador'}
                       </span>
-                    ))}
-                  </div>
-                  <h3 className="post-card-title">{post.titulo || 'Sin título'}</h3>
-                  {post.extracto && <p className="post-card-excerpt">{post.extracto}</p>}
-                  <div className="post-card-meta">
-                    <Calendar size={10} />
-                    {formatDate(post.updated_at)}
-                    <span className="post-card-slug">/blog/{post.slug}</span>
-                  </div>
-                </div>
-
-                <div className="post-card-actions">
-                  <button
-                    title={publicado ? 'Despublicar' : 'Publicar'}
-                    onClick={() => setModalTarget({ post, accion: 'visibilidad' })}
-                    className={`icon-btn ${publicado ? 'icon-btn--eye-on' : 'icon-btn--eye-off'}`}
-                  >
-                    {publicado ? <Eye size={14} /> : <EyeOff size={14} />}
-                  </button>
-                  <button title="Editar" onClick={() => setEditing(post)} className="icon-btn icon-btn--primary">
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    title="Eliminar"
-                    onClick={() => setModalTarget({ post, accion: 'eliminar' })}
-                    className="icon-btn icon-btn--danger"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+                    </td>
+                    <td className="data-td data-td--muted">
+                      {post.tags.length > 0 ? post.tags.join(', ') : '—'}
+                    </td>
+                    <td className="data-td data-td--muted">
+                      {formatDate(post.updated_at)}
+                    </td>
+                    <td className="data-td-right">
+                      <div className="dropdown-wrap">
+                        <button
+                          className="icon-btn"
+                          title="Opciones"
+                          onClick={() => setOpenDropdownId(openDropdownId === post.id ? null : post.id)}
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+                        {openDropdownId === post.id && (
+                          <>
+                            <div className="dropdown-overlay" onClick={() => setOpenDropdownId(null)} />
+                            <div className="dropdown-menu">
+                              <button className="dropdown-item" onClick={() => { setOpenDropdownId(null); setEditing(post) }}>
+                                <Pencil size={14} /> Editar
+                              </button>
+                              <button className="dropdown-item" onClick={() => { setOpenDropdownId(null); setModalTarget({ post, accion: 'visibilidad' }) }}>
+                                {publicado ? <EyeOff size={14} /> : <Eye size={14} />} {publicado ? 'Despublicar' : 'Publicar'}
+                              </button>
+                              <div className="dropdown-divider" />
+                              <button className="dropdown-item dropdown-item--danger" onClick={() => { setOpenDropdownId(null); setModalTarget({ post, accion: 'eliminar' }) }}>
+                                <Trash2 size={14} /> Eliminar
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

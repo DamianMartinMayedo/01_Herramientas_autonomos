@@ -1,6 +1,8 @@
 /**
  * ToolAccessGuard.tsx
  * Wrapper de ruta que aplica el modelo de acceso por herramienta:
+ *   - Si visible === false → NotFound (no accesible por URL directa).
+ *   - Si estado != 'active' → ToolUnavailable (no accesible para nadie).
  *   - Anónimo: pasa si la herramienta es free Y anon_available=true.
  *   - Registrado free: pasa si plan_required != 'premium'.
  *   - Registrado premium: pasa siempre.
@@ -11,6 +13,8 @@ import { useAuth } from '../../hooks/useAuth'
 import { useProfile } from '../../hooks/useProfile'
 import { useHerramienta } from '../../hooks/useHerramientas'
 import { Paywall } from '../shared/Paywall'
+import { ToolUnavailable } from './ToolUnavailable'
+import { NotFoundPage } from './NotFoundPage'
 import { RouteLoading } from './RouteLoading'
 
 interface Props {
@@ -25,9 +29,15 @@ export function ToolAccessGuard({ herramientaId, children }: Props) {
 
   if (hLoading || aLoading || (user && pLoading)) return <RouteLoading />
 
-  // Si la herramienta no existe en la tabla, dejamos pasar (el router decidirá
-  // si la página existe). Esto evita falsos bloqueos durante el bootstrap.
   if (!herramienta) return <>{children}</>
+
+  if (herramienta.visible === false) {
+    return <NotFoundPage />
+  }
+
+  if (herramienta.estado !== 'active') {
+    return <ToolUnavailable estado={herramienta.estado} toolName={herramienta.nombre} />
+  }
 
   const isPremiumTool = herramienta.plan_required === 'premium'
   const allowsAnon    = herramienta.anon_available === true

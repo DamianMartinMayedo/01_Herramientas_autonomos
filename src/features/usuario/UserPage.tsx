@@ -10,6 +10,9 @@ import { UserDashboard } from './UserDashboard'
 import { DocumentoListado, type TipoDocumento } from './DocumentoListado'
 import { PerfilPage } from './PerfilPage'
 import { useAuth } from '../../hooks/useAuth'
+import { useProfile } from '../../hooks/useProfile'
+import { useHerramientas } from '../../hooks/useHerramientas'
+import { PaywallCard } from '../../components/shared/Paywall'
 import { RouteLoading } from '../../components/routing/RouteLoading'
 import { AlertModal } from '../../components/shared/AlertModal'
 import { EmailModal } from '../../components/shared/EmailModal'
@@ -53,8 +56,19 @@ const SECTION_TO_TABLE: Record<TipoDocumento, UserDocumentTable> = {
   reclamaciones: 'reclamaciones',
 }
 
+const SECTION_TO_HERRAMIENTA_ID: Record<TipoDocumento, string> = {
+  facturas: 'factura',
+  presupuestos: 'presupuesto',
+  albaranes: 'albaran',
+  contratos: 'contrato',
+  ndas: 'nda',
+  reclamaciones: 'reclamacion',
+}
+
 export function UserPage() {
   const { user, loading } = useAuth()
+  const { isPremium } = useProfile()
+  const { data: herramientas } = useHerramientas()
   const [searchParams, setSearchParams] = useSearchParams()
   const section = (searchParams.get('s') as UserSection) ?? 'dashboard'
   const [refreshKey, setRefreshKey] = useState(0)
@@ -128,6 +142,15 @@ export function UserPage() {
   const bumpRefresh = () => setRefreshKey((value) => value + 1)
 
   const handleCreateDocument = (targetSection: TipoDocumento) => {
+    const herramientaId = SECTION_TO_HERRAMIENTA_ID[targetSection]
+    const herramienta = herramientas.find(h => h.id === herramientaId)
+    if (herramienta?.plan_required === 'premium' && !isPremium) {
+      setAlertState({
+        msg: `${herramienta.nombre} es una herramienta Premium. Actualiza tu plan para crear este documento.`,
+        variant: 'warning',
+      })
+      return
+    }
     setSearchParams({ s: targetSection })
     setEditor({ section: targetSection })
   }
@@ -483,6 +506,17 @@ export function UserPage() {
   }
 
   const renderDocumentWorkspace = () => {
+    // Si la sección requiere premium y el usuario es free, mostrar Paywall en lugar del listado/editor.
+    const herramientaId = SECTION_TO_HERRAMIENTA_ID[section as TipoDocumento]
+    const sectionHerramienta = herramientaId ? herramientas.find(h => h.id === herramientaId) : undefined
+    if (sectionHerramienta?.plan_required === 'premium' && !isPremium) {
+      return (
+        <div className="paywall-embed">
+          <PaywallCard reason="upgrade" toolName={sectionHerramienta.nombre} />
+        </div>
+      )
+    }
+
     if (!editor || editor.section !== section) {
       return (
         <DocumentoListado

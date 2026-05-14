@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../../hooks/useProfile'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
+import { PlanBadge } from '../../components/shared/PlanBadge'
 import { ConfirmModal } from '../admin/components/ConfirmModal'
 import {
   LayoutDashboard, FileText, Receipt, Package,
@@ -28,22 +29,24 @@ interface UserLayoutProps {
   nombreEmpresa?: string | null
 }
 
-const NAV_GROUPS = [
+interface NavItem { id: UserSection; label: string; Icon: React.ElementType; herramientaId?: string }
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'General',
     items: [
-      { id: 'dashboard' as UserSection, label: 'Dashboard', Icon: LayoutDashboard },
+      { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
     ],
   },
   {
     label: 'Documentos',
     items: [
-      { id: 'facturas' as UserSection,      label: 'Facturas',      Icon: Receipt },
-      { id: 'presupuestos' as UserSection,  label: 'Presupuestos',  Icon: FileText },
-      { id: 'albaranes' as UserSection,     label: 'Albaranes',     Icon: Package },
-      { id: 'contratos' as UserSection,     label: 'Contratos',     Icon: FileSignature },
-      { id: 'ndas' as UserSection,          label: 'NDAs',          Icon: ShieldOff },
-      { id: 'reclamaciones' as UserSection, label: 'Reclamaciones', Icon: AlertCircle },
+      { id: 'facturas',      label: 'Facturas',      Icon: Receipt,       herramientaId: 'factura' },
+      { id: 'presupuestos',  label: 'Presupuestos',  Icon: FileText,      herramientaId: 'presupuesto' },
+      { id: 'albaranes',     label: 'Albaranes',     Icon: Package,       herramientaId: 'albaran' },
+      { id: 'contratos',     label: 'Contratos',     Icon: FileSignature, herramientaId: 'contrato' },
+      { id: 'ndas',          label: 'NDAs',          Icon: ShieldOff,     herramientaId: 'nda' },
+      { id: 'reclamaciones', label: 'Reclamaciones', Icon: AlertCircle,   herramientaId: 'reclamacion' },
     ],
   },
 ]
@@ -90,7 +93,7 @@ function UserSidebar({
           <div key={group.label}>
             <p className="nav-group-label">{group.label}</p>
             <div className="flex flex-col" style={{ gap: 2 }}>
-              {group.items.map(({ id, label, Icon }) => {
+              {group.items.map(({ id, label, Icon, herramientaId }) => {
                 const active = section === id
                 return (
                   <button
@@ -98,7 +101,9 @@ function UserSidebar({
                     onClick={() => { onNav(id); onClose?.() }}
                     className={`sidebar-nav-btn${active ? ' active' : ''}`}
                   >
-                    <Icon size={16} />{label}
+                    <Icon size={16} />
+                    <span className="sidebar-nav-label">{label}</span>
+                    {herramientaId && <PlanBadge herramientaId={herramientaId} />}
                     {active && <ChevronRight size={14} className="ml-auto" />}
                   </button>
                 )

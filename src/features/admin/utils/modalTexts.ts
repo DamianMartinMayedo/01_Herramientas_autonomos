@@ -17,8 +17,8 @@ export function visibilityTexts(label: string, oculta: boolean, options?: { onSh
   return {
     title: oculta ? `Mostrar "${label}"` : `Ocultar "${label}"`,
     description: oculta
-      ? options?.onShowText ?? 'Volverá a aparecer en el Home para todos los usuarios.'
-      : options?.onHideText ?? 'Dejará de mostrarse en el Home. Seguirá siendo accesible por URL directa.',
+      ? options?.onShowText ?? 'Volverá a aparecer en el Home y será accesible por URL directa.'
+      : options?.onHideText ?? 'Dejará de mostrarse en el Home y no será accesible por URL directa.',
     confirmLabel: oculta ? 'Sí, mostrar' : 'Sí, ocultar',
     confirmVariant: oculta ? 'success' : 'warning',
   }

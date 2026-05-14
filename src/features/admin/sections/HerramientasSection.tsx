@@ -8,8 +8,8 @@ import { useAdminFetch, adminPatch } from '../hooks/useAdminFetch'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { HerramientaEditor } from './herramientas/HerramientaEditor'
 import { activationTexts, visibilityTexts, emptyConfirm } from '../utils/modalTexts'
-import { ToggleLeft, ToggleRight, Pencil, CheckCircle, Clock, Eye, EyeOff, Crown, Loader2 } from 'lucide-react'
-import type { Herramienta } from '../../../types/herramienta'
+import { ToggleLeft, ToggleRight, Pencil, CheckCircle, AlertTriangle, Clock, Eye, EyeOff, Crown, Loader2 } from 'lucide-react'
+import type { Herramienta, HerramientaEstado } from '../../../types/herramienta'
 
 type ModalTarget = { herramienta: Herramienta; accion: 'visibilidad' | 'activacion' } | null
 
@@ -20,6 +20,18 @@ const CATEGORIA_LABELS: Record<string, string> = {
 }
 
 interface ApiPayload { herramientas: Herramienta[] }
+
+const ESTADO_ICON: Record<HerramientaEstado, { Icon: typeof CheckCircle; cls: string }> = {
+  active:      { Icon: CheckCircle, cls: 'text-success' },
+  maintenance: { Icon: AlertTriangle, cls: 'text-faint' },
+  coming_soon: { Icon: Clock,       cls: 'text-faint' },
+}
+
+const ESTADO_LABEL: Record<HerramientaEstado, string> = {
+  active: 'Activa',
+  maintenance: 'Mejorando',
+  coming_soon: 'Próximamente',
+}
 
 export function HerramientasSection() {
   const { data, loading, error, refetch } = useAdminFetch<Herramienta[]>(
@@ -48,14 +60,7 @@ export function HerramientasSection() {
     if (accion === 'visibilidad') {
       patch.visible = h.visible === false ? true : false
     } else {
-      const nuevaActiva = !h.activa
-      patch.activa = nuevaActiva
-      if (nuevaActiva) {
-        patch.proximamente = false
-        patch.mantenimiento = false
-      } else if (!h.proximamente && !h.mantenimiento) {
-        patch.mantenimiento = true
-      }
+      patch.estado = h.estado === 'active' ? 'maintenance' : 'active'
     }
 
     const res = await adminPatch('/functions/v1/admin-herramientas', patch)
@@ -68,7 +73,7 @@ export function HerramientasSection() {
   const modalProps = modalTarget
     ? modalTarget.accion === 'visibilidad'
       ? visibilityTexts(modalTarget.herramienta.nombre, modalTarget.herramienta.visible === false)
-      : activationTexts(modalTarget.herramienta.nombre, modalTarget.herramienta.activa)
+      : activationTexts(modalTarget.herramienta.nombre, modalTarget.herramienta.estado === 'active')
     : emptyConfirm()
 
   if (loading) {
@@ -105,35 +110,32 @@ export function HerramientasSection() {
 
       <div>
         <h1 className="section-title">Herramientas</h1>
-        <p className="section-sub">Activa o desactiva herramientas. Los cambios se reflejan en el Home instantáneamente.</p>
+        <p className="section-sub">Activa o desactiva herramientas. Los cambios surten efecto al recargar la página.</p>
       </div>
 
       {Object.entries(byCategoria).map(([cat, items]) => (
         <div key={cat}>
           <p className="section-block-label">{CATEGORIA_LABELS[cat] ?? cat}</p>
 
-          <div className="flex flex-col gap-3">
+          <div className="h-grid">
             {items.map(h => {
               const oculta = h.visible === false
               const premium = h.plan_required === 'premium'
+              const isActive = h.estado === 'active'
+              const { Icon, cls } = ESTADO_ICON[h.estado]
               return (
-                <div key={h.id} className={`h-card${h.activa ? '' : ' h-card--inactive'}`}>
+                <div key={h.id} className={`h-card${isActive ? '' : ' h-card--inactive'}`}>
+                  {premium && <span className="h-card--premium-badge"><span className="badge badge-gold badge-xs"><Crown size={9} /> Premium</span></span>}
 
                   <div>
-                    {h.activa
-                      ? <CheckCircle size={18} className="text-success" />
-                      : <Clock       size={18} className="text-faint" />
-                    }
+                    <Icon size={20} className={cls} />
                   </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`h-name${oculta ? ' h-name--hidden' : ''}`}>{h.nombre}</span>
-                      {premium && <span className="badge badge-gold badge-xs"><Crown size={9} /> Premium</span>}
+                  <div className="min-w-0 w-full">
+                    <span className={`h-name${oculta ? ' h-name--hidden' : ''}`}>{h.nombre}</span>
+                    <div className="flex items-center flex-wrap gap-1 mt-1">
                       {!premium && !h.anon_available && <span className="badge badge-primary badge-xs">Registro</span>}
                       {oculta && <span className="badge badge-muted badge-xs">Oculta</span>}
-                      {h.proximamente && <span className="badge badge-copper badge-xs">Próximamente</span>}
-                      {h.mantenimiento && <span className="badge badge-gold badge-xs">Mejorando</span>}
                     </div>
                     <p className="h-desc">{h.descripcion}</p>
                     <div className="h-meta">
@@ -141,7 +143,7 @@ export function HerramientasSection() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2">
                     <button
                       title={oculta ? 'Mostrar en Home' : 'Ocultar en Home'}
                       onClick={() => setModalTarget({ herramienta: h, accion: 'visibilidad' })}
@@ -162,13 +164,13 @@ export function HerramientasSection() {
 
                     <button
                       onClick={() => setModalTarget({ herramienta: h, accion: 'activacion' })}
-                      title={h.activa ? 'Desactivar herramienta' : 'Activar herramienta'}
-                      className={`toggle-btn ${h.activa ? 'toggle-btn--active' : 'toggle-btn--inactive'}`}
+                      title={isActive ? 'Desactivar herramienta' : 'Activar herramienta'}
+                      className={`toggle-btn ${isActive ? 'toggle-btn--active' : 'toggle-btn--inactive'}`}
                       disabled={busy}
                     >
-                      {h.activa
+                      {isActive
                         ? <><ToggleRight size={15} /> Activa</>
-                        : <><ToggleLeft  size={15} /> Inactiva</>
+                        : <><ToggleLeft  size={15} /> {ESTADO_LABEL[h.estado]}</>
                       }
                     </button>
                   </div>

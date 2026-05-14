@@ -78,7 +78,7 @@ export function OverviewSection() {
 
   const published    = posts.filter(p => p.status === 'published').length
   const drafts       = posts.filter(p => p.status === 'draft').length
-  const activasCount = herramientas.filter(h => h.activa).length
+  const activasCount = herramientas.filter(h => h.estado === 'active').length
   const totalUsos    = Object.values(usosPorHerramienta).reduce((a, n) => a + n, 0)
   const recentEvents = events.slice(0, 15)
 
@@ -109,7 +109,7 @@ export function OverviewSection() {
             return (
               <div key={h.id} className="row-item usage-row">
                 <div className="usage-row-label">
-                  {h.activa
+                  {h.estado === 'active'
                     ? <CheckCircle size={13} className="text-success shrink-0" />
                     : <Circle      size={13} className="text-faint shrink-0" />
                   }
@@ -117,7 +117,7 @@ export function OverviewSection() {
                 </div>
                 <div className="progress-bar">
                   <div
-                    className={`progress-bar-fill ${h.activa ? 'progress-bar-fill--active' : 'progress-bar-fill--inactive'}`}
+                    className={`progress-bar-fill ${h.estado === 'active' ? 'progress-bar-fill--active' : 'progress-bar-fill--inactive'}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>

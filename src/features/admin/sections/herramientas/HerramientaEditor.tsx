@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { AdminModal } from '../../components/AdminModal'
 import { adminPatch } from '../../hooks/useAdminFetch'
-import type { Herramienta, PlanRequired } from '../../../../types/herramienta'
+import type { Herramienta, PlanRequired, HerramientaEstado } from '../../../../types/herramienta'
 import { Crown, AlertTriangle } from 'lucide-react'
 
 interface Props {
@@ -16,17 +16,14 @@ interface Props {
 }
 
 export function HerramientaEditor({ herramienta, onClose, onSaved }: Props) {
-  const [nombre, setNombre]           = useState(herramienta.nombre)
-  const [desc,   setDesc]             = useState(herramienta.descripcion)
-  const [prox,   setProx]             = useState(herramienta.proximamente)
-  const [mant,   setMant]             = useState(herramienta.mantenimiento)
-  const [plan,   setPlan]             = useState<PlanRequired>(herramienta.plan_required)
-  const [anon,   setAnon]             = useState(herramienta.anon_available)
-  const [saving, setSaving]           = useState(false)
-  const [error,  setError]            = useState<string | null>(null)
+  const [nombre, setNombre] = useState(herramienta.nombre)
+  const [desc,   setDesc]   = useState(herramienta.descripcion)
+  const [estado, setEstado] = useState<HerramientaEstado>(herramienta.estado)
+  const [plan,   setPlan]   = useState<PlanRequired>(herramienta.plan_required)
+  const [anon,   setAnon]   = useState(herramienta.anon_available)
+  const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState<string | null>(null)
 
-  const handleProxChange = (val: boolean) => { setProx(val); if (val) setMant(false) }
-  const handleMantChange = (val: boolean) => { setMant(val); if (val) setProx(false) }
   const handlePlanChange = (val: PlanRequired) => {
     setPlan(val)
     if (val === 'premium') setAnon(false)
@@ -39,8 +36,7 @@ export function HerramientaEditor({ herramienta, onClose, onSaved }: Props) {
       id: herramienta.id,
       nombre,
       descripcion: desc,
-      proximamente: prox,
-      mantenimiento: mant,
+      estado,
       plan_required: plan,
       anon_available: plan === 'premium' ? false : anon,
     })
@@ -85,6 +81,36 @@ export function HerramientaEditor({ herramienta, onClose, onSaved }: Props) {
       </div>
 
       <div className="input-group">
+        <label className="input-label">Estado</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setEstado('active')}
+            className={`filter-pill${estado === 'active' ? ' active' : ''}`}
+            disabled={saving}
+          >
+            Activa
+          </button>
+          <button
+            type="button"
+            onClick={() => setEstado('coming_soon')}
+            className={`filter-pill${estado === 'coming_soon' ? ' active' : ''}`}
+            disabled={saving}
+          >
+            Próximamente
+          </button>
+          <button
+            type="button"
+            onClick={() => setEstado('maintenance')}
+            className={`filter-pill${estado === 'maintenance' ? ' active' : ''}`}
+            disabled={saving}
+          >
+            <AlertTriangle size={12} /> Mejorando
+          </button>
+        </div>
+      </div>
+
+      <div className="input-group">
         <label className="input-label">Plan requerido</label>
         <div className="flex gap-2">
           <button
@@ -118,15 +144,6 @@ export function HerramientaEditor({ herramienta, onClose, onSaved }: Props) {
       {plan === 'premium' && (
         <p className="admin-modal-hint">Las herramientas premium siempre requieren registro y suscripción.</p>
       )}
-
-      <label className="input-toggle">
-        <input type="checkbox" checked={prox} onChange={e => handleProxChange(e.target.checked)} disabled={saving} />
-        <span>Mostrar como "Próximamente"</span>
-      </label>
-      <label className="input-toggle">
-        <input type="checkbox" checked={mant} onChange={e => handleMantChange(e.target.checked)} disabled={saving} />
-        <span>Mostrar como "Mejorando"</span>
-      </label>
 
       {error && (
         <div className="error-box">

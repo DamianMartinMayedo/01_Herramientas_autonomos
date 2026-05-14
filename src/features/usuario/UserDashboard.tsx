@@ -11,6 +11,7 @@ import {
   ShieldOff, AlertCircle, TrendingUp, Calculator, Clock,
 } from 'lucide-react'
 import type { UserSection } from './UserLayout'
+import { PlanBadge } from '../../components/shared/PlanBadge'
 
 interface StatsState {
   facturas: number
@@ -24,12 +25,12 @@ interface StatsState {
 }
 
 const STAT_CARDS = [
-  { key: 'facturas',      label: 'Facturas',      Icon: Receipt,       section: 'facturas' as UserSection,      color: 'var(--color-primary)' },
-  { key: 'presupuestos',  label: 'Presupuestos',  Icon: FileText,      section: 'presupuestos' as UserSection,  color: 'var(--color-teal)' },
-  { key: 'albaranes',     label: 'Albaranes',     Icon: Package,       section: 'albaranes' as UserSection,     color: 'var(--color-gold)' },
-  { key: 'contratos',     label: 'Contratos',     Icon: FileSignature, section: 'contratos' as UserSection,     color: 'var(--color-success)' },
-  { key: 'ndas',          label: 'NDAs',          Icon: ShieldOff,     section: 'ndas' as UserSection,          color: 'var(--color-purple)' },
-  { key: 'reclamaciones', label: 'Reclamaciones', Icon: AlertCircle,   section: 'reclamaciones' as UserSection, color: 'var(--color-error)' },
+  { key: 'facturas',      label: 'Facturas',      Icon: Receipt,       section: 'facturas'      as UserSection, herramientaId: 'factura',     color: 'var(--color-primary)' },
+  { key: 'presupuestos',  label: 'Presupuestos',  Icon: FileText,      section: 'presupuestos'  as UserSection, herramientaId: 'presupuesto', color: 'var(--color-teal)' },
+  { key: 'albaranes',     label: 'Albaranes',     Icon: Package,       section: 'albaranes'     as UserSection, herramientaId: 'albaran',     color: 'var(--color-gold)' },
+  { key: 'contratos',     label: 'Contratos',     Icon: FileSignature, section: 'contratos'     as UserSection, herramientaId: 'contrato',    color: 'var(--color-success)' },
+  { key: 'ndas',          label: 'NDAs',          Icon: ShieldOff,     section: 'ndas'          as UserSection, herramientaId: 'nda',         color: 'var(--color-purple)' },
+  { key: 'reclamaciones', label: 'Reclamaciones', Icon: AlertCircle,   section: 'reclamaciones' as UserSection, herramientaId: 'reclamacion', color: 'var(--color-error)' },
 ]
 
 interface Props {
@@ -121,7 +122,7 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
         gap: 'var(--space-4)',
         marginBottom: 'var(--space-8)',
       }}>
-        {STAT_CARDS.map(({ key, label, Icon, section, color }) => (
+        {STAT_CARDS.map(({ key, label, Icon, section, herramientaId, color }) => (
           <button key={key} onClick={() => onNav(section)} className="stat-btn">
             <div className="icon-box" style={{
               width: 40, height: 40,
@@ -130,9 +131,12 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
             }}>
               <Icon size={18} style={{ color }} />
             </div>
-            <div>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontWeight: 500 }}>{label}</p>
-              <p style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-text)', fontVariantNumeric: 'tabular-nums' }}>
+            <div className="stat-btn-body">
+              <div className="stat-btn-label-row">
+                <p className="stat-btn-label">{label}</p>
+                <PlanBadge herramientaId={herramientaId} />
+              </div>
+              <p className="stat-btn-value">
                 {loadingStats ? '—' : stats[key as keyof StatsState]}
               </p>
             </div>
@@ -147,10 +151,10 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
           {[
-            { label: 'Cuota autónomos', desc: 'Calcula tu cuota según tus ingresos netos', section: 'cuota-autonomos' as UserSection, Icon: Calculator, color: 'var(--color-primary)' },
-            { label: 'Precio / hora',   desc: 'Descubre tu tarifa mínima facturable',       section: 'precio-hora' as UserSection,   Icon: TrendingUp, color: 'var(--color-purple)' },
-            { label: 'IVA / IRPF',      desc: 'Calcula IVA a repercutir y retención',       section: 'iva-irpf' as UserSection,      Icon: Clock,      color: 'var(--color-teal)' },
-          ].map(({ label, desc, section, Icon, color }) => (
+            { label: 'Cuota autónomos', desc: 'Calcula tu cuota según tus ingresos netos', section: 'cuota-autonomos' as UserSection, herramientaId: 'cuota-autonomos', Icon: Calculator, color: 'var(--color-primary)' },
+            { label: 'Precio / hora',   desc: 'Descubre tu tarifa mínima facturable',       section: 'precio-hora' as UserSection,     herramientaId: 'precio-hora',     Icon: TrendingUp, color: 'var(--color-purple)' },
+            { label: 'IVA / IRPF',      desc: 'Calcula IVA a repercutir y retención',       section: 'iva-irpf' as UserSection,        herramientaId: 'iva-irpf',        Icon: Clock,      color: 'var(--color-teal)' },
+          ].map(({ label, desc, section, herramientaId, Icon, color }) => (
             <button key={section} onClick={() => onNav(section)} className="stat-btn">
               <div className="icon-box" style={{
                 width: 40, height: 40,
@@ -159,9 +163,12 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
               }}>
                 <Icon size={18} style={{ color }} />
               </div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text)', fontWeight: 600 }}>{label}</p>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>{desc}</p>
+              <div className="stat-btn-body">
+                <div className="stat-btn-label-row">
+                  <p className="stat-btn-label-strong">{label}</p>
+                  <PlanBadge herramientaId={herramientaId} />
+                </div>
+                <p className="stat-btn-desc">{desc}</p>
               </div>
             </button>
           ))}

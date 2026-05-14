@@ -25,8 +25,8 @@ function adminClient() {
 }
 
 const ALLOWED_FIELDS = new Set([
-  'nombre','ruta','descripcion','categoria','activa','visible',
-  'proximamente','mantenimiento','plan_required','anon_available','orden',
+  'nombre','ruta','descripcion','categoria','estado','visible',
+  'plan_required','anon_available','orden',
 ])
 
 Deno.serve(async (req: Request) => {

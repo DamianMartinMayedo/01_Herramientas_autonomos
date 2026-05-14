@@ -4,6 +4,7 @@
  */
 export type HerramientaCategoria = 'documentos' | 'contratos' | 'calculadoras'
 export type PlanRequired = 'free' | 'premium'
+export type HerramientaEstado = 'active' | 'maintenance' | 'coming_soon'
 
 export interface Herramienta {
   id: string
@@ -11,10 +12,8 @@ export interface Herramienta {
   ruta: string
   descripcion: string
   categoria: HerramientaCategoria
-  activa: boolean
+  estado: HerramientaEstado
   visible: boolean
-  proximamente: boolean
-  mantenimiento: boolean
   plan_required: PlanRequired
   anon_available: boolean
   orden: number
