@@ -3,7 +3,7 @@
  * Listado público de artículos del blog — 2 columnas.
  */
 import { useNavigate, Link } from 'react-router-dom'
-import { useBlogStore } from '../../store/blogStore'
+import { useBlogPosts } from '../../hooks/useBlogPosts'
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
@@ -15,7 +15,7 @@ function formatDate(iso: string) {
 
 export function BlogPage() {
   const navigate = useNavigate()
-  const posts = useBlogStore((s) => s.posts).filter((p) => p.status === 'published')
+  const { data: posts } = useBlogPosts()
 
   const jsonLd = posts.length > 0 ? {
     '@context': 'https://schema.org',
@@ -30,7 +30,7 @@ export function BlogPage() {
         url: `https://herramientasautonomos.es/blog/${post.slug}`,
         name: post.titulo,
         description: post.extracto,
-        datePublished: post.publishedAt ?? post.createdAt,
+        datePublished: post.published_at ?? post.created_at,
       },
     })),
   } : undefined
@@ -86,7 +86,7 @@ export function BlogPage() {
                   <div className="blog-card-footer">
                     <div className="blog-card-date">
                       <Calendar size={11} />
-                      {formatDate(post.publishedAt ?? post.createdAt)}
+                      {formatDate(post.published_at ?? post.created_at)}
                     </div>
                     <div className="blog-card-read">
                       Leer artículo <ArrowRight size={14} />

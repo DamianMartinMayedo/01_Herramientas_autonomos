@@ -4,7 +4,8 @@
  */
 import { useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useBlogStore, type BlogPost } from '../../store/blogStore'
+import { useBlogPosts } from '../../hooks/useBlogPosts'
+import type { BlogPost } from '../../types/blog'
 import { ArrowLeft, ArrowRight, Calendar } from 'lucide-react'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
@@ -43,15 +44,15 @@ function getRelated(currentId: string, allPosts: BlogPost[], currentTags: string
       ...p,
       score: p.tags.filter((t) => currentTags.includes(t)).length,
     }))
-    .sort((a, b) => b.score - a.score || new Date(b.publishedAt ?? b.createdAt).getTime() - new Date(a.publishedAt ?? a.createdAt).getTime())
+    .sort((a, b) => b.score - a.score || new Date(b.published_at ?? b.created_at).getTime() - new Date(a.published_at ?? a.created_at).getTime())
     .slice(0, 3)
 }
 
 export function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const posts = useBlogStore((s) => s.posts)
-  const post = posts.find((p) => p.slug === slug && p.status === 'published')
+  const { data: posts } = useBlogPosts()
+  const post = posts.find((p) => p.slug === slug)
   const html = useMemo(() => (post?.contenido ? renderMarkdown(post.contenido) : ''), [post])
 
   useEffect(() => {
@@ -76,8 +77,8 @@ export function BlogPostPage() {
     '@type': 'Article',
     headline: post.titulo,
     description: post.extracto,
-    datePublished: post.publishedAt ?? post.createdAt,
-    dateModified: post.updatedAt,
+    datePublished: post.published_at ?? post.created_at,
+    dateModified: post.updated_at,
     author: {
       '@type': 'Organization',
       name: 'HerramientasAutonomos.es',
@@ -138,7 +139,7 @@ export function BlogPostPage() {
         {/* Meta */}
         <div className="post-meta">
           <Calendar size={11} />
-          Publicado el {formatDate(post.publishedAt ?? post.createdAt)}
+          Publicado el {formatDate(post.published_at ?? post.created_at)}
         </div>
 
         {/* Extracto destacado */}

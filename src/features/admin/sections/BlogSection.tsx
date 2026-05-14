@@ -59,7 +59,7 @@ export function BlogSection() {
   const [importing,   setImporting]   = useState(false)
   const [importMsg,   setImportMsg]   = useState<string | null>(null)
 
-  const posts = data ?? []
+  const posts = useMemo(() => data ?? [], [data])
 
   const filtered = useMemo(
     () => posts.filter(p => filter === 'all' || p.status === filter),

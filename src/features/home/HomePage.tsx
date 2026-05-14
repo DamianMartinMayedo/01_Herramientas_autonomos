@@ -2,11 +2,13 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { RouteLoading } from '../../components/routing/RouteLoading'
-import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock, Scroll, ShieldCheck, BadgeAlert, Truck, FileCheck, Download, UserPlus } from 'lucide-react'
-import type { BlogPost } from '../../store/blogStore'
+import { FileText, Calculator, ArrowRight, AlertTriangle, BookOpen, Calendar, ChevronLeft, ChevronRight, Clock, Scroll, ShieldCheck, BadgeAlert, Truck, FileCheck, Download, UserPlus, Crown } from 'lucide-react'
+import type { BlogPost } from '../../types/blog'
+import type { Herramienta } from '../../types/herramienta'
 import { SiteHeader } from '../../components/layout/SiteHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
-import { useAdminStore, type Herramienta } from '../../store/adminStore'
+import { useHerramientas } from '../../hooks/useHerramientas'
+import { useBlogPosts } from '../../hooks/useBlogPosts'
 import { Seo } from '../../components/seo/Seo'
 
 /*
@@ -44,7 +46,7 @@ function formatDate(iso: string) {
 const CARDS_PER_PAGE = 3
 const AUTO_INTERVAL  = 5000
 
-type PublicBlogPost = Pick<BlogPost, 'id' | 'titulo' | 'slug' | 'extracto' | 'tags' | 'status' | 'createdAt' | 'publishedAt'>
+type PublicBlogPost = Pick<BlogPost, 'id' | 'titulo' | 'slug' | 'extracto' | 'tags' | 'status' | 'created_at' | 'published_at'>
 
 function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
   const total        = Math.min(posts.length, 9)
@@ -95,7 +97,7 @@ function BlogCarousel({ posts }: { posts: PublicBlogPost[] }) {
             <div className="blog-card-footer">
               <div className="blog-card-date">
                 <Calendar size={10} />
-                {formatDate(post.publishedAt ?? post.createdAt)}
+                {formatDate(post.published_at ?? post.created_at)}
               </div>
               <div className="blog-card-read">Leer <ArrowRight size={12} /></div>
             </div>
@@ -139,12 +141,20 @@ function ToolCard({ h }: { h: Herramienta }) {
         <div className="tool-icon-box">
           <Icon size={18} style={{ color: meta.ctaColor }} />
         </div>
-        {(!h.activa || h.proximamente || h.mantenimiento) && (
-          <span className={`badge ${h.mantenimiento ? 'badge-gold' : 'badge-muted'}`}>
-            {h.mantenimiento ? <AlertTriangle size={10} /> : <Clock size={10} />}
-            {h.mantenimiento ? 'Mejorando' : 'Próximamente'}
-          </span>
-        )}
+        <div className="flex items-center gap-1">
+          {h.plan_required === 'premium' && (
+            <span className="badge badge-gold"><Crown size={10} /> Premium</span>
+          )}
+          {h.plan_required === 'free' && !h.anon_available && (
+            <span className="badge badge-primary">Registro</span>
+          )}
+          {(!h.activa || h.proximamente || h.mantenimiento) && (
+            <span className={`badge ${h.mantenimiento ? 'badge-gold' : 'badge-muted'}`}>
+              {h.mantenimiento ? <AlertTriangle size={10} /> : <Clock size={10} />}
+              {h.mantenimiento ? 'Mejorando' : 'Próximamente'}
+            </span>
+          )}
+        </div>
       </div>
 
       <h3 className="card-title" style={{ fontSize: 'var(--text-base)' }}>{h.nombre}</h3>
@@ -183,30 +193,13 @@ function ToolCard({ h }: { h: Herramienta }) {
 // ── Página principal ───────────────────────────────────────────────────────────────────
 export function HomePage() {
   const { user, loading } = useAuth()
-  const herramientas = useAdminStore((s) => s.herramientas)
-  const [blogPosts, setBlogPosts] = useState<PublicBlogPost[] | null>(null)
+  const { data: herramientas } = useHerramientas()
+  const { data: posts } = useBlogPosts()
 
-  useEffect(() => {
-    let cancelled = false
-    let unsubscribe: undefined | (() => void)
-    const toPublic = (posts: BlogPost[]): PublicBlogPost[] =>
-      posts
-        .filter(p => p.status === 'published')
-        .map(p => ({ id: p.id, titulo: p.titulo, slug: p.slug, extracto: p.extracto, tags: p.tags, status: p.status, createdAt: p.createdAt, publishedAt: p.publishedAt }))
-    ;(async () => {
-      try {
-        const { useBlogStore } = await import('../../store/blogStore')
-        if (cancelled) return
-        setBlogPosts(toPublic(useBlogStore.getState().posts))
-        unsubscribe = useBlogStore.subscribe(state => {
-          if (!cancelled) setBlogPosts(toPublic(state.posts))
-        })
-      } catch {
-        if (!cancelled) setBlogPosts([])
-      }
-    })()
-    return () => { cancelled = true; unsubscribe?.() }
-  }, [])
+  const blogPosts: PublicBlogPost[] = posts.map(p => ({
+    id: p.id, titulo: p.titulo, slug: p.slug, extracto: p.extracto,
+    tags: p.tags, status: p.status, created_at: p.created_at, published_at: p.published_at,
+  }))
 
   if (loading) return <RouteLoading />
   if (user) return <Navigate to="/usuario" replace />
