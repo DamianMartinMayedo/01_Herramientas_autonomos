@@ -518,6 +518,8 @@ body {
 .input-toggle { display: flex; align-items: center; gap: var(--space-3); cursor: pointer; width: fit-content; }
 .input-toggle input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-primary); border-radius: var(--radius-sm); flex-shrink: 0; }
 .input-toggle span { font-size: var(--text-sm); color: var(--color-text); }
+.input-toggle.is-disabled { opacity: 0.55; cursor: not-allowed; }
+.input-toggle.is-disabled input { cursor: not-allowed; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    AGRUPADORES DE FORMULARIO

@@ -60,25 +60,47 @@ export function useAdminFetch<T>(path: string, options: UseAdminFetchOptions<T> 
   return { data, loading, error, refetch }
 }
 
-/**
- * POST helper one-shot para edge functions protegidas con x-admin-secret.
- * Devuelve {ok, error, data} sin guardar estado entre llamadas.
- */
-export async function adminPost<TResp = unknown>(path: string, body: unknown): Promise<{ ok: boolean; data: TResp | null; error: string | null }> {
+export interface AdminCallResult<T> {
+  ok: boolean
+  data: T | null
+  error: string | null
+}
+
+async function callAdmin<TResp>(
+  method: 'POST' | 'PATCH' | 'DELETE',
+  path: string,
+  body?: unknown,
+): Promise<AdminCallResult<TResp>> {
   try {
+    const headers: Record<string, string> = { 'x-admin-secret': ADMIN_SECRET ?? '' }
+    if (body !== undefined) headers['Content-Type'] = 'application/json'
+
     const res = await fetch(`${SUPABASE_URL}${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-secret': ADMIN_SECRET ?? '',
-      },
-      body: JSON.stringify(body),
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     })
     const json = await res.json() as { error?: string } & Record<string, unknown>
     if (!res.ok) return { ok: false, data: null, error: json.error ?? `HTTP ${res.status}` }
     return { ok: true, data: json as unknown as TResp, error: null }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error inesperado'
+    console.error(`[adminCall ${method} ${path}]`, err)
     return { ok: false, data: null, error: msg }
   }
+}
+
+/** POST one-shot a una edge function protegida con x-admin-secret. */
+export function adminPost<TResp = unknown>(path: string, body: unknown) {
+  return callAdmin<TResp>('POST', path, body)
+}
+
+/** PATCH one-shot a una edge function protegida con x-admin-secret. */
+export function adminPatch<TResp = unknown>(path: string, body: unknown) {
+  return callAdmin<TResp>('PATCH', path, body)
+}
+
+/** DELETE one-shot a una edge function. Pasa parámetros vía query string. */
+export function adminDelete<TResp = unknown>(path: string) {
+  return callAdmin<TResp>('DELETE', path)
 }

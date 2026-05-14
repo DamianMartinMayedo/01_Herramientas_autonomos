@@ -1,30 +1,52 @@
 /**
  * HerramientaEditor.tsx
  * Modal de edición de metadatos de herramienta. Usa AdminModal.
+ * Persiste vía edge function admin-herramientas (PATCH).
  */
 import { useState } from 'react'
-import { useAdminStore, type Herramienta } from '../../../../store/adminStore'
 import { AdminModal } from '../../components/AdminModal'
+import { adminPatch } from '../../hooks/useAdminFetch'
+import type { Herramienta, PlanRequired } from '../../../../types/herramienta'
+import { Crown, AlertTriangle } from 'lucide-react'
 
 interface Props {
   herramienta: Herramienta
   onClose: () => void
+  onSaved: () => void
 }
 
-export function HerramientaEditor({ herramienta, onClose }: Props) {
-  const updateHerramienta = useAdminStore(s => s.updateHerramienta)
-  const [nombre, setNombre] = useState(herramienta.nombre)
-  const [desc,   setDesc]   = useState(herramienta.descripcion)
-  const [prox,   setProx]   = useState(herramienta.proximamente)
-  const [mant,   setMant]   = useState(herramienta.mantenimiento ?? false)
+export function HerramientaEditor({ herramienta, onClose, onSaved }: Props) {
+  const [nombre, setNombre]           = useState(herramienta.nombre)
+  const [desc,   setDesc]             = useState(herramienta.descripcion)
+  const [prox,   setProx]             = useState(herramienta.proximamente)
+  const [mant,   setMant]             = useState(herramienta.mantenimiento)
+  const [plan,   setPlan]             = useState<PlanRequired>(herramienta.plan_required)
+  const [anon,   setAnon]             = useState(herramienta.anon_available)
+  const [saving, setSaving]           = useState(false)
+  const [error,  setError]            = useState<string | null>(null)
 
   const handleProxChange = (val: boolean) => { setProx(val); if (val) setMant(false) }
   const handleMantChange = (val: boolean) => { setMant(val); if (val) setProx(false) }
+  const handlePlanChange = (val: PlanRequired) => {
+    setPlan(val)
+    if (val === 'premium') setAnon(false)
+  }
 
-  const handleSave = () => {
-    updateHerramienta(herramienta.id, {
-      nombre, descripcion: desc, proximamente: prox, mantenimiento: mant,
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    const res = await adminPatch('/functions/v1/admin-herramientas', {
+      id: herramienta.id,
+      nombre,
+      descripcion: desc,
+      proximamente: prox,
+      mantenimiento: mant,
+      plan_required: plan,
+      anon_available: plan === 'premium' ? false : anon,
     })
+    setSaving(false)
+    if (!res.ok) { setError(res.error ?? 'Error al guardar'); return }
+    onSaved()
     onClose()
   }
 
@@ -35,17 +57,21 @@ export function HerramientaEditor({ herramienta, onClose }: Props) {
       title="Editar herramienta"
       onClose={onClose}
       bodyGap="lg"
+      closeDisabled={saving}
       footer={
         <>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary btn-sm" onClick={handleSave}>Guardar</button>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} disabled={saving}>Cancelar</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { void handleSave() }} disabled={saving}>
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
         </>
       }
     >
       <div className="input-group">
         <label className="input-label">Nombre</label>
-        <input className="input-v3" value={nombre} onChange={e => setNombre(e.target.value)} />
+        <input className="input-v3" value={nombre} onChange={e => setNombre(e.target.value)} disabled={saving} />
       </div>
+
       <div className="input-group">
         <label className="input-label">Descripción</label>
         <textarea
@@ -53,17 +79,61 @@ export function HerramientaEditor({ herramienta, onClose }: Props) {
           value={desc}
           onChange={e => setDesc(e.target.value)}
           rows={3}
+          disabled={saving}
           style={{ minHeight: 'auto' }}
         />
       </div>
+
+      <div className="input-group">
+        <label className="input-label">Plan requerido</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handlePlanChange('free')}
+            className={`filter-pill${plan === 'free' ? ' active' : ''}`}
+            disabled={saving}
+          >
+            Free
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePlanChange('premium')}
+            className={`filter-pill${plan === 'premium' ? ' active' : ''}`}
+            disabled={saving}
+          >
+            <Crown size={12} /> Premium
+          </button>
+        </div>
+      </div>
+
+      <label className={`input-toggle${plan === 'premium' ? ' is-disabled' : ''}`}>
+        <input
+          type="checkbox"
+          checked={anon}
+          onChange={e => setAnon(e.target.checked)}
+          disabled={saving || plan === 'premium'}
+        />
+        <span>Disponible para usuarios sin registro</span>
+      </label>
+      {plan === 'premium' && (
+        <p className="admin-modal-hint">Las herramientas premium siempre requieren registro y suscripción.</p>
+      )}
+
       <label className="input-toggle">
-        <input type="checkbox" checked={prox} onChange={e => handleProxChange(e.target.checked)} />
+        <input type="checkbox" checked={prox} onChange={e => handleProxChange(e.target.checked)} disabled={saving} />
         <span>Mostrar como "Próximamente"</span>
       </label>
       <label className="input-toggle">
-        <input type="checkbox" checked={mant} onChange={e => handleMantChange(e.target.checked)} />
+        <input type="checkbox" checked={mant} onChange={e => handleMantChange(e.target.checked)} disabled={saving} />
         <span>Mostrar como "Mejorando"</span>
       </label>
+
+      {error && (
+        <div className="error-box">
+          <AlertTriangle size={15} className="error-box-icon" />
+          <span>{error}</span>
+        </div>
+      )}
     </AdminModal>
   )
 }

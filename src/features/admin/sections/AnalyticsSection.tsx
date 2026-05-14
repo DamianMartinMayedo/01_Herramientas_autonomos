@@ -74,8 +74,7 @@ const GUIDE_STEPS = [
 ] as const
 
 export function AnalyticsSection() {
-  const events       = useAdminStore((s) => s.events)
-  const herramientas = useAdminStore((s) => s.herramientas)
+  const events = useAdminStore((s) => s.events)
 
   const now = new Date()
   const h24 = new Date(now); h24.setDate(h24.getDate() - 1)
@@ -86,9 +85,9 @@ export function AnalyticsSection() {
   const ev7d  = events.filter(e => new Date(e.timestamp) > d7)
   const ev30d = events.filter(e => new Date(e.timestamp) > d30)
 
-  const pdfExports = events.filter(e => e.tipo === 'pdf_export').length
-  const toolUses   = events.filter(e => e.tipo === 'tool_use').length
-  const totalUsos  = herramientas.reduce((a, h) => a + h.usosRegistrados, 0)
+  const pdfExports     = events.filter(e => e.tipo === 'pdf_export').length
+  const toolUses       = events.filter(e => e.tipo === 'tool_use').length
+  const pageviewsTotal = events.filter(e => e.tipo === 'pageview').length
 
   return (
     <div className="section-stack">
@@ -133,7 +132,7 @@ export function AnalyticsSection() {
           <MetricBox label="Eventos 30d"      value={ev30d.length} sub="últimos 30 días" />
           <MetricBox label="Usos totales"     value={toolUses}     sub="apertura herramientas" />
           <MetricBox label="PDFs exportados"  value={pdfExports}   sub="desde inicio" />
-          <MetricBox label="Total registros"  value={totalUsos}    sub="usos acumulados" />
+          <MetricBox label="Visitas"          value={pageviewsTotal} sub="vistas acumuladas" />
         </div>
       </div>
 

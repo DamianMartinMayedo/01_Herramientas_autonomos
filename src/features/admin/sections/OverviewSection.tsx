@@ -2,7 +2,9 @@
  * OverviewSection.tsx
  * Dashboard principal: KPIs, uso por herramienta, actividad reciente.
  */
+import { useMemo } from 'react'
 import { useAdminStore } from '../../../store/adminStore'
+import { useHerramientas } from '../../../hooks/useHerramientas'
 import { useBlogStore } from '../../../store/blogStore'
 import { FileText, Wrench, Activity, TrendingUp, Clock, CheckCircle, Circle } from 'lucide-react'
 
@@ -53,14 +55,24 @@ function formatRelative(iso: string) {
 }
 
 export function OverviewSection() {
-  const posts        = useBlogStore((s) => s.posts)
-  const herramientas = useAdminStore((s) => s.herramientas)
-  const events       = useAdminStore((s) => s.events)
+  const posts                       = useBlogStore((s) => s.posts)
+  const { data: herramientas }      = useHerramientas()
+  const events                      = useAdminStore((s) => s.events)
+
+  const usosPorHerramienta = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const ev of events) {
+      if (ev.tipo === 'tool_use' && ev.herramienta) {
+        map[ev.herramienta] = (map[ev.herramienta] ?? 0) + 1
+      }
+    }
+    return map
+  }, [events])
 
   const published    = posts.filter(p => p.status === 'published').length
   const drafts       = posts.filter(p => p.status === 'draft').length
   const activasCount = herramientas.filter(h => h.activa).length
-  const totalUsos    = herramientas.reduce((acc, h) => acc + h.usosRegistrados, 0)
+  const totalUsos    = Object.values(usosPorHerramienta).reduce((a, n) => a + n, 0)
   const recentEvents = events.slice(0, 15)
 
   const h24Ago = new Date(); h24Ago.setDate(h24Ago.getDate() - 1)
@@ -85,7 +97,8 @@ export function OverviewSection() {
         <p className="section-block-label">Uso por herramienta</p>
         <div className="flex flex-col gap-2">
           {herramientas.map(h => {
-            const pct = totalUsos > 0 ? Math.round((h.usosRegistrados / totalUsos) * 100) : 0
+            const usos = usosPorHerramienta[h.id] ?? 0
+            const pct = totalUsos > 0 ? Math.round((usos / totalUsos) * 100) : 0
             return (
               <div key={h.id} className="row-item usage-row">
                 <div className="usage-row-label">
@@ -101,7 +114,7 @@ export function OverviewSection() {
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className="usage-row-count">{h.usosRegistrados} usos</span>
+                <span className="usage-row-count">{usos} usos</span>
               </div>
             )
           })}

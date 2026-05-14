@@ -1,47 +1,106 @@
 /**
  * BlogSection.tsx
- * CRUD de artículos: filtros, lista, editor modal, confirmaciones.
+ * CRUD de artículos del blog. Lee y escribe vía admin-blog-posts edge function.
+ * Si la tabla está vacía y el navegador tiene un blogStore en localStorage,
+ * ofrece importar los posts existentes con un click.
  */
 import { useMemo, useState } from 'react'
-import { useBlogStore, type BlogPost, type BlogStatus } from '../../../store/blogStore'
+import { useAdminFetch, adminPatch, adminDelete, adminPost } from '../hooks/useAdminFetch'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { PostEditor } from './blog/PostEditor'
 import { deleteTexts, publishTexts, emptyConfirm } from '../utils/modalTexts'
-import { Plus, Pencil, Trash2, Eye, EyeOff, FileText, Tag, Calendar } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, EyeOff, FileText, Tag, Calendar, Upload, Loader2 } from 'lucide-react'
+import type { BlogPost, BlogStatus } from '../../../types/blog'
 
 type ModalTarget = { post: BlogPost; accion: 'visibilidad' | 'eliminar' } | null
 type Filter = 'all' | BlogStatus
+interface ApiPayload { posts: BlogPost[] }
+
+const BLOG_LOCALSTORAGE_KEY = 'ha-blog'
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso))
 }
 
+/** Lee los posts persistidos por el blogStore antiguo (localStorage). */
+function readLocalStoragePosts(): Array<Record<string, unknown>> {
+  try {
+    const raw = localStorage.getItem(BLOG_LOCALSTORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as { state?: { posts?: unknown[] } }
+    const posts = parsed.state?.posts ?? []
+    if (!Array.isArray(posts)) return []
+    // Mapea camelCase del store antiguo a snake_case del schema cloud.
+    return posts
+      .filter((p): p is Record<string, unknown> => typeof p === 'object' && p !== null)
+      .map(p => ({
+        titulo:       p.titulo,
+        slug:         p.slug,
+        extracto:     p.extracto,
+        contenido:    p.contenido,
+        tags:         Array.isArray(p.tags) ? p.tags : [],
+        status:       p.status,
+        published_at: p.publishedAt ?? null,
+      }))
+  } catch {
+    return []
+  }
+}
+
 export function BlogSection() {
-  const posts       = useBlogStore((s) => s.posts)
-  const deletePost  = useBlogStore((s) => s.deletePost)
-  const publishPost = useBlogStore((s) => s.publishPost)
-  const unpublish   = useBlogStore((s) => s.unpublishPost)
+  const { data, loading, error, refetch } = useAdminFetch<BlogPost[]>(
+    '/functions/v1/admin-blog-posts',
+    { transform: (raw) => (raw as ApiPayload).posts ?? [] },
+  )
 
   const [editing,     setEditing]     = useState<BlogPost | null | 'new'>(null)
   const [filter,      setFilter]      = useState<Filter>('all')
   const [modalTarget, setModalTarget] = useState<ModalTarget>(null)
+  const [importing,   setImporting]   = useState(false)
+  const [importMsg,   setImportMsg]   = useState<string | null>(null)
+
+  const posts = data ?? []
 
   const filtered = useMemo(
     () => posts.filter(p => filter === 'all' || p.status === filter),
     [posts, filter],
   )
 
-  const handleConfirm = () => {
+  const localStoragePosts = useMemo(
+    () => (posts.length === 0 && !loading ? readLocalStoragePosts() : []),
+    [posts, loading],
+  )
+
+  const handleImport = async () => {
+    setImporting(true)
+    setImportMsg(null)
+    const res = await adminPost<{ imported: number }>(
+      '/functions/v1/admin-blog-posts/import',
+      { posts: localStoragePosts },
+    )
+    setImporting(false)
+    if (!res.ok) { setImportMsg(res.error ?? 'Error al importar'); return }
+    setImportMsg(`Se importaron ${res.data?.imported ?? 0} artículos`)
+    await refetch()
+  }
+
+  const handleConfirm = async () => {
     if (!modalTarget) return
     const { post, accion } = modalTarget
-    if (accion === 'eliminar') {
-      deletePost(post.id)
-    } else if (post.status === 'published') {
-      unpublish(post.id)
-    } else {
-      publishPost(post.id)
-    }
     setModalTarget(null)
+    if (accion === 'eliminar') {
+      const res = await adminDelete(`/functions/v1/admin-blog-posts?id=${encodeURIComponent(post.id)}`)
+      if (!res.ok) { alert(res.error ?? 'Error al borrar'); return }
+    } else {
+      const nuevoStatus: BlogStatus = post.status === 'published' ? 'draft' : 'published'
+      const res = await adminPatch('/functions/v1/admin-blog-posts', {
+        id: post.id,
+        status: nuevoStatus,
+        published_at: nuevoStatus === 'published' ? new Date().toISOString() : null,
+      })
+      if (!res.ok) { alert(res.error ?? 'Error al cambiar estado'); return }
+    }
+    await refetch()
   }
 
   const modalProps = modalTarget
@@ -55,6 +114,33 @@ export function BlogSection() {
     { id: 'published', label: 'Publicados' },
     { id: 'draft',     label: 'Borradores' },
   ]
+
+  if (loading) {
+    return (
+      <div className="section-stack">
+        <div>
+          <h1 className="section-title">Blog</h1>
+          <p className="section-sub">Cargando artículos…</p>
+        </div>
+        <div className="empty-state">
+          <Loader2 size={20} className="spin empty-state-icon text-primary" />
+          <p className="empty-state-text">Obteniendo artículos…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="section-stack">
+        <div>
+          <h1 className="section-title">Blog</h1>
+          <p className="section-sub">No se pudo cargar el listado</p>
+        </div>
+        <div className="error-box"><span>{error}</span></div>
+      </div>
+    )
+  }
 
   return (
     <div className="section-stack">
@@ -71,28 +157,49 @@ export function BlogSection() {
         </button>
       </div>
 
-      <div className="flex gap-2">
-        {FILTERS.map(({ id, label }) => (
+      {posts.length === 0 && localStoragePosts.length > 0 && (
+        <div className="admin-info-box flex items-center gap-3">
+          <Upload size={18} className="text-primary shrink-0" />
+          <div className="flex-1">
+            <strong className="admin-info-box-strong">Importar borradores antiguos:</strong>{' '}
+            tienes {localStoragePosts.length} artículo{localStoragePosts.length !== 1 ? 's' : ''} guardado{localStoragePosts.length !== 1 ? 's' : ''} en localStorage del navegador. Pulsa abajo para subirlos a Supabase.
+            {importMsg && <p className="admin-modal-hint" style={{ marginTop: 'var(--space-2)' }}>{importMsg}</p>}
+          </div>
           <button
-            key={id}
-            onClick={() => setFilter(id)}
-            className={`filter-pill${filter === id ? ' active' : ''}`}
+            className="btn btn-primary btn-sm shrink-0"
+            onClick={() => { void handleImport() }}
+            disabled={importing}
           >
-            {label}
+            {importing ? <Loader2 size={14} className="spin" /> : <Upload size={14} />}
+            {importing ? 'Importando…' : 'Importar'}
           </button>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {posts.length > 0 && (
+        <div className="flex gap-2">
+          {FILTERS.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setFilter(id)}
+              className={`filter-pill${filter === id ? ' active' : ''}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="empty-state empty-state--xl">
           <FileText size={28} className="empty-state-icon" />
           <p className="empty-state-title-strong">
-            {filter === 'all'
-              ? 'Aún no has creado ningún artículo'
+            {filter === 'all' || posts.length === 0
+              ? 'Aún no hay artículos en Supabase'
               : `No hay artículos en estado "${filter === 'published' ? 'publicado' : 'borrador'}"`}
           </p>
           <p className="empty-state-text empty-state-spaced">
-            Los artículos se guardan en localStorage ahora y estarán listos para conectar a Supabase al pasar a producción.
+            Crea tu primer artículo o impórtalo desde localStorage si tienes borradores.
           </p>
           <button className="btn btn-primary btn-sm" onClick={() => setEditing('new')}>
             <Plus size={14} /> Crear primer artículo
@@ -120,7 +227,7 @@ export function BlogSection() {
                   {post.extracto && <p className="post-card-excerpt">{post.extracto}</p>}
                   <div className="post-card-meta">
                     <Calendar size={10} />
-                    {formatDate(post.updatedAt)}
+                    {formatDate(post.updated_at)}
                     <span className="post-card-slug">/blog/{post.slug}</span>
                   </div>
                 </div>
@@ -155,12 +262,13 @@ export function BlogSection() {
         open={editing !== null}
         post={editing === 'new' || editing === null ? undefined : editing}
         onClose={() => setEditing(null)}
+        onSaved={() => { void refetch() }}
       />
 
       {modalTarget && (
         <ConfirmModal
           {...modalProps}
-          onConfirm={handleConfirm}
+          onConfirm={() => { void handleConfirm() }}
           onCancel={() => setModalTarget(null)}
         />
       )}
