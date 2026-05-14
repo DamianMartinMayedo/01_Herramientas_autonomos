@@ -14,7 +14,7 @@ export function AdminPage() {
   const [section, setSection] = useState<AdminSection>('overview')
 
   const content = {
-    overview:     <OverviewSection />,
+    overview:     <OverviewSection onNav={setSection} />,
     analytics:    <AnalyticsSection />,
     blog:         <BlogSection />,
     herramientas: <HerramientasSection />,

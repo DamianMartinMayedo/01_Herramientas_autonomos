@@ -2,11 +2,65 @@
  * useBlogPosts — hook público.
  * Lee artículos publicados de Supabase. La policy RLS filtra automáticamente
  * a status='published' para anon/authenticated.
- * Lo consumen BlogPage y BlogPostPage (filtrando por slug en cliente).
+ *
+ * Implementación con singleton a nivel de módulo: una sola consulta + un solo
+ * canal Realtime para todas las instancias. Necesario porque Supabase no
+ * admite más de un canal con el mismo nombre simultáneamente.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 import type { BlogPost } from '../types/blog'
+
+interface CacheState {
+  data: BlogPost[]
+  loading: boolean
+  error: string | null
+}
+
+let cache: CacheState = { data: [], loading: true, error: null }
+const subscribers = new Set<() => void>()
+let channel: RealtimeChannel | null = null
+let initialFetch: Promise<void> | null = null
+let debounceId: ReturnType<typeof setTimeout> | null = null
+
+function notify() {
+  for (const fn of subscribers) fn()
+}
+
+async function refetchAll() {
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .select('*')
+    .order('published_at', { ascending: false, nullsFirst: false })
+  cache = error
+    ? { data: cache.data, loading: false, error: error.message }
+    : { data: (data ?? []) as BlogPost[], loading: false, error: null }
+  if (error) console.error('[useBlogPosts]', error)
+  notify()
+}
+
+function ensureChannel() {
+  if (channel) return
+  channel = supabase
+    .channel('blog-posts-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'blog_posts' },
+      () => {
+        if (debounceId) clearTimeout(debounceId)
+        debounceId = setTimeout(() => { void refetchAll() }, 200)
+      },
+    )
+    .subscribe()
+}
+
+function teardownIfIdle() {
+  if (subscribers.size > 0) return
+  if (debounceId) { clearTimeout(debounceId); debounceId = null }
+  if (channel) { void supabase.removeChannel(channel); channel = null }
+  initialFetch = null
+}
 
 interface State {
   data: BlogPost[]
@@ -16,30 +70,25 @@ interface State {
 }
 
 export function useBlogPosts(): State {
-  const [data, setData]       = useState<BlogPost[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState<string | null>(null)
+  const [, setTick] = useState(0)
 
-  const refetch = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .select('*')
-      .order('published_at', { ascending: false, nullsFirst: false })
-    if (error) {
-      console.error('[useBlogPosts]', error)
-      setError(error.message)
-      setLoading(false)
-      return
+  useEffect(() => {
+    const sub = () => setTick(t => t + 1)
+    subscribers.add(sub)
+    ensureChannel()
+    if (!initialFetch) initialFetch = refetchAll()
+    return () => {
+      subscribers.delete(sub)
+      teardownIfIdle()
     }
-    setData((data ?? []) as BlogPost[])
-    setLoading(false)
   }, [])
 
-  useEffect(() => { void refetch() }, [refetch])
-
-  return { data, loading, error, refetch }
+  return {
+    data: cache.data,
+    loading: cache.loading,
+    error: cache.error,
+    refetch: refetchAll,
+  }
 }
 
 /** Busca un post por slug. Devuelve `null` si no existe o aún cargando. */

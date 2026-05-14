@@ -23,7 +23,13 @@ export function UsuariosSection() {
   const [crearOpen,    setCrearOpen]    = useState(false)
 
   if (selectedUser) {
-    return <UsuarioDetail user={selectedUser} onBack={() => setSelectedUser(null)} />
+    return (
+      <UsuarioDetail
+        user={selectedUser}
+        onBack={() => setSelectedUser(null)}
+        onUserChanged={() => { void refetch() }}
+      />
+    )
   }
 
   return (
@@ -33,6 +39,7 @@ export function UsuariosSection() {
         loading={loading}
         onSelectUser={setSelectedUser}
         onCreateClick={() => setCrearOpen(true)}
+        onUserChanged={() => { void refetch() }}
       />
 
       <CrearUsuarioModal

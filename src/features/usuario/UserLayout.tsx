@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../../hooks/useProfile'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { PlanBadge } from '../../components/shared/PlanBadge'
+import { EstadoBadge } from '../../components/shared/EstadoBadge'
 import { ConfirmModal } from '../admin/components/ConfirmModal'
 import {
   LayoutDashboard, FileText, Receipt, Package,
@@ -103,6 +104,7 @@ function UserSidebar({
                   >
                     <Icon size={16} />
                     <span className="sidebar-nav-label">{label}</span>
+                    {herramientaId && <EstadoBadge herramientaId={herramientaId} />}
                     {herramientaId && <PlanBadge herramientaId={herramientaId} />}
                     {active && <ChevronRight size={14} className="ml-auto" />}
                   </button>

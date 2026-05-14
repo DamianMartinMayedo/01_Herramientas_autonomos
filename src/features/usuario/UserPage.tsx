@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useProfile } from '../../hooks/useProfile'
 import { useHerramientas } from '../../hooks/useHerramientas'
 import { PaywallCard } from '../../components/shared/Paywall'
+import { ToolUnavailableCard } from '../../components/routing/ToolUnavailable'
 import { RouteLoading } from '../../components/routing/RouteLoading'
 import { AlertModal } from '../../components/shared/AlertModal'
 import { EmailModal } from '../../components/shared/EmailModal'
@@ -144,6 +145,15 @@ export function UserPage() {
   const handleCreateDocument = (targetSection: TipoDocumento) => {
     const herramientaId = SECTION_TO_HERRAMIENTA_ID[targetSection]
     const herramienta = herramientas.find(h => h.id === herramientaId)
+    if (herramienta && herramienta.estado !== 'active') {
+      setAlertState({
+        msg: herramienta.estado === 'coming_soon'
+          ? `${herramienta.nombre} aún no está disponible.`
+          : `${herramienta.nombre} está temporalmente en mantenimiento.`,
+        variant: 'warning',
+      })
+      return
+    }
     if (herramienta?.plan_required === 'premium' && !isPremium) {
       setAlertState({
         msg: `${herramienta.nombre} es una herramienta Premium. Actualiza tu plan para crear este documento.`,
@@ -506,9 +516,22 @@ export function UserPage() {
   }
 
   const renderDocumentWorkspace = () => {
-    // Si la sección requiere premium y el usuario es free, mostrar Paywall en lugar del listado/editor.
+    // Si la herramienta de la sección no está activa (próximamente o mantenimiento),
+    // bloquear a todos con la pantalla embebida.
     const herramientaId = SECTION_TO_HERRAMIENTA_ID[section as TipoDocumento]
     const sectionHerramienta = herramientaId ? herramientas.find(h => h.id === herramientaId) : undefined
+    if (sectionHerramienta && sectionHerramienta.estado !== 'active') {
+      return (
+        <div className="paywall-embed">
+          <ToolUnavailableCard
+            estado={sectionHerramienta.estado}
+            toolName={sectionHerramienta.nombre}
+            embedded
+          />
+        </div>
+      )
+    }
+    // Si la sección requiere premium y el usuario es free, mostrar Paywall en lugar del listado/editor.
     if (sectionHerramienta?.plan_required === 'premium' && !isPremium) {
       return (
         <div className="paywall-embed">

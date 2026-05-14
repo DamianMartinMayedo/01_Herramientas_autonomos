@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import type { UserSection } from './UserLayout'
 import { PlanBadge } from '../../components/shared/PlanBadge'
+import { EstadoBadge } from '../../components/shared/EstadoBadge'
 
 interface StatsState {
   facturas: number
@@ -134,6 +135,7 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
             <div className="stat-btn-body">
               <div className="stat-btn-label-row">
                 <p className="stat-btn-label">{label}</p>
+                <EstadoBadge herramientaId={herramientaId} />
                 <PlanBadge herramientaId={herramientaId} />
               </div>
               <p className="stat-btn-value">
@@ -166,6 +168,7 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
               <div className="stat-btn-body">
                 <div className="stat-btn-label-row">
                   <p className="stat-btn-label-strong">{label}</p>
+                  <EstadoBadge herramientaId={herramientaId} />
                   <PlanBadge herramientaId={herramientaId} />
                 </div>
                 <p className="stat-btn-desc">{desc}</p>
