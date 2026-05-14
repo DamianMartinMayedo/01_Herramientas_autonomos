@@ -5,7 +5,8 @@
 import { useMemo } from 'react'
 import { useAdminStore } from '../../../store/adminStore'
 import { useHerramientas } from '../../../hooks/useHerramientas'
-import { useBlogStore } from '../../../store/blogStore'
+import { useAdminFetch } from '../hooks/useAdminFetch'
+import type { BlogPost } from '../../../types/blog'
 import { FileText, Wrench, Activity, TrendingUp, Clock, CheckCircle, Circle } from 'lucide-react'
 
 type Accent = 'primary' | 'success' | 'copper'
@@ -54,10 +55,16 @@ function formatRelative(iso: string) {
   return `Hace ${Math.floor(h / 24)}d`
 }
 
+interface BlogPayload { posts: BlogPost[] }
+
 export function OverviewSection() {
-  const posts                       = useBlogStore((s) => s.posts)
-  const { data: herramientas }      = useHerramientas()
-  const events                      = useAdminStore((s) => s.events)
+  const { data: postsData }    = useAdminFetch<BlogPost[]>(
+    '/functions/v1/admin-blog-posts',
+    { transform: (raw) => (raw as BlogPayload).posts ?? [] },
+  )
+  const posts                  = postsData ?? []
+  const { data: herramientas } = useHerramientas()
+  const events                 = useAdminStore((s) => s.events)
 
   const usosPorHerramienta = useMemo(() => {
     const map: Record<string, number> = {}
