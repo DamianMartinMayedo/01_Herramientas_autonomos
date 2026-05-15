@@ -169,9 +169,10 @@ function ToolCard({ h }: { h: Herramienta }) {
             <div className="tooltip-wrap">
               <AlertTriangle className="tooltip-warn-icon" />
               <div className="tooltip-content">
-                Esta herramienta genera facturas en formato PDF pero
-                <strong> no está conectada a Verifactu</strong>. En el futuro
-                se integrará con el sistema oficial de la AEAT.
+                Las facturas que generes aquí <strong>no están conectadas con VeriFactu</strong>
+                {' '}(el sistema de registro fiscal de la AEAT).
+                {' '}<strong>Regístrate gratis</strong> para configurar VeriFactu desde tu perfil
+                y emitir todas tus facturas con su QR y XML.
                 <div className="tooltip-arrow" />
               </div>
             </div>

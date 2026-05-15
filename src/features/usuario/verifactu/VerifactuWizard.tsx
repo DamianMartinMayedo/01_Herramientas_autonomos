@@ -61,7 +61,6 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
       return
     }
     setMetadata(res.metadata)
-    setStep(3)
   }
 
   const handleSave = async () => {
@@ -162,6 +161,7 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
                   onChange={(e) => {
                     setCertFile(e.target.files?.[0] ?? null)
                     setValidateError(null)
+                    setMetadata(null)
                   }}
                   className="input-v3"
                 />
@@ -181,6 +181,7 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
                   onChange={(e) => {
                     setCertPassword(e.target.value)
                     setValidateError(null)
+                    setMetadata(null)
                   }}
                   autoComplete="off"
                   placeholder="••••••••"
@@ -191,6 +192,25 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
                 <div className="error-box">
                   <AlertTriangle size={16} className="error-box-icon" />
                   <span>{validateError}</span>
+                </div>
+              )}
+
+              {metadata && !validateError && (
+                <div className="verifactu-validated-box">
+                  <div className="verifactu-validated-header">
+                    <CheckCircle2 size={18} />
+                    <strong>Certificado verificado correctamente</strong>
+                  </div>
+                  <div className="verifactu-data-summary" style={{ marginTop: 'var(--space-2)' }}>
+                    <SummaryRow label="Titular" value={metadata.cert_subject} />
+                    <SummaryRow label="NIF titular" value={metadata.nif_titular} />
+                    <SummaryRow label="Emisor" value={metadata.cert_issuer} />
+                    <SummaryRow label="Nº de serie" value={metadata.cert_serial} />
+                    <SummaryRow
+                      label="Caducidad"
+                      value={new Date(metadata.cert_expires_at).toLocaleDateString('es-ES')}
+                    />
+                  </div>
                 </div>
               )}
             </form>
@@ -213,46 +233,48 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
                 />
               </div>
 
-              <fieldset className="verifactu-fieldset">
-                <legend className="verifactu-fieldset-legend">Modo de registro</legend>
-                <RadioRow
-                  name="modo"
-                  value="no_verificable"
-                  checked={modo === 'no_verificable'}
-                  onChange={() => setModo('no_verificable')}
-                  title="No verificable (recomendado para empezar)"
-                  description="Generamos el registro VeriFactu localmente con XML y QR, pero no se envía a la AEAT. Válido legalmente."
-                />
-                <RadioRow
-                  name="modo"
-                  value="veri_factu"
-                  checked={modo === 'veri_factu'}
-                  onChange={() => setModo('veri_factu')}
-                  title="VeriFactu (envío en tiempo real)"
-                  description="Próximamente. Enviaremos cada factura a la AEAT al emitirla."
-                  disabled
-                />
-              </fieldset>
+              <div className="verifactu-fieldset-grid">
+                <fieldset className="verifactu-fieldset">
+                  <legend className="verifactu-fieldset-legend">Modo de registro</legend>
+                  <RadioRow
+                    name="modo"
+                    value="no_verificable"
+                    checked={modo === 'no_verificable'}
+                    onChange={() => setModo('no_verificable')}
+                    title="No verificable"
+                    description="XML y QR locales, sin envío a AEAT. Recomendado para empezar."
+                  />
+                  <RadioRow
+                    name="modo"
+                    value="veri_factu"
+                    checked={modo === 'veri_factu'}
+                    onChange={() => setModo('veri_factu')}
+                    title="VeriFactu (tiempo real)"
+                    description="Próximamente. Envío a AEAT al emitir."
+                    disabled
+                  />
+                </fieldset>
 
-              <fieldset className="verifactu-fieldset">
-                <legend className="verifactu-fieldset-legend">Entorno AEAT</legend>
-                <RadioRow
-                  name="entorno"
-                  value="test"
-                  checked={entorno === 'test'}
-                  onChange={() => setEntorno('test')}
-                  title="Pruebas (preproducción)"
-                  description="El QR enlaza al cotejo de pruebas. Recomendado mientras validas el flujo."
-                />
-                <RadioRow
-                  name="entorno"
-                  value="produccion"
-                  checked={entorno === 'produccion'}
-                  onChange={() => setEntorno('produccion')}
-                  title="Producción"
-                  description="El QR enlaza al cotejo real de la AEAT."
-                />
-              </fieldset>
+                <fieldset className="verifactu-fieldset">
+                  <legend className="verifactu-fieldset-legend">Entorno AEAT</legend>
+                  <RadioRow
+                    name="entorno"
+                    value="test"
+                    checked={entorno === 'test'}
+                    onChange={() => setEntorno('test')}
+                    title="Pruebas (preproducción)"
+                    description="QR de cotejo de pruebas."
+                  />
+                  <RadioRow
+                    name="entorno"
+                    value="produccion"
+                    checked={entorno === 'produccion'}
+                    onChange={() => setEntorno('produccion')}
+                    title="Producción"
+                    description="QR de cotejo real de la AEAT."
+                  />
+                </fieldset>
+              </div>
             </>
           )}
 
@@ -328,23 +350,24 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
 
           {step === 2 && (
             <>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setStep(3)}
-                disabled={validating}
-                title="Saltar la validación (modo provisional para revisar la UI)"
-              >
-                Saltar paso
+              <button className="btn btn-secondary btn-sm" onClick={() => setStep(1)} disabled={validating}>
+                Atrás
               </button>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={(e) => { void handleValidate(e as unknown as FormEvent) }}
-                disabled={!certFile || !certPassword || validating}
-              >
-                {validating
-                  ? <><Loader2 size={14} className="spin" /> Validando…</>
-                  : <><FileKey size={14} /> Validar y continuar</>}
-              </button>
+              {metadata ? (
+                <button className="btn btn-primary btn-sm" onClick={() => setStep(3)}>
+                  Continuar
+                </button>
+              ) : (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={(e) => { void handleValidate(e as unknown as FormEvent) }}
+                  disabled={!certFile || !certPassword || validating}
+                >
+                  {validating
+                    ? <><Loader2 size={14} className="spin" /> Validando…</>
+                    : <><FileKey size={14} /> Validar certificado</>}
+                </button>
+              )}
             </>
           )}
 

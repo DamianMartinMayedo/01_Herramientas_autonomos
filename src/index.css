@@ -3623,6 +3623,43 @@ body {
 }
 .verifactu-legal-check input[type='checkbox'] { margin-top: 3px; flex-shrink: 0; }
 
+/* ── Wizard: tamaño FIJO del modal para que no cambie entre pasos ──
+   Usamos `height` (no min-height) en el box: así si un paso tuviera más
+   contenido haría scroll, pero el contenedor jamás cambia de medidas.
+   El paso 3 mete los dos fieldsets (Modo + Entorno) en 2 columnas para
+   no necesitar scroll. */
+.verifactu-wizard-box {
+  width: min(820px, 96vw);
+  height: min(720px, 90vh);
+}
+
+.verifactu-fieldset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+.verifactu-fieldset-grid .verifactu-fieldset { margin-top: 0; }
+
+/* ── Wizard: bloque verde de "Certificado verificado" en paso 2 ── */
+.verifactu-validated-box {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+}
+.dark .verifactu-validated-box {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+}
+.verifactu-validated-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-success);
+  font-size: var(--text-sm);
+}
+
 
 /* ── Hint para usuarios invitados en el PreviewModal ── */
 .preview-guest-hint {

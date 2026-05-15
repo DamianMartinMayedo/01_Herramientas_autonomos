@@ -458,16 +458,15 @@ export function DocumentEngine({
                   </p>
                   <p className="warning-banner-desc">
                     VeriFactu es el sistema de la AEAT para registrar facturas electrónicamente.
-                    Necesitas una cuenta gratuita para configurarlo y emitir tus facturas con
-                    registro fiscal.
+                    Necesitas una cuenta gratuita para configurarlo.{' '}
+                    <button
+                      type="button"
+                      className="verifactu-inline-link"
+                      onClick={() => setAuthModalOpen(true)}
+                    >
+                      Crear cuenta gratis →
+                    </button>
                   </p>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => setAuthModalOpen(true)}
-                  >
-                    Crear cuenta gratis para configurar VeriFactu
-                  </button>
                 </div>
               </div>
             </div>
