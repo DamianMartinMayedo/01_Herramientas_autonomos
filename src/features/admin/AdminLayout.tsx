@@ -8,11 +8,11 @@ import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { ConfirmModal } from './components/ConfirmModal'
 import {
   LayoutDashboard, FileText, Wrench, Users, BarChart3,
-  LogOut, Menu, X, Lock, Eye, EyeOff, ChevronRight,
+  LogOut, Menu, X, Lock, Eye, EyeOff, ChevronRight, Tag,
 } from 'lucide-react'
 
 /* ── Tipos ──────────────────────────────────────────────────────────────── */
-export type AdminSection = 'overview' | 'analytics' | 'blog' | 'herramientas' | 'usuarios'
+export type AdminSection = 'overview' | 'analytics' | 'blog' | 'herramientas' | 'usuarios' | 'planes'
 
 interface AdminLayoutProps {
   section: AdminSection
@@ -26,6 +26,7 @@ const NAV_ITEMS: { id: AdminSection; label: string; Icon: React.ElementType }[] 
   { id: 'herramientas', label: 'Herramientas',  Icon: Wrench },
   { id: 'blog',         label: 'Blog',          Icon: FileText },
   { id: 'usuarios',     label: 'Usuarios',      Icon: Users },
+  { id: 'planes',      label: 'Planes',        Icon: Tag },
 ]
 
 function AdminSidebar({

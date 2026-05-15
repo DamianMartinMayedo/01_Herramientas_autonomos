@@ -99,6 +99,14 @@ export function useProfile(): UseProfileReturn {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [user, fetchProfile])
 
+  useEffect(() => {
+    const onPlanChanged = () => {
+      if (user) void fetchProfile()
+    }
+    window.addEventListener('ha:plan-changed', onPlanChanged)
+    return () => window.removeEventListener('ha:plan-changed', onPlanChanged)
+  }, [user, fetchProfile])
+
   const updateProfile = async (data: ProfileUpdate) => {
     if (!user) return { error: 'No hay sesión activa' }
 

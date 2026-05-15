@@ -9,10 +9,12 @@
  * `<PaywallCard>` es el bloque autocontenido para embeber dentro de otro layout
  * (por ejemplo el panel de usuario).
  */
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Lock, Crown, UserPlus, ArrowRight } from 'lucide-react'
 import { SiteHeader } from '../layout/SiteHeader'
 import { SiteFooter } from '../layout/SiteFooter'
+import { UpgradeModal } from '../../features/planes/UpgradeModal'
 
 interface PaywallProps {
   reason: 'login' | 'upgrade'
@@ -22,6 +24,7 @@ interface PaywallProps {
 export function PaywallCard({ reason, toolName }: PaywallProps) {
   const navigate = useNavigate()
   const isLogin = reason === 'login'
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
 
   const handleLogin = () => {
     window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'login' } }))
@@ -31,47 +34,51 @@ export function PaywallCard({ reason, toolName }: PaywallProps) {
   }
 
   return (
-    <div className={`paywall-card ${isLogin ? 'paywall-card--login' : 'paywall-card--premium'}`}>
-      <div className={`paywall-icon ${isLogin ? 'paywall-icon--login' : 'paywall-icon--premium'}`}>
-        {isLogin ? <Lock size={28} /> : <Crown size={28} />}
+    <>
+      <div className={`paywall-card ${isLogin ? 'paywall-card--login' : 'paywall-card--premium'}`}>
+        <div className={`paywall-icon ${isLogin ? 'paywall-icon--login' : 'paywall-icon--premium'}`}>
+          {isLogin ? <Lock size={28} /> : <Crown size={28} />}
+        </div>
+
+        <h1 className="paywall-title">
+          {isLogin
+            ? 'Inicia sesión para acceder'
+            : (toolName ? `${toolName} es una herramienta Premium` : 'Esta herramienta es Premium')
+          }
+        </h1>
+
+        <p className="paywall-body">
+          {isLogin
+            ? 'Esta herramienta requiere una cuenta gratuita: así puedes guardar tus documentos, mantener la numeración consecutiva y activar VeriFactu (registro fiscal de la AEAT) cuando lo necesites.'
+            : 'Activa el plan Premium para acceder a esta herramienta y a todas las funcionalidades avanzadas: contratos, NDAs, reclamaciones de pago y más.'
+          }
+        </p>
+
+        <div className="paywall-actions">
+          {isLogin ? (
+            <>
+              <button className="btn btn-primary" onClick={handleLogin}>
+                Iniciar sesión <ArrowRight size={14} />
+              </button>
+              <button className="btn btn-secondary" onClick={handleRegister}>
+                <UserPlus size={14} /> Crear cuenta gratis
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="btn btn-warning" onClick={() => setUpgradeOpen(true)}>
+                <Crown size={14} /> Actualizar a Premium
+              </button>
+              <button className="btn btn-secondary" onClick={() => navigate('/usuario')}>
+                Volver al dashboard
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      <h1 className="paywall-title">
-        {isLogin
-          ? 'Inicia sesión para acceder'
-          : (toolName ? `${toolName} es una herramienta Premium` : 'Esta herramienta es Premium')
-        }
-      </h1>
-
-      <p className="paywall-body">
-        {isLogin
-          ? 'Esta herramienta requiere una cuenta gratuita: así puedes guardar tus documentos, mantener la numeración consecutiva y activar VeriFactu (registro fiscal de la AEAT) cuando lo necesites.'
-          : 'Activa el plan Premium para acceder a esta herramienta y a todas las funcionalidades avanzadas: contratos, NDAs, reclamaciones de pago y más.'
-        }
-      </p>
-
-      <div className="paywall-actions">
-        {isLogin ? (
-          <>
-            <button className="btn btn-primary" onClick={handleLogin}>
-              Iniciar sesión <ArrowRight size={14} />
-            </button>
-            <button className="btn btn-secondary" onClick={handleRegister}>
-              <UserPlus size={14} /> Crear cuenta gratis
-            </button>
-          </>
-        ) : (
-          <>
-            <button className="btn btn-warning" onClick={() => navigate('/usuario?s=perfil')}>
-              <Crown size={14} /> Actualizar a Premium
-            </button>
-            <button className="btn btn-secondary" onClick={() => navigate('/usuario')}>
-              Volver al dashboard
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+    </>
   )
 }
 

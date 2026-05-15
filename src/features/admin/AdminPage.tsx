@@ -9,6 +9,7 @@ import { AnalyticsSection }    from './sections/AnalyticsSection'
 import { BlogSection }         from './sections/BlogSection'
 import { HerramientasSection } from './sections/HerramientasSection'
 import { UsuariosSection }     from './sections/usuarios'
+import { PlanesSection }       from './sections/PlanesSection'
 
 export function AdminPage() {
   const [section, setSection] = useState<AdminSection>('overview')
@@ -19,6 +20,7 @@ export function AdminPage() {
     blog:         <BlogSection />,
     herramientas: <HerramientasSection />,
     usuarios:     <UsuariosSection />,
+    planes:       <PlanesSection />,
   }[section]
 
   return (

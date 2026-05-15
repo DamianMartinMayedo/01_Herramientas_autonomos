@@ -2670,6 +2670,13 @@ body {
   font-size: var(--text-sm);
   pointer-events: none;
   animation: doc-flash-in 0.25s ease-out;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.doc-flash--premium {
+  background: var(--color-gold);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 @keyframes doc-flash-in {
@@ -3635,3 +3642,230 @@ body {
   cursor: pointer;
 }
 .preview-guest-hint button:hover { color: var(--color-primary-hover, var(--color-primary)); }
+
+/* ─── Upgrade Modal ────────────────────────────────────────────────── */
+.upgrade-icon-box {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-gold-highlight);
+  color: var(--color-gold);
+  flex-shrink: 0;
+}
+.upgrade-plan-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+.upgrade-price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.upgrade-price-value {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-text);
+}
+.upgrade-price-period {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.upgrade-original-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.upgrade-original-price {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}
+.upgrade-original-discount {
+  display: inline-flex;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-gold);
+  background: var(--color-gold-highlight);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-full);
+  padding: 1px 6px;
+}
+.upgrade-billing-switch {
+  position: relative;
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: 4px;
+  background: var(--color-surface-offset);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+.upgrade-switch-pill {
+  position: relative;
+  z-index: 1;
+  padding: 6px 20px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color var(--transition);
+  white-space: nowrap;
+}
+.upgrade-switch-pill.active {
+  color: var(--color-text);
+  font-weight: 600;
+}
+.upgrade-switch-indicator {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  height: calc(100% - 8px);
+  width: calc(50% - 8px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 2px 2px 0px 0px var(--color-border);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.upgrade-trial-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-gold-highlight);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-gold);
+  margin-top: var(--space-5);
+}
+.upgrade-feature-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  font-weight: 500;
+  text-align: center;
+  margin-top: var(--space-5);
+}
+.upgrade-feature-text svg {
+  flex-shrink: 0;
+  color: var(--color-gold);
+}
+.upgrade-btn-full {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+.upgrade-state-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: var(--space-3) 0 0;
+}
+.upgrade-state-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: var(--space-2) 0 0;
+  max-width: 32ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+.empty-state.upgrade-state-plain {
+  background: none;
+  border: none;
+  padding: var(--space-8) 0;
+}
+.upgrade-unavailable {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+.upgrade-unavailable-icon {
+  color: var(--color-text-faint);
+}
+.upgrade-unavailable-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+.upgrade-unavailable-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 32ch;
+}
+.auth-modal.upgrade-modal--narrow {
+  max-width: 340px;
+  padding: var(--space-8) var(--space-6) var(--space-4);
+}
+
+/* ─── Planes Section (admin) inline inputs ─────────────────────────── */
+.editable-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.editable-cell .input-v3--cell {
+  width: 72px;
+  padding: 4px 6px;
+  font-size: var(--text-sm);
+  text-align: right;
+}
+.editable-cell span {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.data-tr--muted {
+  background: var(--color-surface-offset);
+  opacity: 0.6;
+}
+
+/* ─── Plan tab in PerfilPage ────────────────────────────────────────── */
+.plan-status-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.plan-status-icon--free    { background: var(--color-surface-offset); color: var(--color-text-muted); }
+.plan-status-icon--premium { background: var(--color-gold-highlight); color: var(--color-gold); }
+.plan-status-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+.plan-status-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: var(--space-2) 0 0;
+  max-width: 36ch;
+  margin-left: auto;
+  margin-right: auto;
+}

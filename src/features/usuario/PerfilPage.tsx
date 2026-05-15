@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Save } from 'lucide-react'
+import { Save, Crown, ArrowRight } from 'lucide-react'
 import { getEmpresa, saveEmpresa } from '../../lib/empresa'
 import { ConfiguracionPage } from './ConfiguracionPage'
 import { VerifactuTab } from './verifactu/VerifactuTab'
+import { UpgradeModal } from '../planes/UpgradeModal'
+import { ConfirmModal } from '../admin/components/ConfirmModal'
+import { useProfile } from '../../hooks/useProfile'
+import { supabase } from '../../lib/supabaseClient'
 import type { Empresa } from '../../types/empresa.types'
 import type { RegularClient } from '../../types/regularClient.types'
 
@@ -13,7 +17,7 @@ interface Props {
   initialTab?: 'empresa' | 'clientes' | 'verifactu'
 }
 
-type Tab = 'empresa' | 'clientes' | 'verifactu'
+type Tab = 'empresa' | 'clientes' | 'verifactu' | 'plan'
 
 const EMPTY_EMPRESA: Empresa = {
   nombre: '', nif: '', email: '', direccion: '',
@@ -23,7 +27,10 @@ const EMPTY_EMPRESA: Empresa = {
 const EMPTY_ERRORS = { nombre: '', nif: '', email: '', direccion: '' }
 
 export function PerfilPage({ userId, clientes, onClientsChange, initialTab }: Props) {
+  const { isPremium, refetch } = useProfile()
   const [tab, setTab] = useState<Tab>(initialTab ?? 'empresa')
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
 
   const [form, setForm] = useState<Empresa>(EMPTY_EMPRESA)
   const [errors, setErrors] = useState(EMPTY_ERRORS)
@@ -82,6 +89,16 @@ export function PerfilPage({ userId, clientes, onClientsChange, initialTab }: Pr
     setTimeout(() => setSavedOk(false), 3000)
   }
 
+  const handleCancelPremium = async () => {
+    await supabase
+      .from('profiles')
+      .update({ plan: 'free', updated_at: new Date().toISOString() })
+      .eq('id', userId)
+    setCancelOpen(false)
+    await refetch()
+    window.dispatchEvent(new CustomEvent('ha:plan-changed', { detail: { plan: 'free' } }))
+  }
+
   return (
     <div className="perfil-page">
 
@@ -105,6 +122,12 @@ export function PerfilPage({ userId, clientes, onClientsChange, initialTab }: Pr
             onClick={() => setTab('verifactu')}
           >
             VeriFactu
+          </button>
+          <button
+            className={`filter-pill${tab === 'plan' ? ' active' : ''}`}
+            onClick={() => setTab('plan')}
+          >
+            Plan
           </button>
         </div>
       </div>
@@ -230,6 +253,52 @@ export function PerfilPage({ userId, clientes, onClientsChange, initialTab }: Pr
 
       {tab === 'verifactu' && (
         <VerifactuTab userId={userId} onGoToEmpresa={() => setTab('empresa')} />
+      )}
+
+      {tab === 'plan' && (
+        <div className="card">
+          <div className="flex flex-col items-center gap-5 text-center" style={{ padding: 'var(--space-8) 0' }}>
+            <div className={`plan-status-icon ${isPremium ? 'plan-status-icon--premium' : 'plan-status-icon--free'}`}>
+              <Crown size={24} />
+            </div>
+
+            <div>
+              <h2 className="plan-status-title">
+                {isPremium ? 'Plan Premium activo' : 'Plan Gratuito'}
+              </h2>
+              <p className="plan-status-desc">
+                {isPremium
+                  ? 'Desbloquea todas las funcionalidades actuales y futuras.'
+                  : 'Actualiza a Premium para desbloquear todas las funcionalidades avanzadas.'}
+              </p>
+            </div>
+
+            {isPremium ? (
+              <button className="btn btn-ghost btn-sm" onClick={() => setCancelOpen(true)}>
+                Cancelar suscripción
+              </button>
+            ) : (
+              <button className="btn btn-warning" onClick={() => setUpgradeOpen(true)}>
+                <Crown size={14} />
+                Actualizar a Premium
+                <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+
+      {cancelOpen && (
+        <ConfirmModal
+          title="Cancelar suscripción"
+          description="Si cancelas tu suscripción Premium, perderás el acceso a las funcionalidades Premium."
+          confirmLabel="Cancelar suscripción"
+          confirmVariant="danger"
+          onConfirm={() => { void handleCancelPremium() }}
+          onCancel={() => setCancelOpen(false)}
+        />
       )}
 
     </div>
