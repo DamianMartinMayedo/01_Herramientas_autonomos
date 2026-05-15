@@ -8,13 +8,14 @@
  *
  * El padre maneja el refetch tras la acción.
  */
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { MoreVertical, Crown, User, MailCheck, KeyRound, Ban, ShieldCheck, Trash2, Eye } from 'lucide-react'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { AdminModal } from '../../components/AdminModal'
 import { adminPost } from '../../hooks/useAdminFetch'
 import { useAdminDev } from '../../hooks/useAdminDev'
+import { useDropdownPosition } from '../../../../hooks/useDropdownPosition'
 import type { Plan, UserProfile } from './types'
 
 interface Props {
@@ -39,49 +40,14 @@ type AsyncAction =
 
 export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChanged, onDeleted }: Props) {
   const dev = useAdminDev()
-  const [open, setOpen]         = useState(false)
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null)
+  const { open: ddOpen, position: ddPosition, buttonRef, menuRef, menuStyle, toggle: ddToggle, close: ddClose } = useDropdownPosition()
   const [confirm, setConfirm]   = useState<AsyncAction | null>(null)
   const [linkResult, setLinkResult] = useState<{ title: string; link: string } | null>(null)
   const [busy, setBusy]         = useState(false)
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const btnRef  = useRef<HTMLButtonElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
 
   const isPremium = user.plan === 'premium'
   // eslint-disable-next-line react-hooks/purity
   const isBanned  = !!user.banned_until && new Date(user.banned_until).getTime() > Date.now()
-
-  const toggleOpen = () => {
-    if (open) {
-      setOpen(false)
-      setDropdownPos(null)
-      return
-    }
-    const rect = btnRef.current?.getBoundingClientRect()
-    if (rect) {
-      setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-    }
-    setOpen(true)
-  }
-
-  const closeDropdown = () => {
-    setOpen(false)
-    setDropdownPos(null)
-  }
-
-  /* Cerrar dropdown al hacer click fuera */
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e: MouseEvent) => {
-      const target = e.target as Node
-      if (wrapRef.current?.contains(target)) return
-      if (menuRef.current?.contains(target)) return
-      closeDropdown()
-    }
-    window.addEventListener('mousedown', onDoc)
-    return () => window.removeEventListener('mousedown', onDoc)
-  }, [open])
 
   const runAction = async (action: AsyncAction) => {
     setBusy(true)
@@ -152,7 +118,7 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
   }
 
   const closeAnd = (fn: () => void) => () => {
-    closeDropdown()
+    ddClose()
     fn()
   }
 
@@ -190,28 +156,28 @@ export function UserActionsMenu({ user, variant = 'menu', onOpenDetail, onChange
           ))}
         </div>
       ) : (
-        <div className="user-actions-menu-wrap" ref={wrapRef} onClick={e => e.stopPropagation()}>
+        <div className="dropdown-wrap" onClick={e => e.stopPropagation()}>
           <button
-            ref={btnRef}
+            ref={buttonRef}
             className="icon-btn"
-            onClick={toggleOpen}
+            onClick={ddToggle}
             aria-label="Acciones de usuario"
             disabled={busy}
           >
             <MoreVertical size={14} />
           </button>
-          {open && dropdownPos && createPortal(
+          {ddOpen && ddPosition && createPortal(
             <div
               ref={menuRef}
-              className="user-actions-menu"
-              style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, margin: 0 }}
+              className="dropdown-menu"
+              style={menuStyle}
               onClick={e => e.stopPropagation()}
             >
               {items.map(it => (
                 <button
                   key={it.id}
                   onClick={it.onClick}
-                  className={`user-actions-menu-item${it.danger ? ' user-actions-menu-item--danger' : ''}`}
+                  className={`dropdown-item${it.danger ? ' dropdown-item--danger' : ''}`}
                 >
                   <it.Icon size={13} /> {it.label}
                 </button>

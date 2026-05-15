@@ -4,7 +4,8 @@
  * Si la tabla está vacía y el navegador tiene un blogStore en localStorage,
  * ofrece importar los posts existentes con un click.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAdminFetch, adminPatch, adminDelete, adminPost } from '../hooks/useAdminFetch'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { PostEditor } from './blog/PostEditor'
@@ -59,6 +60,53 @@ export function BlogSection() {
   const [importing,   setImporting]   = useState(false)
   const [importMsg,   setImportMsg]   = useState<string | null>(null)
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
+  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null)
+  const dropdownMenuRef = useRef<HTMLDivElement | null>(null)
+
+  const closeDropdown = () => { setOpenDropdownId(null); setDropdownPos(null) }
+
+  const toggleDropdown = (e: React.MouseEvent, id: string) => {
+    if (openDropdownId === id) { closeDropdown(); return }
+    const rect = e.currentTarget.getBoundingClientRect()
+    setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    setOpenDropdownId(id)
+  }
+
+  useLayoutEffect(() => {
+    if (!openDropdownId || !dropdownPos) return
+    const menu = dropdownMenuRef.current
+    if (!menu) return
+    const menuH = menu.offsetHeight
+    const vh = window.innerHeight
+    const MARGIN = 8
+    const top = dropdownPos.top
+    if (top === undefined) return
+    if (top + menuH > vh - MARGIN) {
+      const btnTop = top - 4
+      if (btnTop - menuH > MARGIN) {
+        setDropdownPos(prev => prev ? { bottom: vh - btnTop, right: prev.right } : prev)
+      }
+    }
+  }, [openDropdownId, dropdownPos])
+
+  useEffect(() => {
+    if (!openDropdownId) return
+    const onChange = () => closeDropdown()
+    const onClickOutside = (ev: MouseEvent) => {
+      const target = ev.target as HTMLElement
+      if (dropdownMenuRef.current?.contains(target)) return
+      if (target.closest('[data-dropdown-trigger]')) return
+      closeDropdown()
+    }
+    window.addEventListener('scroll', onChange, true)
+    window.addEventListener('resize', onChange)
+    window.addEventListener('mousedown', onClickOutside)
+    return () => {
+      window.removeEventListener('scroll', onChange, true)
+      window.removeEventListener('resize', onChange)
+      window.removeEventListener('mousedown', onClickOutside)
+    }
+  }, [openDropdownId])
 
   const posts = useMemo(() => data ?? [], [data])
 
@@ -242,26 +290,29 @@ export function BlogSection() {
                         <button
                           className="icon-btn"
                           title="Opciones"
-                          onClick={() => setOpenDropdownId(openDropdownId === post.id ? null : post.id)}
+                          data-dropdown-trigger
+                          onClick={e => toggleDropdown(e, post.id)}
                         >
                           <MoreVertical size={14} />
                         </button>
-                        {openDropdownId === post.id && (
-                          <>
-                            <div className="dropdown-overlay" onClick={() => setOpenDropdownId(null)} />
-                            <div className="dropdown-menu">
-                              <button className="dropdown-item" onClick={() => { setOpenDropdownId(null); setEditing(post) }}>
-                                <Pencil size={14} /> Editar
-                              </button>
-                              <button className="dropdown-item" onClick={() => { setOpenDropdownId(null); setModalTarget({ post, accion: 'visibilidad' }) }}>
-                                {publicado ? <EyeOff size={14} /> : <Eye size={14} />} {publicado ? 'Despublicar' : 'Publicar'}
-                              </button>
-                              <div className="dropdown-divider" />
-                              <button className="dropdown-item dropdown-item--danger" onClick={() => { setOpenDropdownId(null); setModalTarget({ post, accion: 'eliminar' }) }}>
-                                <Trash2 size={14} /> Eliminar
-                              </button>
-                            </div>
-                          </>
+                        {openDropdownId === post.id && dropdownPos && createPortal(
+                          <div
+                            ref={dropdownMenuRef}
+                            className="dropdown-menu"
+                            style={{ position: 'fixed', top: dropdownPos.top ?? 'auto', bottom: dropdownPos.bottom ?? 'auto', right: dropdownPos.right, margin: 0 }}
+                          >
+                            <button className="dropdown-item" onClick={() => { closeDropdown(); setEditing(post) }}>
+                              <Pencil size={14} /> Editar
+                            </button>
+                            <button className="dropdown-item" onClick={() => { closeDropdown(); setModalTarget({ post, accion: 'visibilidad' }) }}>
+                              {publicado ? <EyeOff size={14} /> : <Eye size={14} />} {publicado ? 'Despublicar' : 'Publicar'}
+                            </button>
+                            <div className="dropdown-divider" />
+                            <button className="dropdown-item dropdown-item--danger" onClick={() => { closeDropdown(); setModalTarget({ post, accion: 'eliminar' }) }}>
+                              <Trash2 size={14} /> Eliminar
+                            </button>
+                          </div>,
+                          document.body,
                         )}
                       </div>
                     </td>

@@ -49,6 +49,9 @@ React 19 · TypeScript · Vite · Supabase · React Router · CSS puro (sin Tail
 | Modal admin (borde brutal) | `overlay overlay-dark overlay-z200` + `admin-modal-box admin-modal-{sm/md/lg}` |
 | Modal estándar (preview) | `overlay overlay-dark overlay-z60` + `modal-box modal-{sm/lg}` |
 | Cerrar modal | `modal-close-btn` |
+| Dropdown de acciones (wrapper + caja) | `dropdown-wrap` + `dropdown-menu` (portal + `position:fixed`) |
+| Item del dropdown | `dropdown-item` (+ `dropdown-item--danger` para destructivo) |
+| Separador entre grupos del dropdown | `dropdown-divider` |
 | Input | `input-group` > `input-label` + `input-v3` + `input-hint` |
 | Input con error | añadir `is-error` + `input-error-msg` |
 | Estado vacío | `empty-state` (o `empty-state--xl`) |
@@ -68,6 +71,7 @@ React 19 · TypeScript · Vite · Supabase · React Router · CSS puro (sin Tail
 - [ ] Botones usan `.btn` con variante
 - [ ] Iconos de acción usan `.icon-btn` con modificador de color
 - [ ] Modales usan `.overlay` + `.admin-modal-box` o `.modal-box`
+- [ ] Dropdowns de acciones usan `.dropdown-menu`/`.dropdown-item` portalizados a `document.body` con `position: fixed` (nunca dropdowns inline con `position: absolute`)
 - [ ] Inputs usan `.input-group` + `.input-v3`
 - [ ] Estados vacíos usan `.empty-state`
 - [ ] Nuevas clases añadidas usan tokens `var(--color-*)`, `var(--space-*)`, nunca hex ni px hardcodeados

@@ -133,6 +133,61 @@ Las reglas de cuándo usar inline vs clase están en `CLAUDE.md` (siempre activo
 
 ---
 
+## Dropdowns de acciones
+
+**Patrón único de toda la plataforma** (admin y usuario): portal a `document.body` + `position: fixed`, anclado a la derecha del botón disparador, con detección de borde inferior (si no cabe abajo, abre hacia arriba).
+
+```tsx
+import { useDropdownPosition } from '../../hooks/useDropdownPosition'
+import { createPortal } from 'react-dom'
+
+const dd = useDropdownPosition()
+
+<div className="dropdown-wrap">
+  <button ref={dd.buttonRef} className="icon-btn" onClick={dd.toggle}>
+    <MoreVertical size={14} />
+  </button>
+  {dd.open && dd.position && createPortal(
+    <div ref={dd.menuRef} className="dropdown-menu" style={dd.menuStyle}>
+      <button className="dropdown-item">
+        <Pencil size={13} /> Editar
+      </button>
+      <div className="dropdown-divider" />
+      <button className="dropdown-item dropdown-item--danger">
+        <Trash2 size={13} /> Eliminar
+      </button>
+    </div>,
+    document.body,
+  )}
+</div>
+```
+
+### Clases
+
+| Clase | Uso |
+|---|---|
+| `dropdown-wrap` | Wrapper relativo del botón disparador. |
+| `dropdown-menu` | Caja del menú: borde brutal 1.5px + sombra sólida 4px. Anclar siempre con `style={dd.menuStyle}` cuando se portaliza. |
+| `dropdown-item` | Botón de acción dentro del menú. |
+| `dropdown-item--danger` | Modificador rojo para acciones destructivas. |
+| `dropdown-divider` | Línea horizontal entre grupos de items (rescatada del estilo antiguo). |
+
+### Reglas
+
+- **Siempre** portalizar a `document.body` para evitar clipping por overflow de la tabla/contenedor.
+- **Siempre** `position: fixed` con coordenadas calculadas vía `getBoundingClientRect` del botón. El hook `useDropdownPosition` lo hace.
+- **Nunca** usar `.dropdown-overlay` (eliminado): el cierre por click-outside se hace con `mousedown` listener; el botón disparador debe ignorarse vía `data-dropdown-trigger` o ref.
+- Para listas con N dropdowns (uno por fila) con un único abierto, usar estado local `(openId, position)` + `useLayoutEffect` para overflow (ver `DocumentoListado.tsx`, `BlogSection.tsx`). El hook `useDropdownPosition` es para componentes con UN solo dropdown.
+- Separar grupos lógicos de items (acciones primarias / envío / destructivas) con `<div className="dropdown-divider" />`.
+
+### Comportamiento
+
+- Click fuera, scroll, resize → cierran el menú.
+- Si el menú se sale por la parte inferior del viewport y hay espacio arriba, conmuta a anclaje inferior (abre hacia arriba) sin parpadeo (`useLayoutEffect`).
+- z-index: 500 (definido en la clase, no overridear).
+
+---
+
 ## Inputs y formularios
 
 ```tsx

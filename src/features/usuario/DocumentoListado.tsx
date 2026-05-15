@@ -3,7 +3,7 @@
  * Listado genérico reutilizable para todos los tipos de documento.
  * Facturas y presupuestos usan pestañas (Borradores / Emitidas|Enviados).
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabaseClient'
@@ -111,7 +111,8 @@ export function DocumentoListado({
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null)
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null)
+  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null)
+  const dropdownMenuRef = useRef<HTMLDivElement | null>(null)
   const [emitirConfirmId, setEmitirConfirmId] = useState<string | null>(null)
   const [emailPresupuestoEnviarRow, setEmailPresupuestoEnviarRow] = useState<DocRow | null>(null)
   const [emailAlbaranListadoRow, setEmailAlbaranListadoRow] = useState<DocRow | null>(null)
@@ -173,6 +174,44 @@ export function DocumentoListado({
     setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
     setDropdownOpenId(id)
   }
+
+  /* Tras montar el menú, si se sale por abajo y hay espacio arriba, conmuta a anclaje inferior. */
+  useLayoutEffect(() => {
+    if (!dropdownOpenId || !dropdownPos) return
+    const menu = dropdownMenuRef.current
+    if (!menu) return
+    const menuH = menu.offsetHeight
+    const vh = window.innerHeight
+    const MARGIN = 8
+    const top = dropdownPos.top
+    if (top === undefined) return
+    if (top + menuH > vh - MARGIN) {
+      const btnTop = top - 4
+      if (btnTop - menuH > MARGIN) {
+        setDropdownPos(prev => prev ? { bottom: vh - btnTop, right: prev.right } : prev)
+      }
+    }
+  }, [dropdownOpenId, dropdownPos])
+
+  /* Cerrar al hacer click fuera, scroll o resize. */
+  useEffect(() => {
+    if (!dropdownOpenId) return
+    const onChange = () => closeDropdown()
+    const onClickOutside = (ev: MouseEvent) => {
+      const target = ev.target as HTMLElement
+      if (dropdownMenuRef.current?.contains(target)) return
+      if (target.closest('[data-dropdown-trigger]')) return
+      closeDropdown()
+    }
+    window.addEventListener('scroll', onChange, true)
+    window.addEventListener('resize', onChange)
+    window.addEventListener('mousedown', onClickOutside)
+    return () => {
+      window.removeEventListener('scroll', onChange, true)
+      window.removeEventListener('resize', onChange)
+      window.removeEventListener('mousedown', onClickOutside)
+    }
+  }, [dropdownOpenId])
 
   const handleDropdownKeyDown = (e: React.KeyboardEvent, id: string) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -339,7 +378,7 @@ export function DocumentoListado({
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
 
   const renderEmitidaRow = (row: DocRow) => renderRowBase(row, (
-    <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+    <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" data-dropdown-trigger onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
       <MoreHorizontal size={13} />
     </button>
   ), row.datos_json?.esRectificativa ? renderRectificativaBadge() : undefined)
@@ -375,7 +414,7 @@ export function DocumentoListado({
             <Pencil size={13} />
           </button>
         )}
-        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" data-dropdown-trigger onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -391,7 +430,7 @@ export function DocumentoListado({
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" data-dropdown-trigger onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -407,7 +446,7 @@ export function DocumentoListado({
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" data-dropdown-trigger onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -421,7 +460,7 @@ export function DocumentoListado({
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" data-dropdown-trigger onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -435,7 +474,7 @@ export function DocumentoListado({
         <button type="button" title="Editar" className="icon-btn" onClick={() => onOpen?.(row.id)}>
           <Pencil size={13} />
         </button>
-        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
+        <button type="button" title="Más opciones" aria-label="Más opciones" className="icon-btn" data-dropdown-trigger onClick={(e) => openDropdown(e, row.id)} onKeyDown={(e) => handleDropdownKeyDown(e, row.id)}>
           <MoreHorizontal size={13} />
         </button>
       </>
@@ -914,11 +953,6 @@ export function DocumentoListado({
         </>
       )}
 
-      {/* Backdrop para cerrar el dropdown al hacer clic fuera */}
-      {dropdownOpenId && (
-        <div className="dropdown-overlay" onClick={closeDropdown} />
-      )}
-
       {/* Portal dropdown — fuera del DOM de la tabla para evitar clipping */}
       {dropdownOpenId && dropdownPos && (() => {
         const row = rows.find(r => r.id === dropdownOpenId)
@@ -1069,10 +1103,11 @@ export function DocumentoListado({
 
         return createPortal(
           <div
+            ref={dropdownMenuRef}
             className="dropdown-menu"
             role="menu"
             aria-label="Acciones"
-            style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 500, margin: 0 }}
+            style={{ position: 'fixed', top: dropdownPos.top ?? 'auto', bottom: dropdownPos.bottom ?? 'auto', right: dropdownPos.right, margin: 0 }}
             onClick={e => e.stopPropagation()}
             onKeyDown={e => {
               if (e.key === 'Escape') { closeDropdown(); return }

@@ -2700,21 +2700,24 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   DROPDOWN MENU
+   DROPDOWN MENU — patrón único para toda la plataforma (admin y usuario)
+   Uso: portalizar a document.body + position:fixed con useDropdownPosition.
 ══════════════════════════════════════════════════════════════════════════ */
 .dropdown-wrap { position: relative; display: inline-flex; }
 
 .dropdown-menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 4px);
-  z-index: 30;
-  min-width: 190px;
-  padding: var(--space-1) 0;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 24px -4px oklch(0% 0 0 / 0.12), 0 2px 8px -2px oklch(0% 0 0 / 0.08);
+  top: calc(100% + var(--space-1));
+  z-index: 500;
+  min-width: 220px;
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 4px 4px 0px 0px var(--color-border);
+  display: flex;
+  flex-direction: column;
 }
 
 .dropdown-item {
@@ -2728,6 +2731,7 @@ body {
   color: var(--color-text);
   background: none;
   border: none;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   text-align: left;
   transition: background var(--transition);
@@ -2735,7 +2739,7 @@ body {
 .dropdown-item:hover { background: var(--color-surface-offset); }
 
 .dropdown-item--danger { color: var(--color-error); }
-.dropdown-item--danger:hover { background: var(--color-error-highlight); color: var(--color-error); }
+.dropdown-item--danger:hover { background: var(--color-error-subtle); color: var(--color-error); }
 
 .dropdown-divider {
   height: 1px;
@@ -2902,13 +2906,6 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-/* Overlay invisible para cerrar dropdowns al click fuera */
-.dropdown-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 29;
 }
 
 /* UserMenu — botón "Cerrar sesión" del dropdown */
@@ -3304,39 +3301,6 @@ body {
   font-size: var(--text-xs);
 }
 .user-data-id:hover { color: var(--color-text); }
-
-/* Dropdown de acciones */
-.user-actions-menu-wrap { position: relative; display: inline-block; }
-.user-actions-menu {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  right: 0;
-  min-width: 220px;
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: 4px 4px 0px 0px var(--color-border);
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-1);
-  z-index: 50;
-}
-.user-actions-menu-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  text-align: left;
-  border-radius: var(--radius-sm);
-}
-.user-actions-menu-item:hover { background: var(--color-surface-offset); }
-.user-actions-menu-item--danger { color: var(--color-error); }
-.user-actions-menu-item--danger:hover { background: var(--color-error-subtle); }
 
 /* Barra de acciones en detalle */
 .user-actions-bar { display: flex; flex-wrap: wrap; gap: var(--space-2); }
