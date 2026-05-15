@@ -334,49 +334,43 @@ export type Database = {
       }
       herramientas: {
         Row: {
-          activa: boolean
           anon_available: boolean
           categoria: string
           created_at: string
           descripcion: string
+          estado: string
           id: string
-          mantenimiento: boolean
           nombre: string
           orden: number
           plan_required: string
-          proximamente: boolean
           ruta: string
           updated_at: string
           visible: boolean
         }
         Insert: {
-          activa?: boolean
           anon_available?: boolean
           categoria: string
           created_at?: string
           descripcion?: string
+          estado?: string
           id: string
-          mantenimiento?: boolean
           nombre: string
           orden?: number
           plan_required?: string
-          proximamente?: boolean
           ruta: string
           updated_at?: string
           visible?: boolean
         }
         Update: {
-          activa?: boolean
           anon_available?: boolean
           categoria?: string
           created_at?: string
           descripcion?: string
+          estado?: string
           id?: string
-          mantenimiento?: boolean
           nombre?: string
           orden?: number
           plan_required?: string
-          proximamente?: boolean
           ruta?: string
           updated_at?: string
           visible?: boolean
@@ -508,6 +502,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          display_name: string | null
           email: string | null
           id: string
           plan: string
@@ -515,6 +510,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          display_name?: string | null
           email?: string | null
           id: string
           plan?: string
@@ -522,6 +518,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          display_name?: string | null
           email?: string | null
           id?: string
           plan?: string
@@ -574,6 +571,116 @@ export type Database = {
         }
         Relationships: []
       }
+      user_verifactu_config: {
+        Row: {
+          cert_expires_at: string | null
+          cert_issuer: string | null
+          cert_password_secret_id: string | null
+          cert_serial: string | null
+          cert_storage_path: string | null
+          cert_subject: string | null
+          created_at: string
+          enabled: boolean
+          entorno: string
+          last_test_ok_at: string | null
+          modo: string
+          nif_titular: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cert_expires_at?: string | null
+          cert_issuer?: string | null
+          cert_password_secret_id?: string | null
+          cert_serial?: string | null
+          cert_storage_path?: string | null
+          cert_subject?: string | null
+          created_at?: string
+          enabled?: boolean
+          entorno?: string
+          last_test_ok_at?: string | null
+          modo?: string
+          nif_titular?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cert_expires_at?: string | null
+          cert_issuer?: string | null
+          cert_password_secret_id?: string | null
+          cert_serial?: string | null
+          cert_storage_path?: string | null
+          cert_subject?: string | null
+          created_at?: string
+          enabled?: boolean
+          entorno?: string
+          last_test_ok_at?: string | null
+          modo?: string
+          nif_titular?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verifactu_registros: {
+        Row: {
+          created_at: string
+          enviado_aeat_at: string | null
+          factura_id: string | null
+          fecha_expedicion: string
+          hash: string
+          hash_anterior: string | null
+          huella: string
+          id: string
+          numero_factura: string
+          qr_url: string
+          respuesta_aeat: Json | null
+          tipo_registro: string
+          user_id: string
+          xml: string
+        }
+        Insert: {
+          created_at?: string
+          enviado_aeat_at?: string | null
+          factura_id?: string | null
+          fecha_expedicion: string
+          hash: string
+          hash_anterior?: string | null
+          huella: string
+          id?: string
+          numero_factura: string
+          qr_url: string
+          respuesta_aeat?: Json | null
+          tipo_registro: string
+          user_id: string
+          xml: string
+        }
+        Update: {
+          created_at?: string
+          enviado_aeat_at?: string | null
+          factura_id?: string | null
+          fecha_expedicion?: string
+          hash?: string
+          hash_anterior?: string | null
+          huella?: string
+          id?: string
+          numero_factura?: string
+          qr_url?: string
+          respuesta_aeat?: Json | null
+          tipo_registro?: string
+          user_id?: string
+          xml?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verifactu_registros_factura_id_fkey"
+            columns: ["factura_id"]
+            isOneToOne: false
+            referencedRelation: "facturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -591,6 +698,7 @@ export type Database = {
           secuencia: number
         }[]
       }
+      verifactu_last_hash: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -45,7 +45,7 @@ export function PaywallCard({ reason, toolName }: PaywallProps) {
 
       <p className="paywall-body">
         {isLogin
-          ? 'Esta herramienta requiere una cuenta gratuita para usarse, así puedes guardar tus documentos y mantener la numeración consecutiva.'
+          ? 'Esta herramienta requiere una cuenta gratuita: así puedes guardar tus documentos, mantener la numeración consecutiva y activar VeriFactu (registro fiscal de la AEAT) cuando lo necesites.'
           : 'Activa el plan Premium para acceder a esta herramienta y a todas las funcionalidades avanzadas: contratos, NDAs, reclamaciones de pago y más.'
         }
       </p>

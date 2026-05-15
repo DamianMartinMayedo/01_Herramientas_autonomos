@@ -767,7 +767,15 @@ export function UserPage() {
       return <UserDashboard onNav={(s) => setSearchParams({ s })} nombreEmpresa={empresa?.nombre} />
     }
     if (section === 'perfil') {
-      return <PerfilPage userId={user.id} clientes={clientes} onClientsChange={setClientes} />
+      const initialTab = searchParams.get('t')
+      return (
+        <PerfilPage
+          userId={user.id}
+          clientes={clientes}
+          onClientsChange={setClientes}
+          initialTab={initialTab === 'clientes' || initialTab === 'verifactu' ? initialTab : undefined}
+        />
+      )
     }
     if (DOCUMENT_SECTIONS.includes(section)) {
       return renderDocumentWorkspace()

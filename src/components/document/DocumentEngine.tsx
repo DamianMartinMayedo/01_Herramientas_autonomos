@@ -13,7 +13,8 @@ import { PreviewModal } from './PreviewModal'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
-import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send, Undo2, Info } from 'lucide-react'
+import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send, Undo2, Info, ShieldCheck, ShieldOff } from 'lucide-react'
+import { useVerifactuStatus } from '../../hooks/useVerifactuStatus'
 import { EmailModal } from '../shared/EmailModal'
 import { AuthModal } from '../../features/auth/AuthModal'
 import { formatFecha } from '../../utils/formatters'
@@ -89,6 +90,7 @@ export function DocumentEngine({
   const [feedbackMessage, setFeedbackMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const verifactu = useVerifactuStatus()
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
   }, [autoOpenPreview])
@@ -444,20 +446,74 @@ export function DocumentEngine({
         </div>
       </div>
 
-      {tipo === 'factura' && (
-        <div className="warning-banner">
-          <div className="warning-banner-inner">
-            <AlertTriangle size={20} className="warning-banner-icon" />
-            <div>
-              <p className="warning-banner-title">
-                Por el momento esta factura no está conectada con el sistema Verifactu
-              </p>
-              <p className="warning-banner-desc">
-                Es solo para referencia interna. Para facturación legal, consulta con tu gestor o usa software certificado Verifactu.
-              </p>
+      {tipo === 'factura' && !verifactu.loading && (
+        <>
+          {!verifactu.authenticated && (
+            <div className="warning-banner">
+              <div className="warning-banner-inner">
+                <ShieldOff size={20} className="warning-banner-icon" />
+                <div className="verifactu-banner-content">
+                  <p className="warning-banner-title">
+                    Esta factura no está conectada al sistema VeriFactu
+                  </p>
+                  <p className="warning-banner-desc">
+                    VeriFactu es el sistema de la AEAT para registrar facturas electrónicamente.
+                    Necesitas una cuenta gratuita para configurarlo y emitir tus facturas con
+                    registro fiscal.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setAuthModalOpen(true)}
+                  >
+                    Crear cuenta gratis para configurar VeriFactu
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+
+          {verifactu.authenticated && !verifactu.enabled && (
+            <div className="warning-banner">
+              <div className="warning-banner-inner">
+                <ShieldOff size={20} className="warning-banner-icon" />
+                <div className="verifactu-banner-content">
+                  <p className="warning-banner-title">
+                    De momento esta factura no está conectada con VeriFactu
+                  </p>
+                  <p className="warning-banner-desc">
+                    Puedes configurar VeriFactu en tu perfil para que todas tus facturas se
+                    registren automáticamente con el sistema de la AEAT.{' '}
+                    <button
+                      type="button"
+                      className="verifactu-inline-link"
+                      onClick={() => navigate('/usuario?s=perfil&t=verifactu')}
+                    >
+                      Configurar VeriFactu →
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {verifactu.authenticated && verifactu.enabled && (
+            <div className="success-banner">
+              <div className="warning-banner-inner">
+                <ShieldCheck size={20} className="success-banner-icon" />
+                <div>
+                  <p className="warning-banner-title">
+                    Esta factura se registrará en VeriFactu al emitirla
+                  </p>
+                  <p className="warning-banner-desc">
+                    Generaremos el XML, el QR de verificación AEAT y el hash encadenado
+                    automáticamente cuando la factura pase a estado emitida.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {viewOnlyActions && (

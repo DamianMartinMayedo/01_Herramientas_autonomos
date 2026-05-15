@@ -87,10 +87,23 @@ export function PreviewModal({ documento, totales, onClose, isGuest = false }: P
           {/* Acciones */}
           <div className="modal-footer" style={{ justifyContent: 'flex-end' }}>
             {isGuest && (
-              <Button variant="secondary" onClick={onClose} disabled={generando}>
-                <Pencil size={16} />
-                Volver a editar
-              </Button>
+              <>
+                <p className="preview-guest-hint">
+                  Esta factura <strong>no está conectada con VeriFactu</strong>.
+                  Para activar el registro fiscal AEAT en todas tus facturas,{' '}
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('ha:open-auth', { detail: { view: 'register' } }))}
+                  >
+                    crea una cuenta gratis
+                  </button>
+                  .
+                </p>
+                <Button variant="secondary" onClick={onClose} disabled={generando}>
+                  <Pencil size={16} />
+                  Volver a editar
+                </Button>
+              </>
             )}
             <Button variant="primary" onClick={handleDescargar} disabled={generando}>
               {generando

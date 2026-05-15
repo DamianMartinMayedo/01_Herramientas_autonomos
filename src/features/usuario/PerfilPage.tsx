@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Save } from 'lucide-react'
 import { getEmpresa, saveEmpresa } from '../../lib/empresa'
 import { ConfiguracionPage } from './ConfiguracionPage'
+import { VerifactuTab } from './verifactu/VerifactuTab'
 import type { Empresa } from '../../types/empresa.types'
 import type { RegularClient } from '../../types/regularClient.types'
 
@@ -9,9 +10,10 @@ interface Props {
   userId: string
   clientes: RegularClient[]
   onClientsChange: (clients: RegularClient[]) => void
+  initialTab?: 'empresa' | 'clientes' | 'verifactu'
 }
 
-type Tab = 'empresa' | 'clientes'
+type Tab = 'empresa' | 'clientes' | 'verifactu'
 
 const EMPTY_EMPRESA: Empresa = {
   nombre: '', nif: '', email: '', direccion: '',
@@ -20,8 +22,8 @@ const EMPTY_EMPRESA: Empresa = {
 
 const EMPTY_ERRORS = { nombre: '', nif: '', email: '', direccion: '' }
 
-export function PerfilPage({ userId, clientes, onClientsChange }: Props) {
-  const [tab, setTab] = useState<Tab>('empresa')
+export function PerfilPage({ userId, clientes, onClientsChange, initialTab }: Props) {
+  const [tab, setTab] = useState<Tab>(initialTab ?? 'empresa')
 
   const [form, setForm] = useState<Empresa>(EMPTY_EMPRESA)
   const [errors, setErrors] = useState(EMPTY_ERRORS)
@@ -97,6 +99,12 @@ export function PerfilPage({ userId, clientes, onClientsChange }: Props) {
             onClick={() => setTab('clientes')}
           >
             Clientes habituales
+          </button>
+          <button
+            className={`filter-pill${tab === 'verifactu' ? ' active' : ''}`}
+            onClick={() => setTab('verifactu')}
+          >
+            VeriFactu
           </button>
         </div>
       </div>
@@ -218,6 +226,10 @@ export function PerfilPage({ userId, clientes, onClientsChange }: Props) {
 
       {tab === 'clientes' && (
         <ConfiguracionPage clientes={clientes} onClientsChange={onClientsChange} />
+      )}
+
+      {tab === 'verifactu' && (
+        <VerifactuTab userId={userId} onGoToEmpresa={() => setTab('empresa')} />
       )}
 
     </div>
