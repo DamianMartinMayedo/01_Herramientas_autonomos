@@ -24,7 +24,7 @@ export function PrivacidadPage() {
         </nav>
 
         <h1 className="hero-heading--page" style={{ marginBottom: 'var(--space-2)' }}>Política de privacidad</h1>
-        <p className="hero-sub--page" style={{ marginBottom: 'var(--space-8)' }}>Última actualización: mayo de 2026</p>
+        <p className="hero-sub--page" style={{ marginBottom: 'var(--space-8)' }}>Última actualización: 15 de mayo de 2026</p>
 
         <div className="blog-content">
           <h2>1. Responsable del tratamiento</h2>
@@ -37,6 +37,7 @@ export function PrivacidadPage() {
             <li><strong>Datos de registro:</strong> nombre, correo electrónico y contraseña cuando creas una cuenta de usuario.</li>
             <li><strong>Datos de documentos:</strong> información que introduces al crear facturas, presupuestos, contratos y otros documentos (datos de cliente, importes, etc.).</li>
             <li><strong>Datos de navegación:</strong> información técnica generada automáticamente durante tu uso de la web (dirección IP, tipo de navegador, páginas visitadas).</li>
+            <li><strong>Datos de pago y facturación:</strong> si contratas la suscripción Premium, recopilamos los datos necesarios para emitir factura (nombre o razón social, NIF, dirección fiscal) y para gestionar el cobro. <strong>No almacenamos los datos completos de tu tarjeta bancaria</strong>: el pago se procesa a través de una pasarela de pago externa que cumple con el estándar PCI-DSS y que actúa como encargado del tratamiento.</li>
           </ul>
 
           <h2>3. Finalidad del tratamiento</h2>
@@ -44,8 +45,9 @@ export function PrivacidadPage() {
           <ul>
             <li>Gestionar tu cuenta de usuario y proporcionarte acceso a las herramientas.</li>
             <li>Almacenar y gestionar los documentos que creas a través de la plataforma.</li>
+            <li>Gestionar el cobro de la suscripción Premium y emitir la factura correspondiente.</li>
             <li>Mejorar el funcionamiento y la experiencia de uso de la web.</li>
-            <li>Cumplir con las obligaciones legales aplicables.</li>
+            <li>Cumplir con las obligaciones legales aplicables (en particular, las obligaciones fiscales y contables, que exigen conservar las facturas durante el plazo legalmente previsto).</li>
           </ul>
 
           <h2>4. Base legal</h2>
@@ -59,9 +61,15 @@ export function PrivacidadPage() {
 
           <h2>5. Conservación de datos</h2>
           <p>Tus datos se conservarán mientras mantengas tu cuenta de usuario activa. Si decides eliminar tu cuenta, los datos asociados se eliminarán de nuestros sistemas en un plazo razonable, salvo que exista una obligación legal de conservación.</p>
+          <p>Los <strong>datos de facturación y los registros de pago</strong> de las suscripciones Premium se conservan durante el plazo exigido por la normativa fiscal y contable (mínimo 4 años, conforme al artículo 66 de la Ley General Tributaria), aun cuando elimines tu cuenta.</p>
 
           <h2>6. Destinatarios</h2>
-          <p>No se ceden datos a terceros salvo obligación legal o cuando sea necesario para la prestación del servicio (por ejemplo, proveedores de hosting y almacenamiento en la nube que actúan como encargados del tratamiento).</p>
+          <p>No se ceden datos a terceros salvo obligación legal o cuando sea necesario para la prestación del servicio. En particular, intervienen los siguientes encargados del tratamiento:</p>
+          <ul>
+            <li><strong>Proveedores de hosting y bases de datos en la nube</strong>, para el alojamiento del servicio y los documentos generados.</li>
+            <li><strong>Pasarela de pago</strong>, para el procesamiento de los pagos de la suscripción Premium. Estos proveedores actúan bajo sus propias políticas de privacidad y cumplen con los estándares de seguridad aplicables al sector (PCI-DSS).</li>
+            <li><strong>Proveedores de envío de correo transaccional</strong>, para confirmaciones, recuperación de contraseña y comunicaciones relacionadas con el servicio.</li>
+          </ul>
 
           <h2>7. Derechos del interesado</h2>
           <p>De acuerdo con el Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), tienes derecho a:</p>

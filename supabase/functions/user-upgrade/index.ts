@@ -37,15 +37,16 @@ Deno.serve(async (req: Request) => {
     { auth: { autoRefreshToken: false, persistSession: false } },
   )
 
-  const { data: profile, error: profileError } = await adminClient
-    .from('profiles')
-    .select('plan')
-    .eq('id', user.id)
-    .single()
+  // Validar que el plan premium existe y está activo
+  const { data: plan, error: planError } = await adminClient
+    .from('planes')
+    .select('id')
+    .eq('id', 'premium')
+    .eq('activo', true)
+    .maybeSingle()
 
-  if (profileError || !profile) return json({ error: 'Perfil no encontrado' }, 404)
-
-  if (profile.plan === 'premium') return json({ error: 'Ya tienes plan Premium' }, 400)
+  if (planError) return json({ error: 'Error al verificar plan' }, 500)
+  if (!plan) return json({ error: 'El plan Premium no está disponible en este momento' }, 410)
 
   // TODO: Integrar pasarela de pago (Stripe/PayPal) aquí.
   // Por ahora el upgrade es inmediato. En producción:
@@ -53,12 +54,18 @@ Deno.serve(async (req: Request) => {
   //   2. Devolver URL de redirección al frontend
   //   3. El webhook de Stripe confirmará el pago y actualizará profiles.plan
 
-  const { error: updateError } = await adminClient
+  // UPDATE condicional atómico: solo actualiza si el plan actual NO es premium.
+  // Previene race conditions (doble-click, requests simultáneos).
+  const { data: updated, error: updateError } = await adminClient
     .from('profiles')
     .update({ plan: 'premium', updated_at: new Date().toISOString() })
     .eq('id', user.id)
+    .neq('plan', 'premium')
+    .select('id')
+    .maybeSingle()
 
   if (updateError) return json({ error: updateError.message }, 400)
+  if (!updated) return json({ error: 'Ya tienes plan Premium' }, 409)
 
   return json({ plan: 'premium' }, 200)
 })

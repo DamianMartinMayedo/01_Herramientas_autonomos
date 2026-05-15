@@ -7,5 +7,6 @@ export interface PlanConfig {
   descuento_anual_pct: number
   dias_prueba: number
   descripcion: string | null
+  features: string[]
   activo: boolean
 }
