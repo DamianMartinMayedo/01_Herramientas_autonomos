@@ -15,6 +15,7 @@ import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
 import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send, Undo2, Info, ShieldCheck, ShieldOff } from 'lucide-react'
 import { useVerifactuStatus } from '../../hooks/useVerifactuStatus'
+import { useVerifactuRegistro } from '../../hooks/useVerifactuRegistro'
 import { EmailModal } from '../shared/EmailModal'
 import { AuthModal } from '../../features/auth/AuthModal'
 import { formatFecha } from '../../utils/formatters'
@@ -59,6 +60,7 @@ interface DocumentEngineProps {
   estadoAlbaran?: string
   defaultNumero?: string
   numero?: string | null
+  facturaId?: string | null
 }
 
 export function DocumentEngine({
@@ -84,6 +86,7 @@ export function DocumentEngine({
   estadoAlbaran,
   defaultNumero,
   numero,
+  facturaId,
 }: DocumentEngineProps) {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [finalizarModalAbierto, setFinalizarModalAbierto] = useState(false)
@@ -91,6 +94,7 @@ export function DocumentEngine({
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const verifactu = useVerifactuStatus()
+  const facturaRegistro = useVerifactuRegistro(tipo === 'factura' ? facturaId : null)
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
   }, [autoOpenPreview])
@@ -446,7 +450,9 @@ export function DocumentEngine({
         </div>
       </div>
 
-      {tipo === 'factura' && !verifactu.loading && (
+      {/* Banners VeriFactu — solo mientras se edita/crea la factura, no en modo solo-lectura.
+          Cuando la factura ya está emitida, mostramos un pill compacto más abajo. */}
+      {tipo === 'factura' && !verifactu.loading && !viewOnlyActions && (
         <>
           {!verifactu.authenticated && (
             <div className="warning-banner">
@@ -502,17 +508,27 @@ export function DocumentEngine({
                 <ShieldCheck size={20} className="success-banner-icon" />
                 <div>
                   <p className="warning-banner-title">
-                    Esta factura se registrará en VeriFactu al emitirla
+                    Esta factura se registrará con VeriFactu al emitirla
                   </p>
                   <p className="warning-banner-desc">
-                    Generaremos el XML, el QR de verificación AEAT y el hash encadenado
-                    automáticamente cuando la factura pase a estado emitida.
+                    En cuanto la emitas, generamos su justificante con QR de la AEAT y la dejamos
+                    registrada por ti, sin que tengas que hacer nada más.
                   </p>
                 </div>
               </div>
             </div>
           )}
         </>
+      )}
+
+      {/* Pill compacto cuando la factura emitida tiene un registro REAL en verifactu_registros.
+          No basta con que VeriFactu esté activo ahora: las facturas antiguas (anteriores
+          a la activación) no están registradas y no deben mostrar este indicador. */}
+      {tipo === 'factura' && viewOnlyActions && facturaRegistro.registered && (
+        <div className="verifactu-pill" title="Esta factura está registrada en VeriFactu">
+          <ShieldCheck size={14} />
+          <span>Registrada con VeriFactu</span>
+        </div>
       )}
 
       {viewOnlyActions && (

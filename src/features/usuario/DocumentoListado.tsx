@@ -6,11 +6,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useVerifactuStatus } from '../../hooks/useVerifactuStatus'
 import { supabase } from '../../lib/supabaseClient'
 import {
   Plus, FileText, Trash2, ExternalLink, CheckCircle2, Undo2, Send,
   Pencil, MoreHorizontal, Eye, Download, Copy, PenLine, Mail, X,
-  ArrowRight, Calculator, TrendingUp, Clock,
+  ArrowRight, Calculator, TrendingUp, Clock, ShieldCheck,
 } from 'lucide-react'
 import { EmailModal } from '../../components/shared/EmailModal'
 import { AlertModal } from '../../components/shared/AlertModal'
@@ -93,6 +94,7 @@ interface Props {
   onEnviarContrato?: (id: string) => Promise<void> | void
   onEnviarNda?: (id: string) => Promise<void> | void
   onEnviarReclamacion?: (id: string) => Promise<void> | void
+  onRegistrarVerifactu?: (id: string) => Promise<{ ok: boolean; alreadyRegistered?: boolean; error?: string }>
   onNavCalc?: (section: string) => void
   flashMessage?: string | null
 }
@@ -102,12 +104,17 @@ interface Props {
 export function DocumentoListado({
   tipo, refreshKey = 0, onCreate, onOpen, onView, onDescargar, onEmitir, onDuplicar, onCorregir,
   onEnviarPresupuesto, onAprobarPresupuesto, onConvertirAFactura,
-  onMarcarPresupuestoEntregado, onEnviarAlbaran, onEnviarContrato, onEnviarNda, onEnviarReclamacion, onNavCalc,
+  onMarcarPresupuestoEntregado, onEnviarAlbaran, onEnviarContrato, onEnviarNda, onEnviarReclamacion,
+  onRegistrarVerifactu, onNavCalc,
   flashMessage,
 }: Props) {
   const { user } = useAuth()
+  const verifactu = useVerifactuStatus()
   const cfg = TABLA_CONFIG[tipo]
   const [rows, setRows] = useState<DocRow[]>([])
+  // Set de facturas que tienen un registro 'alta' en verifactu_registros.
+  const [verifactuRegistradas, setVerifactuRegistradas] = useState<Set<string>>(new Set())
+  const [registrandoVerifactuId, setRegistrandoVerifactuId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null)
@@ -165,6 +172,44 @@ export function DocumentoListado({
     void fetchRows()
     return () => { active = false }
   }, [refreshKey, tipo, userId])
+
+  // Carga del set de facturas con registro VeriFactu (solo para tipo='facturas').
+  useEffect(() => {
+    if (!userId || tipo !== 'facturas') {
+      setVerifactuRegistradas(new Set())
+      return
+    }
+    let active = true
+    void supabase
+      .from('verifactu_registros')
+      .select('factura_id')
+      .eq('user_id', userId)
+      .eq('tipo_registro', 'alta')
+      .then(({ data }) => {
+        if (!active) return
+        const ids = (data ?? [])
+          .map((r) => (r as { factura_id: string | null }).factura_id)
+          .filter((id): id is string => !!id)
+        setVerifactuRegistradas(new Set(ids))
+      })
+    return () => { active = false }
+  }, [refreshKey, tipo, userId, registrandoVerifactuId])
+
+  const handleRegistrarVerifactu = async (id: string) => {
+    if (!onRegistrarVerifactu || registrandoVerifactuId) return
+    setRegistrandoVerifactuId(id)
+    const res = await onRegistrarVerifactu(id)
+    setRegistrandoVerifactuId(null)
+    if (res.ok) {
+      setVerifactuRegistradas((prev) => {
+        const next = new Set(prev)
+        next.add(id)
+        return next
+      })
+    } else if (res.error) {
+      setAlertState({ title: 'No se pudo registrar', msg: res.error, variant: 'warning' })
+    }
+  }
 
   const closeDropdown = () => { setDropdownOpenId(null); setDropdownPos(null) }
 
@@ -311,14 +356,35 @@ export function DocumentoListado({
     )
   }
 
+  const handleRowOpen = (row: DocRow) => {
+    // Borrador → editor. El resto → ver (read-only) si está disponible, si no editar.
+    const isBorrador = row.estado === 'borrador' || row.estado === 'pendiente'
+    if (isBorrador) {
+      onOpen?.(row.id)
+    } else if (onView) {
+      onView(row.id)
+    } else {
+      onOpen?.(row.id)
+    }
+  }
+
   const renderRowBase = (row: DocRow, actions: React.ReactNode, extraBadge?: React.ReactNode, overrideBadge?: React.ReactNode) => {
     const titulo  = row[cfg.campoTitulo] || ((tipo === 'contratos' || tipo === 'ndas' || tipo === 'reclamaciones') ? row.titulo : null) || '—'
     const cliente = row[cfg.campoSecundario] ?? '—'
     const precio  = cfg.campoPrecio ? row[cfg.campoPrecio] : null
     const fecha   = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES') : ''
 
+    const isFacturaRegistrada = tipo === 'facturas' && verifactuRegistradas.has(row.id)
+
+    const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+      // Ignora clicks que vienen del cell de acciones o del dropdown
+      const target = e.target as HTMLElement
+      if (target.closest('[data-row-actions]')) return
+      handleRowOpen(row)
+    }
+
     return (
-      <tr key={row.id} className="data-tr">
+      <tr key={row.id} className="data-tr data-tr--clickable" onClick={handleRowClick}>
         <td className="data-td" style={{ fontWeight: 600 }}>{titulo || 'Sin número'}</td>
         <td className="data-td" style={{ color: 'var(--color-text-muted)' }}>{cliente}</td>
         <td className="data-td data-td--meta">{fecha}</td>
@@ -333,9 +399,14 @@ export function DocumentoListado({
           <div className="status-cell">
             {overrideBadge ?? renderStatusBadge(row.estado ?? '')}
             {extraBadge}
+            {isFacturaRegistrada && (
+              <span className="verifactu-pill verifactu-pill--xs" title="Registrada en VeriFactu">
+                <ShieldCheck size={11} /> VeriFactu
+              </span>
+            )}
           </div>
         </td>
-        <td className="data-td-right">
+        <td className="data-td-right" data-row-actions>
           <div className="flex gap-2" style={{ justifyContent: 'flex-end' }}>
             {actions}
           </div>
@@ -958,6 +1029,12 @@ export function DocumentoListado({
         const row = rows.find(r => r.id === dropdownOpenId)
         if (!row) return null
 
+        const showRegistrarVerifactu = tipo === 'facturas'
+          && verifactu.enabled
+          && (row.estado === 'emitida' || row.estado === 'cobrada')
+          && !verifactuRegistradas.has(row.id)
+          && Boolean(onRegistrarVerifactu)
+
         const menuItems = tipo === 'facturas' ? (
           <>
             <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); onView?.(row.id) }}><Eye size={13} /> Ver</button>
@@ -971,6 +1048,19 @@ export function DocumentoListado({
               <button role="menuitem" className="dropdown-item" onClick={() => { closeDropdown(); void handleFacturaStatus(row.id, 'emitida') }}>
                 <Undo2 size={13} /> Marcar como no cobrada
               </button>
+            )}
+            {showRegistrarVerifactu && (
+              <>
+                <div className="dropdown-divider" />
+                <button
+                  role="menuitem"
+                  className="dropdown-item"
+                  disabled={registrandoVerifactuId === row.id}
+                  onClick={() => { closeDropdown(); void handleRegistrarVerifactu(row.id) }}
+                >
+                  <ShieldCheck size={13} /> {registrandoVerifactuId === row.id ? 'Registrando…' : 'Registrar en VeriFactu'}
+                </button>
+              </>
             )}
             {!row.datos_json?.esRectificativa && (
               <>

@@ -17,6 +17,7 @@ interface FacturaPageProps {
   viewOnlyActions?: { onRectificar: () => void; onMarcarCobrada: () => void; onDuplicar: () => void; estadoActual?: string }
   autoOpenPreview?: boolean
   numero?: string | null
+  facturaId?: string | null
 }
 
 export function FacturaPage(props: FacturaPageProps) {

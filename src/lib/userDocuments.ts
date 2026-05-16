@@ -4,6 +4,23 @@ import type { DocumentoBase, TotalesDocumento } from '../types/document.types'
 import type { ContratoServiciosDoc, LegalDoc, NdaDoc, ReclamacionPagoDoc } from '../types/legalDoc.types'
 import type { DocRow } from '../types/docRow.types'
 import { documentRegistry, type UserDocumentTable } from './documentRegistry'
+import { emitirRegistroFactura } from './verifactu'
+
+// Dispara el registro VeriFactu en segundo plano. Fire-and-forget:
+// si VeriFactu no está activado o falla, no bloqueamos la emisión de la factura.
+// La idempotencia está en la edge function (si ya hay registro 'alta', no duplica).
+function triggerVerifactuRegistro(facturaId: string | null | undefined): void {
+  if (!facturaId) return
+  void emitirRegistroFactura(facturaId).then((res) => {
+    if (!res.ok) {
+      // Casos esperados: VeriFactu no activado (silencioso) u otros errores recuperables
+      // que el usuario puede resolver desde la acción manual "Verificar con VeriFactu".
+      console.warn('[verifactu] registro automático no creado:', res.error)
+    }
+  }).catch((err) => {
+    console.warn('[verifactu] error inesperado en registro automático:', err)
+  })
+}
 
 export type { UserDocumentTable }
 
@@ -115,6 +132,11 @@ export async function saveBusinessDocument(params: {
   const payload = entry.buildPayload({ document, numero, finalizar, userId, id, totals })
   const result = await writeRowWithRetry({ table, id, payload })
 
+  // Hook VeriFactu: si la factura pasa a 'emitida', dispara el registro en background.
+  if (table === 'facturas' && finalizar && result.data?.id && !result.error) {
+    triggerVerifactuRegistro(result.data.id)
+  }
+
   return { ...result, numero: (payload.numero as string | null | undefined) ?? null }
 }
 
@@ -147,6 +169,9 @@ export async function emitirFactura(userId: string, id: string) {
     .from('facturas')
     .update({ numero, estado: 'emitida', datos_json: updatedDatosJson })
     .eq('id', id)
+
+  // Hook VeriFactu: factura recién emitida desde borrador
+  if (!updateError) triggerVerifactuRegistro(id)
 
   return { error: updateError, numero }
 }

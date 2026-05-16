@@ -217,6 +217,15 @@ export function UpgradeModal({ open, onClose }: Props) {
                 </span>
                 <span className="upgrade-price-period">{selectedPeriod}</span>
               </div>
+               {hasTrial && (
+              <div className="upgrade-trial-row">
+                <span>
+                  <strong>{premiumPlan!.dias_prueba} días gratis</strong>
+                  {' · Después '}
+                  {selectedPrice.toFixed(2).replace('.', ',')} €{selectedPeriod.replace(' ', '')}
+                </span>
+              </div>
+            )}
               {billing === 'anual' && (
                 <p className="upgrade-price-equiv">
                   Equivale a {equivalenteMensualAnual.toFixed(2).replace('.', ',')} €/mes
@@ -227,15 +236,7 @@ export function UpgradeModal({ open, onClose }: Props) {
               )}
             </div>
 
-            {hasTrial && (
-              <div className="upgrade-trial-row">
-                <span>
-                  <strong>{premiumPlan!.dias_prueba} días gratis</strong>
-                  {' · Después '}
-                  {selectedPrice.toFixed(2).replace('.', ',')} €{selectedPeriod.replace(' ', '')}
-                </span>
-              </div>
-            )}
+           
 
             {features.length > 0 && (
               <ul className="upgrade-features-list">
@@ -248,14 +249,6 @@ export function UpgradeModal({ open, onClose }: Props) {
               </ul>
             )}
 
-            <div className="upgrade-payment-methods" aria-label="Métodos de pago aceptados">
-              <ShieldCheck size={14} className="upgrade-payment-secure-icon" aria-hidden="true" />
-              <span className="upgrade-payment-secure-text">Pago seguro</span>
-              <span className="upgrade-payment-method">VISA</span>
-              <span className="upgrade-payment-method">MC</span>
-              <span className="upgrade-payment-method">AMEX</span>
-              <span className="upgrade-payment-method">Pay</span>
-            </div>
 
             <button
               ref={primaryActionRef}
@@ -266,6 +259,14 @@ export function UpgradeModal({ open, onClose }: Props) {
               {ctaLabel}
             </button>
 
+            <div className="upgrade-payment-methods" aria-label="Métodos de pago aceptados">
+              <ShieldCheck size={14} className="upgrade-payment-secure-icon" aria-hidden="true" />
+              <span >Pago seguro: VISA, MC, AMEX, PAY</span>
+              {/* <span >VISA</span>
+              <span >MC</span>
+              <span >AMEX</span>
+              <span >Pay</span> */}
+            </div>
             <p className="upgrade-legal">
               Renovación automática · Cancela cuando quieras · IVA incluido.
               <br />

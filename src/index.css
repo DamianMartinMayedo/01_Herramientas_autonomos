@@ -89,6 +89,7 @@
   --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
   --text-2xl:  clamp(2rem,     1.2rem  + 2.5vw,  3.5rem);
   --text-3xl:  clamp(2.5rem,   1rem    + 4vw,    5rem);
+ 
 
   /* ── Espaciado ── */
   --space-1:  0.25rem;
@@ -1592,6 +1593,32 @@ body {
   gap: var(--space-2);
   align-items: flex-start;
 }
+
+/* Pill compacto para factura emitida con VeriFactu */
+.verifactu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px var(--space-3);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color: var(--color-success);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  width: fit-content;
+  margin: var(--space-4) var(--space-6) 0;
+}
+.dark .verifactu-pill {
+  background: color-mix(in srgb, var(--color-success) 22%, transparent);
+}
+
+/* Variante mini para usar dentro de status-cell de la tabla */
+.verifactu-pill--xs {
+  margin: 0;
+  padding: 2px 6px;
+  font-size: 10px;
+  gap: 3px;
+}
 .verifactu-inline-link {
   background: none;
   border: none;
@@ -1958,6 +1985,11 @@ body {
 .data-td       { padding: var(--space-4); }
 .data-td-right { padding: var(--space-4); text-align: right; }
 .data-tr       { border-bottom: 1px solid var(--color-border); }
+.data-tr--clickable { cursor: pointer; transition: background-color 0.12s; }
+.data-tr--clickable:hover { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
+.dark .data-tr--clickable:hover { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+/* Cualquier botón/icono dentro del cell de acciones no debe heredar el cursor pointer del row */
+.data-tr--clickable [data-row-actions] { cursor: default; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    FILTER PILLS — filtros tipo pill para listas
@@ -3439,25 +3471,59 @@ body {
 }
 .verifactu-feature-list li svg { color: var(--color-gold); flex-shrink: 0; }
 
-/* ── Estado "configurado" ── */
-.verifactu-config-header {
+/* ── Estado "configurado" — cabecera con switch maestro y lista de info ── */
+.verifactu-active-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
   margin-bottom: var(--space-4);
-  flex-wrap: wrap;
 }
-.verifactu-config-status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
+.verifactu-active-header-text { min-width: 0; }
+.verifactu-active-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
 }
-.verifactu-config-mode {
+.verifactu-active-sub {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+  margin-top: 2px;
 }
+
+.verifactu-info-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+.verifactu-info-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.verifactu-info-row:last-child { border-bottom: none; }
+.verifactu-info-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.verifactu-info-value {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .verifactu-config-actions {
   display: flex;
   gap: var(--space-2);
@@ -3706,7 +3772,7 @@ body {
 }
 .upgrade-price-value {
   font-family: var(--font-display);
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
   font-weight: 800;
   color: var(--color-text);
 }
@@ -3798,7 +3864,7 @@ body {
 .upgrade-btn-full {
   width: 100%;
   justify-content: center;
-  margin-top: var(--space-6);
+  margin-top: auto;
 }
 .upgrade-state-title {
   font-size: var(--text-base);
@@ -3824,7 +3890,7 @@ body {
   flex-direction: column;
 }
 .upgrade-modal--payment {
-  min-height: 540px;
+  min-height: 570px;
   padding: var(--space-6);
 }
 
@@ -3948,8 +4014,7 @@ body {
   color: var(--color-success);
 }
 
-/* Métodos de pago — placeholder hasta integrar Stripe.
-   margin-top:auto empuja métodos + CTA + legal al fondo del modal. */
+/* Métodos de pago — placeholder hasta integrar Stripe. */
 .upgrade-payment-methods {
   display: flex;
   align-items: center;
@@ -3958,7 +4023,7 @@ body {
   flex-wrap: wrap;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  margin-top: auto;
+  margin-top: var(--space-2);
 }
 .upgrade-payment-secure-icon { color: var(--color-success); }
 .upgrade-payment-secure-text { font-weight: 500; margin-right: var(--space-1); }

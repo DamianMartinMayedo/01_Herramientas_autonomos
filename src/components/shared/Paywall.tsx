@@ -22,7 +22,6 @@ interface PaywallProps {
 }
 
 export function PaywallCard({ reason, toolName }: PaywallProps) {
-  const navigate = useNavigate()
   const isLogin = reason === 'login'
   const [upgradeOpen, setUpgradeOpen] = useState(false)
 
@@ -50,7 +49,7 @@ export function PaywallCard({ reason, toolName }: PaywallProps) {
         <p className="paywall-body">
           {isLogin
             ? 'Esta herramienta requiere una cuenta gratuita: así puedes guardar tus documentos, mantener la numeración consecutiva y activar VeriFactu (registro fiscal de la AEAT) cuando lo necesites.'
-            : 'Activa el plan Premium para acceder a esta herramienta y a todas las funcionalidades avanzadas: contratos, NDAs, reclamaciones de pago y más.'
+            : 'Activa el plan Premium para desbloquear todas las funcionalidades Premium presentes y futuras.'
           }
         </p>
 
@@ -69,9 +68,7 @@ export function PaywallCard({ reason, toolName }: PaywallProps) {
               <button className="btn btn-warning" onClick={() => setUpgradeOpen(true)}>
                 <Crown size={14} /> Actualizar a Premium
               </button>
-              <button className="btn btn-secondary" onClick={() => navigate('/usuario')}>
-                Volver al dashboard
-              </button>
+              
             </>
           )}
         </div>

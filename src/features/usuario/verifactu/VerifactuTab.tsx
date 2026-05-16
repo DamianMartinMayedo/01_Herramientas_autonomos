@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
-  ShieldCheck, ShieldOff, AlertTriangle, FileKey, RefreshCw, Loader2, Sparkles,
+  ShieldCheck, AlertTriangle, FileKey, Loader2, Sparkles,
 } from 'lucide-react'
 import { getEmpresa } from '../../../lib/empresa'
-import { getVerifactuConfig, disableVerifactu } from '../../../lib/verifactu'
+import {
+  getVerifactuConfig,
+  disableVerifactu,
+  enableVerifactu,
+  nombreTitularFromSubject,
+  autoridadFromIssuer,
+  formatFechaCaducidad,
+} from '../../../lib/verifactu'
 import type { Empresa } from '../../../types/empresa.types'
 import type { VerifactuConfig } from '../../../types/verifactu.types'
 import { VerifactuWizard } from './VerifactuWizard'
@@ -16,13 +23,16 @@ interface Props {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 
+type WizardOpen = false | { initialStep: 1 | 2 | 3 | 4 }
+
 export function VerifactuTab({ userId, onGoToEmpresa }: Props) {
   const [empresa, setEmpresa] = useState<Empresa | null>(null)
   const [config, setConfig] = useState<VerifactuConfig | null>(null)
   const [loading, setLoading] = useState(true)
-  const [wizardOpen, setWizardOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState<WizardOpen>(false)
   const [confirmDisableOpen, setConfirmDisableOpen] = useState(false)
-  const [disabling, setDisabling] = useState(false)
+  const [toggling, setToggling] = useState(false)
+  const [toggleError, setToggleError] = useState<string | null>(null)
 
   const reload = async () => {
     setLoading(true)
@@ -40,12 +50,38 @@ export function VerifactuTab({ userId, onGoToEmpresa }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
-  const handleDisable = async () => {
-    setDisabling(true)
-    await disableVerifactu()
-    setDisabling(false)
-    setConfirmDisableOpen(false)
+  const handleEnable = async () => {
+    setToggling(true)
+    setToggleError(null)
+    const res = await enableVerifactu()
+    setToggling(false)
+    if (!res.ok) {
+      setToggleError(res.error ?? 'No se pudo activar VeriFactu')
+      return
+    }
     await reload()
+  }
+
+  const handleDisableConfirm = async () => {
+    setToggling(true)
+    setToggleError(null)
+    const res = await disableVerifactu()
+    setToggling(false)
+    setConfirmDisableOpen(false)
+    if (!res.ok) {
+      setToggleError(res.error ?? 'No se pudo desactivar VeriFactu')
+      return
+    }
+    await reload()
+  }
+
+  const handleToggleClick = () => {
+    if (toggling) return
+    if (config?.enabled) {
+      setConfirmDisableOpen(true)
+    } else {
+      void handleEnable()
+    }
   }
 
   if (loading) {
@@ -57,74 +93,123 @@ export function VerifactuTab({ userId, onGoToEmpresa }: Props) {
     )
   }
 
-  const isConfigured = Boolean(config?.enabled && config?.cert_storage_path)
+  // Estado: hay configuración guardada con certificado (independiente de enabled).
+  const hasConfig = Boolean(config?.cert_storage_path)
+  const isEnabled = Boolean(config?.enabled && hasConfig)
+
+  const nifMismatch = empresa?.nif && config?.nif_titular
+    && empresa.nif.trim().toUpperCase().replace(/[\s.-]/g, '') !==
+       config.nif_titular.trim().toUpperCase().replace(/[\s.-]/g, '')
 
   return (
     <div className="verifactu-tab">
 
-      {!isConfigured && (
+      {/* ── Estado 1: sin configurar nunca ─────────────────────────────── */}
+      {!hasConfig && (
         <div className="card card-raised">
           <div className="verifactu-empty">
             <div className="verifactu-empty-icon">
               <ShieldCheck size={28} />
             </div>
-            <h2 className="verifactu-empty-title">VeriFactu no está activado</h2>
+            <h2 className="verifactu-empty-title">VeriFactu no está configurado</h2>
             <p className="verifactu-empty-body">
               VeriFactu es el sistema de la AEAT para registrar facturas electrónicamente.
               Aún <strong>no es obligatorio</strong>, pero configurarlo ahora deja todo listo
               para cuando lo sea — y añade un QR de verificación a cada factura que emitas.
             </p>
             <ul className="verifactu-feature-list">
-              <li><Sparkles size={14} /> Generamos el XML y QR de cada factura automáticamente.</li>
+              <li><Sparkles size={14} /> Generamos el justificante y el QR de cada factura automáticamente.</li>
               <li><Sparkles size={14} /> Tus facturas anteriores no se tocan: la cadena empieza desde la activación.</li>
-              <li><Sparkles size={14} /> Puedes desactivarlo en cualquier momento; los registros se conservan.</li>
+              <li><Sparkles size={14} /> Puedes desactivarlo y reactivarlo cuando quieras sin volver a subir el certificado.</li>
             </ul>
-            <button className="btn btn-primary" onClick={() => setWizardOpen(true)}>
+            <button className="btn btn-primary" onClick={() => setWizardOpen({ initialStep: 1 })}>
               <FileKey size={14} /> Configurar VeriFactu
             </button>
           </div>
         </div>
       )}
 
-      {isConfigured && config && (
+      {/* ── Estado 2 y 3: configuración guardada (activada o desactivada) ── */}
+      {hasConfig && config && (
         <div className="card card-raised">
-          <div className="verifactu-config-header">
-            <div className="verifactu-config-status">
-              <span className="badge badge-success">
-                <ShieldCheck size={12} /> Activado
+
+          {/* Cabecera con switch maestro */}
+          <div className="verifactu-active-header">
+            <div className="verifactu-active-header-text">
+              <h2 className="verifactu-active-title">
+                {isEnabled ? 'VeriFactu está activado' : 'VeriFactu está desactivado'}
+              </h2>
+              <p className="verifactu-active-sub">
+                {isEnabled
+                  ? 'Tus facturas se registran automáticamente al emitirlas.'
+                  : 'Tu configuración sigue guardada. Actívalo cuando quieras y empezará a aplicarse a tus nuevas facturas.'}
+              </p>
+            </div>
+            <label className={`plan-switch${isEnabled ? ' is-on' : ''}${toggling ? ' is-busy' : ''}`}>
+              <input
+                type="checkbox"
+                role="switch"
+                checked={isEnabled}
+                disabled={toggling}
+                onChange={handleToggleClick}
+                aria-label={isEnabled ? 'Desactivar VeriFactu' : 'Activar VeriFactu'}
+              />
+              <span className="plan-switch-track" aria-hidden="true">
+                <span className="plan-switch-thumb" />
               </span>
-              <span className="verifactu-config-mode">
-                {config.modo === 'no_verificable' ? 'Modo: No verificable' : 'Modo: VeriFactu (tiempo real)'}
-                {' · '}
-                {config.entorno === 'test' ? 'Entorno: Pruebas' : 'Entorno: Producción'}
+              <span className="plan-switch-text">{isEnabled ? 'Activo' : 'Inactivo'}</span>
+            </label>
+          </div>
+
+          {toggleError && (
+            <div className="error-box" style={{ marginBottom: 'var(--space-3)' }}>
+              <AlertTriangle size={16} className="error-box-icon" />
+              <span>{toggleError}</span>
+            </div>
+          )}
+
+          {nifMismatch && (
+            <div className="error-box" style={{ marginBottom: 'var(--space-3)' }}>
+              <AlertTriangle size={16} className="error-box-icon" />
+              <span>
+                El NIF del certificado ({config.nif_titular}) ya no coincide con el de tu empresa
+                ({empresa?.nif}).{' '}
+                <button type="button" className="verifactu-inline-link" onClick={onGoToEmpresa}>
+                  Revisar empresa
+                </button>{' '}
+                o reemplaza el certificado.
               </span>
             </div>
-          </div>
+          )}
 
-          <div className="verifactu-data-summary">
-            <SummaryRow label="NIF titular" value={config.nif_titular} mismatch={
-              empresa?.nif && config.nif_titular && empresa.nif.trim().toUpperCase() !== config.nif_titular.trim().toUpperCase()
-                ? 'El NIF actual de tu empresa no coincide con el del certificado. Reemplaza el certificado.'
-                : undefined
-            } />
-            <SummaryRow label="Emisor" value={config.cert_issuer} />
-            <SummaryRow label="Nº de serie" value={config.cert_serial} />
-            <SummaryRow
-              label="Caducidad"
-              value={config.cert_expires_at ? new Date(config.cert_expires_at).toLocaleDateString('es-ES') : null}
-              expiresIn={config.cert_expires_at ? daysUntil(config.cert_expires_at) : null}
+          {/* Lista de datos del certificado en lenguaje claro */}
+          <dl className="verifactu-info-list">
+            <InfoRow label="Titular del certificado" value={nombreTitularFromSubject(config.cert_subject)} />
+            <InfoRow label="NIF" value={config.nif_titular ?? '—'} />
+            <InfoRow label="Autoridad emisora" value={autoridadFromIssuer(config.cert_issuer)} />
+            <InfoRow
+              label="Caduca el"
+              value={formatFechaCaducidad(config.cert_expires_at)}
+              caducidad={config.cert_expires_at ? daysUntil(config.cert_expires_at) : null}
             />
-          </div>
+            <InfoRow
+              label="Dónde se registran"
+              value={config.modo === 'no_verificable'
+                ? 'Solo en tu cuenta (justificante con QR)'
+                : 'Conectado con la AEAT'}
+            />
+            <InfoRow
+              label="Entorno"
+              value={config.entorno === 'test' ? 'En pruebas' : 'Real'}
+            />
+          </dl>
 
           <div className="verifactu-config-actions">
-            <button className="btn btn-secondary btn-sm" onClick={() => setWizardOpen(true)}>
-              <RefreshCw size={14} /> Reemplazar certificado
-            </button>
             <button
-              className="btn btn-danger btn-sm"
-              onClick={() => setConfirmDisableOpen(true)}
+              className="btn btn-secondary btn-sm"
+              onClick={() => setWizardOpen({ initialStep: 2 })}
             >
-              <ShieldOff size={14} /> Desactivar VeriFactu
+              <FileKey size={14} /> Reemplazar certificado
             </button>
           </div>
         </div>
@@ -133,6 +218,7 @@ export function VerifactuTab({ userId, onGoToEmpresa }: Props) {
       {wizardOpen && (
         <VerifactuWizard
           empresa={empresa}
+          initialStep={wizardOpen.initialStep}
           onClose={() => setWizardOpen(false)}
           onSaved={() => {
             setWizardOpen(false)
@@ -149,13 +235,13 @@ export function VerifactuTab({ userId, onGoToEmpresa }: Props) {
         <ConfirmModal
           title="Desactivar VeriFactu"
           description={
-            disabling
+            toggling
               ? 'Desactivando…'
-              : 'Las facturas que emitas a partir de ahora no llevarán registro VeriFactu. Los registros anteriores se conservan (obligación legal). Puedes reactivar más adelante.'
+              : 'Las facturas que emitas a partir de ahora no llevarán registro VeriFactu. Tu configuración y certificado quedan guardados — puedes reactivar cuando quieras sin volver a subir nada.'
           }
           confirmLabel="Desactivar"
           confirmVariant="danger"
-          onConfirm={() => { void handleDisable() }}
+          onConfirm={() => { void handleDisableConfirm() }}
           onCancel={() => setConfirmDisableOpen(false)}
         />
       )}
@@ -168,24 +254,23 @@ function daysUntil(iso: string): number {
   return Math.floor((new Date(iso).getTime() - Date.now()) / MS_PER_DAY)
 }
 
-function SummaryRow({
-  label, value, mismatch, expiresIn,
+function InfoRow({
+  label, value, caducidad,
 }: {
   label: string
-  value?: string | null
-  mismatch?: string
-  expiresIn?: number | null
+  value: string
+  caducidad?: number | null
 }) {
-  const expiresSoon = typeof expiresIn === 'number' && expiresIn < 30 && expiresIn > 0
-  const expired = typeof expiresIn === 'number' && expiresIn <= 0
+  const expiresSoon = typeof caducidad === 'number' && caducidad < 30 && caducidad > 0
+  const expired = typeof caducidad === 'number' && caducidad <= 0
   return (
-    <div className="verifactu-summary-row">
-      <span className="verifactu-summary-label">{label}</span>
-      <span className="verifactu-summary-value">
-        {value?.trim() || '—'}
+    <div className="verifactu-info-row">
+      <dt className="verifactu-info-label">{label}</dt>
+      <dd className="verifactu-info-value">
+        <span>{value}</span>
         {expiresSoon && (
           <span className="badge badge-gold" style={{ marginLeft: 'var(--space-2)' }}>
-            Caduca en {expiresIn} días
+            En {caducidad} días
           </span>
         )}
         {expired && (
@@ -193,12 +278,7 @@ function SummaryRow({
             <AlertTriangle size={11} /> Caducado
           </span>
         )}
-      </span>
-      {mismatch && (
-        <span className="verifactu-summary-hint verifactu-summary-hint--error">
-          <AlertTriangle size={12} /> {mismatch}
-        </span>
-      )}
+      </dd>
     </div>
   )
 }

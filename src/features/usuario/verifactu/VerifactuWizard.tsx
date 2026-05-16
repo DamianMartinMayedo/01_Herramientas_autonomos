@@ -6,7 +6,13 @@ import type {
   VerifactuEntorno,
   VerifactuModo,
 } from '../../../types/verifactu.types'
-import { validateCertificate, saveVerifactuConfig } from '../../../lib/verifactu'
+import {
+  validateCertificate,
+  saveVerifactuConfig,
+  nombreTitularFromSubject,
+  autoridadFromIssuer,
+  formatFechaCaducidad,
+} from '../../../lib/verifactu'
 import { validarNif } from '../../../utils/validarNif'
 
 interface Props {
@@ -14,14 +20,24 @@ interface Props {
   onClose: () => void
   onSaved: () => void
   onGoToEmpresa: () => void
+  initialStep?: Step
 }
 
 type Step = 1 | 2 | 3 | 4
 
 const STEP_LABELS = ['Datos fiscales', 'Certificado', 'Modo', 'Confirmación']
 
-export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Props) {
-  const [step, setStep] = useState<Step>(1)
+const MODO_LABEL: Record<VerifactuModo, string> = {
+  no_verificable: 'Solo en mi cuenta',
+  veri_factu: 'Conectado con la AEAT',
+}
+const ENTORNO_LABEL: Record<VerifactuEntorno, string> = {
+  test: 'En pruebas',
+  produccion: 'Real',
+}
+
+export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa, initialStep }: Props) {
+  const [step, setStep] = useState<Step>(initialStep ?? 1)
 
   // Paso 2 — certificado
   const [certFile, setCertFile] = useState<File | null>(null)
@@ -202,14 +218,10 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
                     <strong>Certificado verificado correctamente</strong>
                   </div>
                   <div className="verifactu-data-summary" style={{ marginTop: 'var(--space-2)' }}>
-                    <SummaryRow label="Titular" value={metadata.cert_subject} />
-                    <SummaryRow label="NIF titular" value={metadata.nif_titular} />
-                    <SummaryRow label="Emisor" value={metadata.cert_issuer} />
-                    <SummaryRow label="Nº de serie" value={metadata.cert_serial} />
-                    <SummaryRow
-                      label="Caducidad"
-                      value={new Date(metadata.cert_expires_at).toLocaleDateString('es-ES')}
-                    />
+                    <SummaryRow label="Titular" value={nombreTitularFromSubject(metadata.cert_subject)} />
+                    <SummaryRow label="NIF" value={metadata.nif_titular} />
+                    <SummaryRow label="Autoridad emisora" value={autoridadFromIssuer(metadata.cert_issuer)} />
+                    <SummaryRow label="Caduca el" value={formatFechaCaducidad(metadata.cert_expires_at)} />
                   </div>
                 </div>
               )}
@@ -220,58 +232,55 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
             <>
               <p className="modal-body-text">
                 {metadata
-                  ? 'Certificado validado correctamente. Elige cómo quieres que funcione VeriFactu.'
-                  : 'Aún no has validado el certificado. Puedes revisar las opciones, pero tendrás que volver al paso 2 antes de activar.'}
+                  ? 'Tu certificado ya está verificado. Ahora elige cómo quieres usar VeriFactu.'
+                  : 'Aún no has verificado el certificado. Puedes revisar las opciones, pero tendrás que volver al paso anterior antes de activar.'}
               </p>
 
               <div className="verifactu-data-summary">
-                <SummaryRow label="Titular" value={metadata?.cert_subject ?? 'Pendiente de validar'} />
-                <SummaryRow label="Emisor" value={metadata?.cert_issuer ?? '—'} />
-                <SummaryRow
-                  label="Caduca"
-                  value={metadata ? new Date(metadata.cert_expires_at).toLocaleDateString('es-ES') : '—'}
-                />
+                <SummaryRow label="Titular" value={metadata ? nombreTitularFromSubject(metadata.cert_subject) : 'Pendiente de verificar'} />
+                <SummaryRow label="NIF" value={metadata?.nif_titular ?? '—'} />
+                <SummaryRow label="Caduca el" value={metadata ? formatFechaCaducidad(metadata.cert_expires_at) : '—'} />
               </div>
 
               <div className="verifactu-fieldset-grid">
                 <fieldset className="verifactu-fieldset">
-                  <legend className="verifactu-fieldset-legend">Modo de registro</legend>
+                  <legend className="verifactu-fieldset-legend">¿Dónde se registran tus facturas?</legend>
                   <RadioRow
                     name="modo"
                     value="no_verificable"
                     checked={modo === 'no_verificable'}
                     onChange={() => setModo('no_verificable')}
-                    title="No verificable"
-                    description="XML y QR locales, sin envío a AEAT. Recomendado para empezar."
+                    title="Solo en mi cuenta"
+                    description="Guardamos cada factura con su QR y justificante, listos por si Hacienda los pide. Recomendado para empezar."
                   />
                   <RadioRow
                     name="modo"
                     value="veri_factu"
                     checked={modo === 'veri_factu'}
                     onChange={() => setModo('veri_factu')}
-                    title="VeriFactu (tiempo real)"
-                    description="Próximamente. Envío a AEAT al emitir."
+                    title="Conectado con la AEAT"
+                    description="Próximamente. Enviaremos cada factura a Hacienda al emitirla."
                     disabled
                   />
                 </fieldset>
 
                 <fieldset className="verifactu-fieldset">
-                  <legend className="verifactu-fieldset-legend">Entorno AEAT</legend>
+                  <legend className="verifactu-fieldset-legend">¿En qué entorno trabajamos?</legend>
                   <RadioRow
                     name="entorno"
                     value="test"
                     checked={entorno === 'test'}
                     onChange={() => setEntorno('test')}
-                    title="Pruebas (preproducción)"
-                    description="QR de cotejo de pruebas."
+                    title="En pruebas"
+                    description="El QR enlaza con la zona de pruebas de la AEAT. Ideal mientras verificas el flujo."
                   />
                   <RadioRow
                     name="entorno"
                     value="produccion"
                     checked={entorno === 'produccion'}
                     onChange={() => setEntorno('produccion')}
-                    title="Producción"
-                    description="QR de cotejo real de la AEAT."
+                    title="Real"
+                    description="El QR enlaza con la AEAT real. Úsalo cuando ya estés listo para producción."
                   />
                 </fieldset>
               </div>
@@ -296,13 +305,11 @@ export function VerifactuWizard({ empresa, onClose, onSaved, onGoToEmpresa }: Pr
               )}
 
               <div className="verifactu-data-summary">
-                <SummaryRow label="NIF titular" value={metadata?.nif_titular ?? empresa?.nif ?? '—'} />
-                <SummaryRow label="Modo" value={modo === 'no_verificable' ? 'No verificable' : 'VeriFactu (tiempo real)'} />
-                <SummaryRow label="Entorno" value={entorno === 'test' ? 'Pruebas (preproducción)' : 'Producción'} />
-                <SummaryRow
-                  label="Caducidad cert."
-                  value={metadata ? new Date(metadata.cert_expires_at).toLocaleDateString('es-ES') : '—'}
-                />
+                <SummaryRow label="Titular" value={metadata ? nombreTitularFromSubject(metadata.cert_subject) : (empresa?.nombre ?? '—')} />
+                <SummaryRow label="NIF" value={metadata?.nif_titular ?? empresa?.nif ?? '—'} />
+                <SummaryRow label="Modo" value={MODO_LABEL[modo]} />
+                <SummaryRow label="Entorno" value={ENTORNO_LABEL[entorno]} />
+                <SummaryRow label="Caduca el" value={metadata ? formatFechaCaducidad(metadata.cert_expires_at) : '—'} />
               </div>
 
               <label className="verifactu-legal-check">

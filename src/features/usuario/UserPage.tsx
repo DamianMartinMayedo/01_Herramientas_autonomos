@@ -27,6 +27,7 @@ import { ContratoPage } from '../contrato/ContratoPage'
 import { NdaPage } from '../nda/NdaPage'
 import { ReclamacionPage } from '../reclamacion/ReclamacionPage'
 import { getStoredUserDocument, saveBusinessDocument, saveLegalDocument, emitirFactura, duplicarFactura, corregirFactura, marcarFacturaCobrada, marcarFacturaEmitida, enviarPresupuesto, aprobarPresupuesto, convertirPresupuestoAFactura, enviarAlbaran, marcarPresupuestoEntregado, enviarContrato, enviarNda, enviarReclamacion, type UserDocumentTable } from '../../lib/userDocuments'
+import { emitirRegistroFactura } from '../../lib/verifactu'
 import { listRegularClients, createRegularClient } from '../../lib/regularClients'
 import { getEmpresa } from '../../lib/empresa'
 import { OnboardingEmpresaModal } from './OnboardingEmpresaModal'
@@ -567,6 +568,7 @@ export function UserPage() {
           onEnviarContrato={(id) => { void handleEnviarContratoDesdeListado(id) }}
           onEnviarNda={(id) => { void handleEnviarNdaDesdeListado(id) }}
           onEnviarReclamacion={(id) => { void handleEnviarReclamacionDesdeListado(id) }}
+          onRegistrarVerifactu={(id) => emitirRegistroFactura(id)}
           onNavCalc={(s) => { setCalcOrigin(section as UserSection); setSearchParams({ s }) }}
           flashMessage={flashMessage}
         />
@@ -584,6 +586,7 @@ export function UserPage() {
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
+          facturaId={editorId ?? null}
           onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('facturas', document, totals, editorId, finalizar)}
           saving={saving}
           clientes={clientesDisponibles}
