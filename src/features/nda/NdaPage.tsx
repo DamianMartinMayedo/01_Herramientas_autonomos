@@ -58,17 +58,40 @@ function FormParte({
   prefix,
   register,
   errors,
+  clientes,
+  selectedClientId,
+  onClienteSelect,
 }: {
   titulo: string
   prefix: 'parteA' | 'parteB'
   register: RegisterFn
   errors: ErrorsObj
+  clientes?: RegularClient[]
+  selectedClientId?: string
+  onClienteSelect?: (id: string) => void
 }) {
   const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, FieldError>>
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
       <div className="fieldset-v3-body">
+        {prefix === 'parteB' && clientes && clientes.length > 0 && onClienteSelect && (
+          <div className="input-group">
+            <label className="input-label">Cliente frecuente</label>
+            <select
+              className="select-v3"
+              value={selectedClientId}
+              onChange={(e) => onClienteSelect(e.target.value)}
+            >
+              <option value="">Selecciona un cliente guardado</option>
+              {clientes.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
@@ -166,7 +189,7 @@ export function NdaPage({
         onEmail={onEmailNda}
         estadoDoc={estadoNda}
         autoOpenPreview={autoOpenPreview}
-      renderForm={({ register, getValues, errors }) => {
+      renderForm={({ register, getValues, errors, clientes, selectedClientId, onClienteSelect }) => {
         const reg = register as RegisterFn
         const err = errors as unknown as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, FieldError | undefined>
@@ -236,6 +259,9 @@ export function NdaPage({
               prefix="parteB"
               register={reg}
               errors={err}
+              clientes={clientes}
+              selectedClientId={selectedClientId}
+              onClienteSelect={onClienteSelect}
             />
 
             {/* Contenido del NDA */}

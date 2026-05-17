@@ -8,7 +8,7 @@ import { useAdminFetch, adminPatch } from '../hooks/useAdminFetch'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { HerramientaEditor } from './herramientas/HerramientaEditor'
 import { activationTexts, visibilityTexts, emptyConfirm } from '../utils/modalTexts'
-import { ToggleLeft, ToggleRight, Pencil, CheckCircle, AlertTriangle, Clock, Eye, EyeOff, Crown, Loader2 } from 'lucide-react'
+import { Pencil, Eye, EyeOff, Crown, Loader2 } from 'lucide-react'
 import type { Herramienta, HerramientaEstado } from '../../../types/herramienta'
 
 type ModalTarget = { herramienta: Herramienta; accion: 'visibilidad' | 'activacion' } | null
@@ -20,12 +20,6 @@ const CATEGORIA_LABELS: Record<string, string> = {
 }
 
 interface ApiPayload { herramientas: Herramienta[] }
-
-const ESTADO_ICON: Record<HerramientaEstado, { Icon: typeof CheckCircle; cls: string }> = {
-  active:      { Icon: CheckCircle, cls: 'text-success' },
-  maintenance: { Icon: AlertTriangle, cls: 'text-faint' },
-  coming_soon: { Icon: Clock,       cls: 'text-faint' },
-}
 
 const ESTADO_LABEL: Record<HerramientaEstado, string> = {
   active: 'Activa',
@@ -122,57 +116,60 @@ export function HerramientasSection() {
               const oculta = h.visible === false
               const premium = h.plan_required === 'premium'
               const isActive = h.estado === 'active'
-              const { Icon, cls } = ESTADO_ICON[h.estado]
               return (
                 <div key={h.id} className={`h-card${isActive ? '' : ' h-card--inactive'}`}>
                   {premium && <span className="h-card--premium-badge"><span className="badge badge-gold badge-xs"><Crown size={9} /> Premium</span></span>}
 
-                  <div>
-                    <Icon size={20} className={cls} />
+                  <div className="h-card-main">
+                    <div className="min-w-0 flex-1">
+                      <span className={`h-name${oculta ? ' h-name--hidden' : ''}`}>{h.nombre}</span>
+                      <div className="flex items-center flex-wrap gap-1 mt-1">
+                        {!premium && !h.anon_available && <span className="badge badge-primary badge-xs">Registro</span>}
+                        {oculta && <span className="badge badge-muted badge-xs">Oculta</span>}
+                      </div>
+                      <p className="h-desc">{h.descripcion}</p>
+                      <div className="h-meta">
+                        <span className="h-meta-item h-meta-item--mono">{h.ruta}</span>
+                      </div>
+                    </div>
+
+                    <label className={`plan-switch${isActive ? ' is-on' : ''}${busy ? ' is-busy' : ''}`}>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={isActive}
+                        disabled={busy}
+                        onChange={() => setModalTarget({ herramienta: h, accion: 'activacion' })}
+                        aria-label={isActive ? 'Desactivar herramienta' : 'Activar herramienta'}
+                      />
+                      <span className="plan-switch-track" aria-hidden="true">
+                        <span className="plan-switch-thumb" />
+                      </span>
+                    </label>
                   </div>
 
-                  <div className="min-w-0 w-full">
-                    <span className={`h-name${oculta ? ' h-name--hidden' : ''}`}>{h.nombre}</span>
-                    <div className="flex items-center flex-wrap gap-1 mt-1">
-                      {!premium && !h.anon_available && <span className="badge badge-primary badge-xs">Registro</span>}
-                      {oculta && <span className="badge badge-muted badge-xs">Oculta</span>}
+                  <div className="h-card-footer">
+                    <div className="flex items-center gap-2">
+                      <button
+                        title={oculta ? 'Mostrar en Home' : 'Ocultar en Home'}
+                        onClick={() => setModalTarget({ herramienta: h, accion: 'visibilidad' })}
+                        className={`icon-btn ${oculta ? 'icon-btn--eye-off' : 'icon-btn--eye-on'}`}
+                        disabled={busy}
+                      >
+                        {oculta ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+
+                      <button
+                        onClick={() => setEditing(h)}
+                        className="icon-btn icon-btn--primary"
+                        title="Editar"
+                        disabled={busy}
+                      >
+                        <Pencil size={13} />
+                      </button>
                     </div>
-                    <p className="h-desc">{h.descripcion}</p>
-                    <div className="h-meta">
-                      <span className="h-meta-item h-meta-item--mono">{h.ruta}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      title={oculta ? 'Mostrar en Home' : 'Ocultar en Home'}
-                      onClick={() => setModalTarget({ herramienta: h, accion: 'visibilidad' })}
-                      className={`icon-btn ${oculta ? 'icon-btn--eye-off' : 'icon-btn--eye-on'}`}
-                      disabled={busy}
-                    >
-                      {oculta ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-
-                    <button
-                      onClick={() => setEditing(h)}
-                      className="icon-btn icon-btn--primary"
-                      title="Editar"
-                      disabled={busy}
-                    >
-                      <Pencil size={13} />
-                    </button>
-
-                    <button
-                      onClick={() => setModalTarget({ herramienta: h, accion: 'activacion' })}
-                      title={isActive ? 'Desactivar herramienta' : 'Activar herramienta'}
-                      className={`toggle-btn ${isActive ? 'toggle-btn--active' : 'toggle-btn--inactive'}`}
-                      disabled={busy}
-                    >
-                      {isActive
-                        ? <><ToggleRight size={15} /> Activa</>
-                        : <><ToggleLeft  size={15} /> {ESTADO_LABEL[h.estado]}</>
-                      }
-                    </button>
+                    <span className="h-card-status">{isActive ? 'Activa' : ESTADO_LABEL[h.estado]}</span>
                   </div>
                 </div>
               )

@@ -11,7 +11,7 @@ import { supabase } from '../../lib/supabaseClient'
 import {
   Plus, FileText, Trash2, ExternalLink, CheckCircle2, Undo2, Send,
   Pencil, MoreHorizontal, Eye, Download, Copy, PenLine, Mail, X,
-  ArrowRight, Calculator, TrendingUp, Clock, ShieldCheck,
+  ArrowRight, Calculator, TrendingUp, Clock, ShieldCheck, Stamp,
 } from 'lucide-react'
 import { EmailModal } from '../../components/shared/EmailModal'
 import { AlertModal } from '../../components/shared/AlertModal'
@@ -40,11 +40,20 @@ interface TablaConfig {
   campoSecundario: string
   campoPrecio?: string
   routeCrear: string
+  descripcion: string
 }
 
 const TABLA_CONFIG: Record<TipoDocumento, TablaConfig> = Object.fromEntries(
   (Object.keys(documentRegistry) as TipoDocumento[]).map((tipo) => {
     const entry = documentRegistry[tipo]
+    const descripciones: Record<TipoDocumento, string> = {
+      facturas: 'Documentos de cobro con registro VeriFactu',
+      presupuestos: 'Estimaciones profesionales para tus clientes',
+      albaranes: 'Justificantes de entrega de mercancías',
+      contratos: 'Contratos de prestación de servicios',
+      ndas: 'Acuerdos de confidencialidad unilaterales o bilaterales',
+      reclamaciones: 'Cartas de reclamación de pago profesionales',
+    }
     return [tipo, {
       label: entry.label.plural,
       labelSingular: entry.label.singular,
@@ -53,6 +62,7 @@ const TABLA_CONFIG: Record<TipoDocumento, TablaConfig> = Object.fromEntries(
       campoSecundario: entry.listado.campoSecundario,
       campoPrecio: entry.listado.campoPrecio,
       routeCrear: entry.routePath,
+      descripcion: descripciones[tipo] ?? '',
     }]
   }),
 ) as Record<TipoDocumento, TablaConfig>
@@ -439,7 +449,7 @@ export function DocumentoListado({
           className="icon-btn icon-btn--primary"
           onClick={() => setEmitirConfirmId(row.id)}
         >
-          <Send size={13} />
+          <Stamp size={13} />
         </button>
       )}
       <button
@@ -644,7 +654,7 @@ export function DocumentoListado({
         <div>
           <h1 className="section-title">{cfg.label}</h1>
           <p className="section-sub" style={{ marginTop: 2 }}>
-            {loading ? 'Cargando…' : `${rows.length} ${rows.length === 1 ? cfg.labelSingular : cfg.label.toLowerCase()}`}
+            {loading ? 'Cargando…' : cfg.descripcion}
           </p>
         </div>
         <button
@@ -1242,7 +1252,7 @@ export function DocumentoListado({
               <div
                 className="icon-box icon-box-md icon-box--primary"
               >
-                <Send size={18} />
+                <Stamp size={18} />
               </div>
               <h2 className="admin-modal-title">Emitir factura</h2>
               <button onClick={() => setEmitirConfirmId(null)} className="modal-close-btn" aria-label="Cerrar">
@@ -1266,7 +1276,7 @@ export function DocumentoListado({
                   setEmitirConfirmId(null)
                 }}
               >
-                <Send size={15} /> Emitir factura
+                <Stamp size={15} /> Emitir factura
               </button>
             </div>
           </div>

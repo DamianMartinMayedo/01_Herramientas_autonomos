@@ -60,17 +60,40 @@ function FormParte({
   prefix,
   register,
   errors,
+  clientes,
+  selectedClientId,
+  onClienteSelect,
 }: {
   titulo: string
   prefix: 'acreedor' | 'deudor'
   register: RegisterFn
   errors: ErrorsObj
+  clientes?: RegularClient[]
+  selectedClientId?: string
+  onClienteSelect?: (id: string) => void
 }) {
   const e = (errors[prefix] ?? {}) as Partial<Record<keyof ParteLegal, FieldError>>
   return (
     <fieldset className="fieldset-v3">
       <legend className="fieldset-legend">{titulo}</legend>
       <div className="fieldset-v3-body">
+        {prefix === 'deudor' && clientes && clientes.length > 0 && onClienteSelect && (
+          <div className="input-group">
+            <label className="input-label">Cliente frecuente</label>
+            <select
+              className="select-v3"
+              value={selectedClientId}
+              onChange={(e) => onClienteSelect(e.target.value)}
+            >
+              <option value="">Selecciona un cliente guardado</option>
+              {clientes.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <FormField
           label="Nombre / Razón social *"
           {...register(`${prefix}.nombre`, { required: 'Obligatorio' })}
@@ -166,7 +189,7 @@ export function ReclamacionPage({
         onEmail={onEmailReclamacion}
         estadoDoc={estadoReclamacion}
         autoOpenPreview={autoOpenPreview}
-      renderForm={({ register, getValues, errors, watch, setValue }) => {
+      renderForm={({ register, getValues, errors, watch, setValue, clientes, selectedClientId, onClienteSelect }) => {
         const reg = register as RegisterFn
         const err = errors as unknown as ErrorsObj
         const metaErr = (err['metadatos'] ?? {}) as Record<string, FieldError | undefined>
@@ -185,6 +208,9 @@ export function ReclamacionPage({
             userId={userId}
             watch={w}
             setValue={sv}
+            clientes={clientes}
+            selectedClientId={selectedClientId}
+            onClienteSelect={onClienteSelect}
           />
         )
       }}
@@ -205,6 +231,9 @@ function ReclamacionFormFields({
   userId,
   watch,
   setValue,
+  clientes,
+  selectedClientId,
+  onClienteSelect,
 }: {
   reg: RegisterFn
   err: ErrorsObj
@@ -215,6 +244,9 @@ function ReclamacionFormFields({
   userId: ReclamacionPageProps['userId']
   watch: UseFormWatch<ReclamacionPagoDoc>
   setValue: UseFormSetValue<ReclamacionPagoDoc>
+  clientes?: RegularClient[]
+  selectedClientId?: string
+  onClienteSelect?: (id: string) => void
 }) {
   const [facturasOptions, setFacturasOptions] = useState<DocRow[]>([])
   const [selectedFacturaId, setSelectedFacturaId] = useState('')
@@ -336,7 +368,7 @@ function ReclamacionFormFields({
 
       {/* Partes */}
       <FormParte titulo="Acreedor (tú — quien reclama)" prefix="acreedor" register={reg} errors={err} />
-      <FormParte titulo="Deudor (quien debe pagar)" prefix="deudor" register={reg} errors={err} />
+      <FormParte titulo="Deudor (quien debe pagar)" prefix="deudor" register={reg} errors={err} clientes={clientes} selectedClientId={selectedClientId} onClienteSelect={onClienteSelect} />
 
       {/* Datos de la deuda */}
       <fieldset className="fieldset-v3">

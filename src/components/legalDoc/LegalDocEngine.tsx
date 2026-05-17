@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch, type DefaultValues, type Path, type PathValue } from 'react-hook-form'
 import { ChevronLeft, Save, CheckCircle2, Mail, Download } from 'lucide-react'
 import type { LegalDoc, ParteLegal, TipoLegalDoc } from '../../types/legalDoc.types'
-import type { SaveResult } from '../../types/document.types'
+import type { SaveResult, EmisorInfo } from '../../types/document.types'
 import { LegalDocModal } from './LegalDocModal'
 import { LegalDocPreview } from './LegalDocPreview'
 import { DocActionsBar, type DocAction } from '../document/DocActionsBar'
@@ -42,6 +42,10 @@ export interface FormHelpers<T extends LegalDoc> {
   getValues: ReturnType<typeof useForm<T>>['getValues']
   errors: ReturnType<typeof useForm<T>>['formState']['errors']
   setValue: ReturnType<typeof useForm<T>>['setValue']
+  clientes?: RegularClient[]
+  selectedClientId?: string
+  onClienteSelect?: (id: string) => void
+  clienteField?: 'cliente' | 'parteB' | 'deudor'
 }
 
 const sectionLabelStyle: React.CSSProperties = {
@@ -214,7 +218,7 @@ export function LegalDocEngine<T extends LegalDoc>({
         (values as Partial<Record<'prestador' | 'parteA' | 'acreedor', unknown>>).acreedor
 
       if (source) {
-        setEmisorGuardado(source as Record<string, string>)
+        setEmisorGuardado(source as EmisorInfo)
       }
     }, 1000)
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
@@ -246,6 +250,10 @@ export function LegalDocEngine<T extends LegalDoc>({
     getValues,
     errors,
     setValue,
+    clientes,
+    selectedClientId,
+    onClienteSelect: handleSeleccionCliente,
+    clienteField,
   }
 
   return (
@@ -330,25 +338,28 @@ export function LegalDocEngine<T extends LegalDoc>({
             if (onSave) {
               list.push({
                 id: 'guardar',
-                label: saving ? 'Guardando...' : 'Guardar documento',
+                label: saving ? 'Guardando...' : 'Guardar',
                 Icon: Save,
                 onClick: handleGuardarDocumento,
                 disabled: saving,
               })
             }
+
+            list.push({
+              id: 'descargar', label: 'Descargar', Icon: Download,
+              onClick: handleExportar,
+            })
+
             if (onEmail) {
               list.push({
                 id: 'enviar',
                 label: estadoDoc && estadoDoc !== 'borrador' ? 'Reenviar' : 'Enviar por correo',
                 Icon: Mail,
+                variant: 'primary',
                 onClick: handleEnviarEmail,
                 disabled: saving,
               })
             }
-            list.push({
-              id: 'exportar', label: 'Exportar', Icon: Download,
-              variant: 'primary', onClick: handleExportar,
-            })
 
             return list.filter(Boolean) as DocAction[]
           })()} />
@@ -364,29 +375,6 @@ export function LegalDocEngine<T extends LegalDoc>({
         margin: '0 auto',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-          {clientes.length > 0 && clienteField && (
-            <fieldset className="fieldset-v3">
-              <legend className="fieldset-legend">Cliente frecuente</legend>
-              <div className="fieldset-v3-body">
-                <div className="input-group">
-                  <label className="input-label">Selecciona un cliente guardado</label>
-                  <select
-                    className="select-v3"
-                    value={selectedClientId}
-                    onChange={(event) => handleSeleccionCliente(event.target.value)}
-                  >
-                    <option value="">Selecciona un cliente guardado</option>
-                    {clientes.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </fieldset>
-          )}
-
           {renderForm(helpers)}
         </div>
 

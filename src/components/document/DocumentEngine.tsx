@@ -26,9 +26,9 @@ import { regularClientToClienteInfo } from '../../types/regularClient.types'
 import type { Empresa } from '../../types/empresa.types'
 
 const TITULO_ENCABEZADO: Record<DocumentoBase['tipo'], string> = {
-  factura: 'Encabezado de factura',
-  presupuesto: 'Encabezado de presupuesto',
-  albaran: 'Encabezado de albarán',
+  factura: 'Fechas',
+  presupuesto: 'Fechas',
+  albaran: 'Fechas',
 }
 
 interface ViewOnlyActions {
