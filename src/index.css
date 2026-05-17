@@ -1,4 +1,5 @@
 @import './features/auth/auth.css';
+@import './styles/responsive/_index.css';
 
 /* ── Dark mode via clase .dark en el html/body ── */
 
@@ -208,6 +209,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color-scheme: light;
+  overflow-x: clip;
 }
 html.dark, html[data-theme="dark"] { color-scheme: dark; }
 
@@ -229,6 +231,7 @@ body {
   color: var(--color-text);
   background: var(--color-bg);
   line-height: 1.6;
+  overflow-x: clip;
   transition: background var(--transition-slow), color var(--transition-slow);
 }
 
@@ -653,9 +656,8 @@ body {
   content: '';
   position: absolute;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
+  left: 0;
+  right: 0;
   border-top: 1px solid var(--color-divider);
 }
 .site-footer-legal {
@@ -1397,7 +1399,7 @@ body {
 
 .show-lg { display: none; }
 @media (min-width: 1024px) { .show-lg { display: flex; } }
-@media (max-width: 1023px) { .hide-lg { display: none; } }
+@media (min-width: 1024px) { .hide-lg { display: none; } }
 
 .show-xl { display: none; }
 @media (min-width: 1280px) { .show-xl { display: flex; } }
@@ -1618,6 +1620,13 @@ body {
   padding: 2px 6px;
   font-size: 10px;
   gap: 3px;
+}
+
+/* Variante inline para colocar el pill al lado del número de factura (sin margen) */
+.verifactu-pill--inline {
+  margin: 0;
+  padding: 3px 10px;
+  font-size: var(--text-xs);
 }
 .verifactu-inline-link {
   background: none;
@@ -1985,10 +1994,13 @@ body {
 .data-td       { padding: var(--space-4); }
 .data-td-right { padding: var(--space-4); text-align: right; }
 .data-tr       { border-bottom: 1px solid var(--color-border); }
-.data-tr--clickable { cursor: pointer; transition: background-color 0.12s; }
-.data-tr--clickable:hover { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
-.dark .data-tr--clickable:hover { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
-/* Cualquier botón/icono dentro del cell de acciones no debe heredar el cursor pointer del row */
+/* Patrón estándar para filas clicables (alineado con .user-tr-clickable del admin).
+   Usar en cualquier <tr> que abra detalle/edición al hacer click. */
+.data-tr--clickable,
+.user-tr-clickable { cursor: pointer; transition: background-color 0.12s; }
+.data-tr--clickable:hover,
+.user-tr-clickable:hover { background: var(--color-surface-offset); }
+/* Las celdas con acciones (botones, dropdowns) no heredan el cursor del row */
 .data-tr--clickable [data-row-actions] { cursor: default; }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -2250,6 +2262,29 @@ body {
 .sidebar-footer-btn--danger             { color: var(--color-error); }
 .sidebar-footer-btn--danger:hover       { color: var(--color-error); background: var(--color-surface-offset); }
 
+/* Enlaces legales discretos al final del sidebar (RGPD / términos). */
+.sidebar-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-3) 0;
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+.sidebar-legal-links a {
+  color: var(--color-text-faint);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.sidebar-legal-links a:hover {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    ADMIN TOPBAR — barra superior del panel de administración
 ══════════════════════════════════════════════════════════════════════════ */
@@ -2259,7 +2294,7 @@ body {
   z-index: 30;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-divider);
@@ -2313,7 +2348,31 @@ body {
   z-index: 50;
   display: flex;
 }
-.mobile-drawer-backdrop { flex: 1; background: rgba(0,0,0,0.4); }
+.mobile-drawer-backdrop {
+  flex: 1;
+  background: rgba(0,0,0,0.45);
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+.mobile-drawer > div:first-child {
+  transform: translateX(-100%);
+  transition: transform 260ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.mobile-drawer.is-open .mobile-drawer-backdrop {
+  opacity: 1;
+}
+.mobile-drawer.is-open > div:first-child {
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer-backdrop,
+  .mobile-drawer > div:first-child {
+    transition: none;
+  }
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    USER SIDEBAR HEADER — cabecera del sidebar de usuario con avatar
@@ -2879,8 +2938,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--pill-color);
-  background: color-mix(in oklch, var(--pill-color) 12%, var(--color-surface-2));
-  border: 1px solid color-mix(in oklch, var(--pill-color) 30%, var(--color-border));
+  /* Mezcla en srgb (no oklch): la interpolación de hue en oklch entre un color
+     croma alto y un blanco-cálido neutro puede caer en hue verde por arco
+     corto. srgb mezcla lineal RGB y da el tinte esperado. */
+  background: color-mix(in srgb, var(--pill-color) 12%, var(--color-surface-2));
+  border: 1px solid color-mix(in srgb, var(--pill-color) 30%, var(--color-border));
   border-radius: var(--radius-full);
   padding: 1px 7px;
 }
@@ -3069,7 +3131,13 @@ body {
 .admin-layout-sidebar      { position: sticky; top: 0; align-self: flex-start; height: 100vh; }
 .admin-layout-content      { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; }
 .admin-layout-main         { flex: 1; padding: var(--space-8); }
-.admin-mobile-drawer-panel { height: 100vh; }
+.admin-mobile-drawer-panel {
+  height: 100dvh;        /* respeta barras dinámicas del navegador móvil */
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 /* Topbar interno: hamburguesa + spacer */
 .admin-topbar-left  { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
@@ -3345,8 +3413,7 @@ body {
 .btn-link-sm:hover { text-decoration: underline; }
 
 /* ─── Admin Usuarios ─────────────────────────────────────── */
-.user-tr-clickable { cursor: pointer; }
-.user-tr-clickable:hover { background: var(--color-surface-offset); }
+/* .user-tr-clickable se define junto con .data-tr--clickable como patrón unificado de filas clicables */
 
 /* Filas clave/valor en cards de cuenta/empresa */
 .user-data-row {

@@ -37,20 +37,100 @@ src/
 
 Antes de escribir `style={{}}` pregúntate: *¿este valor cambia entre renders?* Si no → va en una clase CSS.
 
-| Elemento | Clase(s) |
-|---|---|
-| Botón | `.btn` + `.btn-{primary/secondary/ghost/danger/success}` + `.btn-sm` |
-| Card | `.card` + `.card-raised/.no-pad/.interactive` + `.card-accent-{primary/success/copper/purple/teal/gold}` |
-| Input | `.input-group` → `.input-label` + `.input-v3` + `.input-hint` |
-| Modal admin | `.overlay.overlay-dark.overlay-z200` + `.admin-modal-box.admin-modal-{sm/md/lg}` |
-| Modal estándar | `.overlay.overlay-dark.overlay-z60` + `.modal-box.modal-{sm/lg}` |
-| Badge | `.badge` + `.badge-{primary/success/copper/purple/teal/gold/error/muted}` |
-| Pill de estado | `.status-pill` + `.status-pill--{gold/error}` (color custom: `style={{ '--pill-color': X } as React.CSSProperties}`) |
-| Empty state | `.empty-state` + `.empty-state--xl` |
-| Calculadora | `.calc-card-pad`, `.calc-grid` + `.calc-grid--{2/3/2-min0}`, `.calc-result--{copper/teal/purple}`, `.tool-icon-box--{copper/teal/purple}` |
-| Listado de docs | `.filter-row`, `.list-empty-msg`, `.pagination-row`, `.status-cell`, `.data-td--meta`, `.data-td-right--strong` |
+### Clases fundamentales del sistema
 
-Tokens en `src/index.css`: `--color-*`, `--font-*`, `--text-*`, `--space-*`, `--radius-*`, `--transition`. Para inventario completo de clases → `/css-guide`.
+| Necesito… | Clase(s) |
+|---|---|
+| Botón principal | `btn btn-primary` |
+| Botón secundario | `btn btn-secondary` |
+| Botón peligro | `btn btn-danger` |
+| Botón éxito | `btn btn-success` |
+| Botón aviso (gold) | `btn btn-warning` |
+| Botón cobre | `btn btn-copper` |
+| Botón fantasma (texto + hover sutil) | `btn btn-ghost` |
+| Botón blanco sobre fondo azul | `btn btn-white` |
+| Botón blanco sobre fondo cobre | `btn btn-white-copper` |
+| Botón confirmación (color dinámico) | `btn btn-confirm` (con `--confirm-bg`, `--confirm-border`, `--confirm-color`, `--confirm-shadow`, `--confirm-hover-bg`) |
+| Botón pequeño | añadir `btn-sm` |
+| Botón grande | añadir `btn-lg` |
+| Botón centrado | añadir `btn-center` |
+| Icono de acción 32px | `icon-btn` |
+| Icono con hover rojo | `icon-btn icon-btn--danger` |
+| Icono con hover verde | `icon-btn icon-btn--success` |
+| Icono con hover azul | `icon-btn icon-btn--primary` |
+| Icono con hover dorado | `icon-btn icon-btn--gold` |
+| Card base | `card` |
+| Card con sombra (4px) | `card card-raised` |
+| Card con sombra ligera (3px) | `card card-raised-sm` |
+| Card con padding reducido | `card card-sm` |
+| Card sin padding (tabla) | `card card-no-pad` |
+| Card en flex-col con gap | `card card-flex` |
+| Card interactiva (hover lift) | añadir `card-interactive` |
+| Card desactivada | añadir `card-disabled` |
+| Card con acento de color | añadir `card-accent-{primary/success/copper/purple/teal/gold}` |
+| Modal admin (borde brutal) | `overlay overlay-dark overlay-z200` + `admin-modal-box admin-modal-{sm/md/lg}` |
+| Modal estándar (preview) | `overlay overlay-dark overlay-z60` + `modal-box modal-{sm/lg}` |
+| Cerrar modal | `modal-close-btn` |
+| Dropdown de acciones (wrapper + caja) | `dropdown-wrap` + `dropdown-menu` (portal + `position:fixed`) |
+| Item del dropdown | `dropdown-item` (+ `dropdown-item--danger` para destructivo) |
+| Separador entre grupos del dropdown | `dropdown-divider` |
+| Input | `input-group` > `input-label` + `input-v3` + `input-hint` |
+| Input con error | añadir `is-error` + `input-error-msg` |
+| Estado vacío | `empty-state` (o `empty-state--xl`) |
+| Tabla de datos | `data-table` + `data-thead-row` + `data-th/td/tr` |
+| Toggle activo/inactivo | `toggle-btn toggle-btn--active` / `toggle-btn--inactive` |
+| Pill de filtro | `filter-pill` (`.active` cuando seleccionado) |
+| Badge | `badge badge-{primary/success/muted/gold/error…}` |
+| Pill de estado (color custom) | `status-pill` + `status-pill--{gold/error}` (color custom: `style={{ '--pill-color': X } as React.CSSProperties}`) |
+| Spinner | `spinner spinner-md spinner-primary` |
+| Link sin decoración | `link-block` |
+| Fila de documento usuario | `doc-row` + `doc-row-title` + `doc-row-meta` + `doc-row-price` |
+| Calculadora | `calc-card-pad`, `calc-grid` + `calc-grid--{2/3/2-min0}`, `calc-result--{copper/teal/purple}`, `tool-icon-box--{copper/teal/purple}` |
+| Listado de docs | `filter-row`, `list-empty-msg`, `pagination-row`, `status-cell`, `data-td--meta`, `data-td-right--strong` |
+
+Tokens en `src/index.css`: `--color-*`, `--font-*`, `--text-*`, `--space-*`, `--radius-*`, `--transition`.
+
+> **Inventario exhaustivo de clases con ejemplos JSX → [CSS-GUIDE.md](CSS-GUIDE.md)** (lectura obligatoria antes de escribir nuevas clases o tocar componentes con estilos no triviales).
+
+### Checklist antes de entregar código con estilos
+
+- [ ] Cada `style={{}}` tiene justificación de valor dinámico
+- [ ] Botones usan `.btn` con variante
+- [ ] Iconos de acción usan `.icon-btn` con modificador de color
+- [ ] Modales usan `.overlay` + `.admin-modal-box` o `.modal-box`
+- [ ] Dropdowns de acciones usan `.dropdown-menu`/`.dropdown-item` portalizados a `document.body` con `position: fixed` (nunca dropdowns inline con `position: absolute`)
+- [ ] Inputs usan `.input-group` + `.input-v3`
+- [ ] Estados vacíos usan `.empty-state`
+- [ ] Nuevas clases añadidas usan tokens `var(--color-*)`, `var(--space-*)`, nunca hex ni px hardcodeados
+- [ ] Si toco un componente que se ve sobre fondo oscuro, verifiqué en dark mode que iconos, sombras y bordes son visibles
+
+### Modo oscuro — comportamiento
+
+El toggle dark/light vive en Zustand (`src/store/themeStore.ts`); `App.tsx` aplica clase `.dark` y atributo `data-theme="dark"` en `<html>`. Casi todo el CSS funciona automáticamente porque los tokens cambian de valor entre `:root, [data-theme="light"]` y `.dark, [data-theme="dark"]`.
+
+Reglas que importan al escribir CSS:
+
+- **Hovers de botón en dark NO cambian background.** El efecto "lift" lo da `box-shadow` (3px → 5px) + `transform: translate(-2px, -2px)`. Si tu botón nuevo define `:hover { background: ... }` para light, en dark queda neutralizado por overrides genéricos en `index.css`.
+- **`color-scheme: light/dark`** se aplica al `<html>` automáticamente. Iconos nativos del navegador (calendario en `<input type="date">`, time pickers) se invierten solos en dark.
+- **Tokens nuevos disponibles:** `--color-error-hover`, `--color-error-active`, `--color-error-subtle` (en ambos modos).
+- **Tokens que NO existen** y suelen causar iconos negros: `--color-blue`, `--color-warning`, `--color-orange`. Usar paleta principal (`--color-primary`, `--color-gold`, `--color-copper`).
+
+Cuándo añadir override explícito `[data-theme="dark"] .mi-clase`:
+
+- SVG en data-URI con stroke/fill hardcoded (chevron de `.select-v3`).
+- Sombras `rgba(0,0,0,...)` que se pierden sobre fondo oscuro (`.modal-box`, `.tooltip-content`, `.doc-flash`) — añadir ring blanco tenue + sombra negra profunda.
+- Background sólido cuyo token claro pierde fuerza como botón (`.btn-danger` usa rojo saturado `#DA3D3D` en dark).
+- Botones blancos sobre fondos de COLOR (`.btn-white`, `.btn-white-copper`) deben mantenerse `#FFFFFF` siempre — no usar `var(--color-white)` que en dark se oscurece.
+
+### Tablas Supabase — GRANTs obligatorios (regla activa desde mayo 2026)
+
+Toda tabla nueva en `public` **debe incluir GRANTs explícitos** o PostgREST devuelve error `42501`. La plantilla `supabase/migrations/_TEMPLATE_nueva_tabla_documental.sql` ya los incluye. No omitirlos al copiar la plantilla.
+
+```sql
+GRANT SELECT                             ON public.<tabla> TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE     ON public.<tabla> TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE     ON public.<tabla> TO service_role;
+```
 
 ## Guests vs Registrados
 - **Guest**: rutas públicas (`/factura`, `/presupuesto`, `/albaran`, `/contrato`, `/nda`, `/reclamacion-pago`). Sin numeración consecutive — número fijo pre-rellenado editable.
@@ -131,6 +211,104 @@ El tipo `Database` vive en `src/types/database.types.ts` y se **regenera** desde
 2. NO `style={{}}` para estilos estáticos
 3. NO commits主动性 — esperar que el usuario lo pida
 4. Verificar `tsc --noEmit` antes de entregar cambios de tipos
+
+## Responsive — reglas obligatorias para cualquier herramienta nueva
+
+Toda página, formulario, tabla o modal nuevo DEBE pasar este checklist antes de entregarse. **Ningún componente que rompa este checklist se considera completo**, da igual lo bien que se vea en desktop.
+
+### Breakpoints estándar (NO inventar otros valores)
+
+| Token (en `breakpoints.css`) | Valor | Uso típico |
+|---|---|---|
+| `--bp-mobile` | 480px | Phones. Botones colapsan a icono, modales fullscreen. |
+| (excepción) | 640px | Tablas → cards apiladas, filter-pills con scroll horizontal. |
+| `--bp-tablet` | 768px | Tablet portrait. Grids 2/3-col → 1-col. |
+| `--bp-desktop` | 1024px | Tablet landscape / desktop. Sidebars cambian de fijo a drawer. |
+| `--bp-wide` | 1280px | Desktop wide. Preview del motor de documentos lado a lado. |
+
+CSS no soporta `var()` dentro de `@media` en navegadores actuales, así que los breakpoints son **tokens documentales**: úsalos siempre como referencia y escribe los números reales en `@media (max-width: 480px)` etc. **NO usar otros valores** (ej. 500px, 720px, 850px).
+
+### Arquitectura CSS
+
+Los estilos responsive viven en `src/styles/responsive/`, con un archivo por dominio:
+
+```
+src/styles/responsive/
+├── _index.css         ← punto de entrada (importado desde src/index.css)
+├── breakpoints.css    ← tokens --bp-*
+├── typography.css     ← clamp() para hero, section-title, calc-result-value
+├── layout.css         ← refuerzos de shell público
+├── headers.css        ← site-header, doc-listado-header, footer 4→2→1 col
+├── tables.css         ← patrón data-table → cards
+├── forms.css          ← calc-grid--2/3, form-row-1-2, clientes-layout
+├── modals.css         ← admin-modal-box y modal-box fullscreen ≤480px
+├── filter-pills.css   ← scroll horizontal con scroll-snap
+└── buttons.css        ← btn-responsive (icono-only ≤480px)
+```
+
+Reglas para añadir nuevos estilos responsive:
+- Si el dominio existe → añadir al archivo correspondiente.
+- Si es un dominio nuevo → crear `src/styles/responsive/<dominio>.css` y referenciarlo en `_index.css`.
+- **Nunca** añadir media queries directamente en `src/index.css`.
+
+### Checklist obligatorio
+
+- [ ] Probado a **360px** (móvil pequeño), **768px** (tablet portrait) y **1280px** (desktop).
+- [ ] Ningún elemento desborda horizontalmente. `body` siempre con `overflow-x: hidden`.
+- [ ] Las **tablas** usan `<table className="data-table data-table--responsive">` y cada `<td>` lleva `data-label="…"`. Columnas no esenciales en móvil → `data-hide-mobile`. La celda con dropdown/acciones → `data-actions`.
+- [ ] Los **formularios** usan `form-row`, `form-row-1-2`, `calc-grid--2`, `calc-grid--3`. Colapsan a 1 columna automáticamente: no añadas media queries propias para esto.
+- [ ] Los **CTAs principales** (Nuevo, Crear, Guardar) usan `btn btn-primary btn-responsive` con `<span className="btn-text">…</span>` y `aria-label`. El texto se oculta a ≤640px, queda solo el icono.
+- [ ] Las **barras de acciones** de una vista de detalle (Rectificar, Cobrada, Enviar, Duplicar, Descargar…) usan el componente `<DocActionsBar actions={[…]} />` ([src/components/document/DocActionsBar.tsx](src/components/document/DocActionsBar.tsx)). En desktop renderiza inline; en ≤1024px colapsa a un único botón "Opciones" con dropdown. **Nunca** dejar 3+ botones inline en el header de un documento.
+- [ ] Los botones **Descargar** y **Enviar por correo** de cualquier documento NO factura (presupuesto, albarán, contrato, NDA, reclamación) deben llamar `ensureSavedThen('descargando' | 'enviando', after)` ([DocumentEngine.tsx](src/components/document/DocumentEngine.tsx) y [LegalDocEngine.tsx](src/components/legalDoc/LegalDocEngine.tsx)). Este helper auto-guarda el documento, asigna número vía `next_document_number` y propaga el número al form con `setValue` antes de ejecutar la acción. El `onSave` debe respetar el contrato `(doc, …, keepOpen?) => Promise<SaveResult | void>` y, cuando `keepOpen=true`, NO debe cerrar el editor (ver `saveBusiness` / `saveLegal` en [UserPage.tsx](src/features/usuario/UserPage.tsx) propagando `skipClose`). **Las facturas quedan fuera de este patrón**: siguen el flujo estricto Guardar borrador → Finalizar.
+- [ ] Los **modales** usan `.admin-modal-box` o `.modal-box`. NO definir anchos fijos custom — el override móvil ya está en `modals.css`.
+- [ ] Si la página tiene **filtros**, el contenedor usa `.filter-row`. Scroll horizontal automático en ≤640px.
+- [ ] Si la página vive dentro del **panel admin o usuario**, NO ocultes el sidebar manualmente. El patrón es: envolver el sidebar desktop en `<div className="show-lg">` y el botón burger en `.hide-lg.admin-menu-btn`. El drawer (`.mobile-drawer` + `.mobile-drawer-backdrop` + `.admin-mobile-drawer-panel`) ya está estilado.
+- [ ] **Tipografías grandes** (hero, resultado de calculadora, títulos de panel) usan `clamp()`, nunca `rem` fijos. Las clases `hero-heading`, `section-title`, `tool-title`, `calc-result-value` ya lo aplican; si creas una nueva, sigue el patrón.
+- [ ] El **motor de documentos** (DocumentEngine, LegalDocEngine) NO necesita tabs form/preview: el preview lado a lado solo aparece ≥1280px (`.show-xl`); en resoluciones menores se usa el botón → `PreviewModal`.
+
+### Patrón tabla → cards (≤640px)
+
+```tsx
+<table className="data-table data-table--responsive">
+  <thead>
+    <tr className="data-thead-row">
+      <th className="data-th">Cliente</th>
+      <th className="data-th">Fecha</th>
+      <th className="data-th-right">Total</th>
+      <th className="data-th-right">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.map(row => (
+      <tr key={row.id} className="data-tr">
+        <td className="data-td" data-label="Cliente">{row.cliente}</td>
+        <td className="data-td" data-label="Fecha" data-hide-mobile>{row.fecha}</td>
+        <td className="data-td-right" data-label="Total">{row.total} €</td>
+        <td className="data-td-right" data-actions>
+          <DropdownActions row={row} />
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+```
+
+A ≤640px: el `<thead>` se oculta, cada `<tr>` se convierte en una card con dos columnas (contenido | acciones), y cada `<td>` muestra su `data-label` como mini-header arriba del valor. `data-hide-mobile` oculta la columna entera. **Zero JS, solo CSS.**
+
+### Patrón CTA icono-only en móvil (≤480px)
+
+```tsx
+<button
+  className="btn btn-primary btn-responsive"
+  onClick={onCreate}
+  aria-label="Nueva factura"
+>
+  <Plus size={15} />
+  <span className="btn-text">Nueva factura</span>
+</button>
+```
+
+El texto se oculta automáticamente en ≤480px, queda solo el icono. El `aria-label` es obligatorio para que el botón siga siendo accesible.
 
 ## Reglas críticas (NUNCA cambiar sin entender el impacto)
 

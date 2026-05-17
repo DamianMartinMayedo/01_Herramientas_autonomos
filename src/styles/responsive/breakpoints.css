@@ -1,0 +1,16 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   BREAKPOINTS — sistema oficial del proyecto
+   Tokens documentales: CSS no permite var() dentro de @media en navegadores
+   actuales, pero estos tokens son la referencia única. NO inventar otros
+   valores en media queries: usar siempre 480, 640, 768, 1024 o 1280 px.
+══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bp-mobile:  480px;   /* phones pequeñas — botones a icono, modales fullscreen */
+  --bp-tablet:  768px;   /* tablet portrait — grids 2-col → 1-col */
+  --bp-desktop: 1024px;  /* tablet landscape / desktop — sidebars de fijo a drawer */
+  --bp-wide:    1280px;  /* desktop wide — 3 columnas si tiene sentido */
+}
+
+/* Excepción documentada: tablas → cards a 640px (entre mobile y tablet).
+   Es el único punto fuera de los cuatro tokens y vive solo en tables.css. */

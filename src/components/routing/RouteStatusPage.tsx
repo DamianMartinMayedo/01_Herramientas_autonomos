@@ -37,8 +37,8 @@ export function RouteStatusPage({ title, description }: RouteStatusPageProps) {
             borderRadius: '999px',
             display: 'grid',
             placeItems: 'center',
-            background: 'var(--color-warning-soft, rgba(245, 158, 11, 0.12))',
-            color: 'var(--color-warning, #b45309)',
+            background: 'var(--color-gold-subtle)',
+            color: 'var(--color-gold)',
           }}
         >
           <AlertTriangle size={20} />

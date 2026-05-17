@@ -108,11 +108,11 @@ interface ReclamacionPageProps {
   embedded?: boolean
   onBack?: () => void
   defaultValues?: ReclamacionPagoDoc
-  onSave?: (documento: ReclamacionPagoDoc) => Promise<void>
+  onSave?: (documento: ReclamacionPagoDoc, keepOpen?: boolean) => Promise<import('../../types/document.types').SaveResult | void>
   saving?: boolean
   clientes?: RegularClient[]
   empresa?: Empresa | null
-  onEmailReclamacion?: (documento: ReclamacionPagoDoc) => void
+  onEmailReclamacion?: (documento: ReclamacionPagoDoc, saved?: import('../../types/document.types').SaveResult | null) => void
   estadoReclamacion?: string
   autoOpenPreview?: boolean
   userId?: string
@@ -302,6 +302,38 @@ function ReclamacionFormFields({
         </div>
       </fieldset>
 
+      {/* Tono y condiciones */}
+      <fieldset className="fieldset-v3">
+        <legend className="fieldset-legend">Tono y condiciones</legend>
+        <div className="fieldset-v3-body">
+          <div className="input-group">
+            <label className="input-label">Tono de la carta</label>
+            <select {...reg('tono')} className="select-v3">
+              <option value="amistoso">Amistoso — 1ª notificación, tono cordial</option>
+              <option value="formal">Formal — 2ª notificación, más firme</option>
+              <option value="urgente">Urgente — aviso previo a acciones legales</option>
+            </select>
+          </div>
+          <FormField
+            label="Plazo de respuesta (días hábiles) *"
+            type="number"
+            min={1}
+            {...reg('plazoRespuesta', {
+              valueAsNumber: true,
+              required: 'Obligatorio',
+              min: { value: 1, message: 'Mínimo 1 día' },
+            })}
+            error={err['plazoRespuesta']}
+          />
+          {tono === 'urgente' && (
+            <label className="input-toggle">
+              <input type="checkbox" {...reg('mencionAccionLegal')} />
+              <span>Mencionar explícitamente acciones legales y registro de morosos</span>
+            </label>
+          )}
+        </div>
+      </fieldset>
+
       {/* Partes */}
       <FormParte titulo="Acreedor (tú — quien reclama)" prefix="acreedor" register={reg} errors={err} />
       <FormParte titulo="Deudor (quien debe pagar)" prefix="deudor" register={reg} errors={err} />
@@ -366,38 +398,6 @@ function ReclamacionFormFields({
               error={err['fechaVencimiento']}
             />
           </div>
-        </div>
-      </fieldset>
-
-      {/* Configuración de la carta */}
-      <fieldset className="fieldset-v3">
-        <legend className="fieldset-legend">Tono y condiciones</legend>
-        <div className="fieldset-v3-body">
-          <div className="input-group">
-            <label className="input-label">Tono de la carta</label>
-            <select {...reg('tono')} className="select-v3">
-              <option value="amistoso">Amistoso — 1ª notificación, tono cordial</option>
-              <option value="formal">Formal — 2ª notificación, más firme</option>
-              <option value="urgente">Urgente — aviso previo a acciones legales</option>
-            </select>
-          </div>
-          <FormField
-            label="Plazo de respuesta (días hábiles) *"
-            type="number"
-            min={1}
-            {...reg('plazoRespuesta', {
-              valueAsNumber: true,
-              required: 'Obligatorio',
-              min: { value: 1, message: 'Mínimo 1 día' },
-            })}
-            error={err['plazoRespuesta']}
-          />
-          {tono === 'urgente' && (
-            <label className="input-toggle">
-              <input type="checkbox" {...reg('mencionAccionLegal')} />
-              <span>Mencionar explícitamente acciones legales y registro de morosos</span>
-            </label>
-          )}
         </div>
       </fieldset>
 

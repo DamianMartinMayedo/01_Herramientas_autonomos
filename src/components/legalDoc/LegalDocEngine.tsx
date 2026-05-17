@@ -7,11 +7,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch, type DefaultValues, type Path, type PathValue } from 'react-hook-form'
-import { ChevronLeft, Save, CheckCircle2, Mail } from 'lucide-react'
+import { ChevronLeft, Save, CheckCircle2, Mail, Download } from 'lucide-react'
 import type { LegalDoc, ParteLegal, TipoLegalDoc } from '../../types/legalDoc.types'
+import type { SaveResult } from '../../types/document.types'
 import { LegalDocModal } from './LegalDocModal'
 import { LegalDocPreview } from './LegalDocPreview'
-import { Button } from '../ui/Button'
+import { DocActionsBar, type DocAction } from '../document/DocActionsBar'
 import { AuthModal } from '../../features/auth/AuthModal'
 import type { RegularClient } from '../../types/regularClient.types'
 import { regularClientToParteLegal } from '../../types/regularClient.types'
@@ -26,11 +27,11 @@ export interface LegalDocEngineProps<T extends LegalDoc> {
   buildDoc: (values: T) => LegalDoc
   embedded?: boolean
   onBack?: () => void
-  onSave?: (documento: T) => Promise<void>
+  onSave?: (documento: T, keepOpen?: boolean) => Promise<SaveResult | void>
   saving?: boolean
   clientes?: RegularClient[]
   clienteField?: 'cliente' | 'parteB' | 'deudor'
-  onEmail?: (documento: T) => void
+  onEmail?: (documento: T, saved?: SaveResult | null) => void
   estadoDoc?: string
   autoOpenPreview?: boolean
 }
@@ -157,11 +158,46 @@ export function LegalDocEngine<T extends LegalDoc>({
     setTimeout(() => setFeedbackMessage(null), 2500)
   }
 
-  const handleExportar = handleSubmit(() => setModalAbierto(true))
+  /**
+   * ensureSavedThen — auto-guarda el documento legal antes de descargar/enviar.
+   * Asigna número (vía RPC next_document_number → metadatos.referencia) si
+   * todavía no tiene uno, propaga el resultado al form, y luego ejecuta
+   * `after(saved)` con el SaveResult del save (o null si fue modo guest). Los
+   * callbacks downstream deben usar `saved.id` para evitar closure stale.
+   */
+  const ensureSavedThen = (verbo: string, after: (saved: SaveResult | null) => void) => handleSubmit(
+    async (values) => {
+      if (!onSave) {
+        after(null)
+        return
+      }
+      setSaveError(null)
+      try {
+        const result = await onSave(values as T, true)
+        let saved: SaveResult | null = null
+        if (result && typeof result === 'object' && 'id' in result && 'numero' in result) {
+          saved = result as SaveResult
+          if (saved.numero) {
+            const current = (values as { metadatos?: { referencia?: string } })?.metadatos?.referencia
+            if (current !== saved.numero) {
+              setValue('metadatos.referencia' as Path<T>, saved.numero as PathValue<T, Path<T>>, { shouldDirty: false })
+            }
+          }
+        }
+        showFeedback(`Guardado y ${verbo}…`)
+        after(saved)
+      } catch (error) {
+        console.error(error)
+        setSaveError('No se pudo guardar el documento. Inténtalo de nuevo.')
+      }
+    },
+  )
 
-  const handleEnviarEmail = handleSubmit(async (values) => {
+  const handleExportar = ensureSavedThen('descargando', () => setModalAbierto(true))
+
+  const handleEnviarEmail = ensureSavedThen('enviando', (saved) => {
     if (!onEmail) return
-    onEmail(values as T)
+    onEmail(form.getValues() as T, saved)
   })
 
   const allFormValues = useWatch({ control: form.control })
@@ -288,21 +324,34 @@ export function LegalDocEngine<T extends LegalDoc>({
               Regístrate gratis
             </button>
           )}
-          {onSave && (
-            <Button variant="secondary" size="sm" type="button" onClick={handleGuardarDocumento} disabled={saving}>
-              <Save size={14} />
-              {saving ? 'Guardando...' : 'Guardar documento'}
-            </Button>
-          )}
-          {onEmail && (
-            <Button variant="secondary" size="sm" type="button" onClick={handleEnviarEmail} disabled={saving}>
-              <Mail size={14} />
-              {estadoDoc && estadoDoc !== 'borrador' ? 'Reenviar' : 'Enviar por correo'}
-            </Button>
-          )}
-          <Button variant="primary" size="sm" onClick={handleExportar} type="button">
-            Exportar
-          </Button>
+          <DocActionsBar actions={(() => {
+            const list: (DocAction | false | null | undefined)[] = []
+
+            if (onSave) {
+              list.push({
+                id: 'guardar',
+                label: saving ? 'Guardando...' : 'Guardar documento',
+                Icon: Save,
+                onClick: handleGuardarDocumento,
+                disabled: saving,
+              })
+            }
+            if (onEmail) {
+              list.push({
+                id: 'enviar',
+                label: estadoDoc && estadoDoc !== 'borrador' ? 'Reenviar' : 'Enviar por correo',
+                Icon: Mail,
+                onClick: handleEnviarEmail,
+                disabled: saving,
+              })
+            }
+            list.push({
+              id: 'exportar', label: 'Exportar', Icon: Download,
+              variant: 'primary', onClick: handleExportar,
+            })
+
+            return list.filter(Boolean) as DocAction[]
+          })()} />
         </div>
       </div>
 

@@ -96,11 +96,17 @@ export function ConfiguracionPage({ clientes, onClientsChange }: ConfiguracionPa
     }
 
     const result = editingId
-      ? await updateRegularClient(editingId, payload)
+      ? await updateRegularClient(editingId, payload, user.id)
       : await createRegularClient(user.id, payload)
 
     if (result.error || !result.data) {
-      setServerError(result.error?.message ?? 'No se pudo guardar el cliente.')
+      // Si es duplicado por NIF, ponemos el error en el field correspondiente
+      // para que el usuario lo vea junto al input que tiene que corregir.
+      if (result.duplicate) {
+        setFieldErrors({ ...fieldErrors, nif: result.error?.message ?? 'NIF duplicado' })
+      } else {
+        setServerError(result.error?.message ?? 'No se pudo guardar el cliente.')
+      }
       setSaving(false)
       return
     }

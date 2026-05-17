@@ -2,7 +2,7 @@
  * UserPage.tsx
  * Página raíz del panel de usuario.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { UserLayout, type UserSection } from './UserLayout'
@@ -40,14 +40,28 @@ const DOCUMENT_SECTIONS: UserSection[] = [
   'facturas', 'presupuestos', 'albaranes', 'contratos', 'ndas', 'reclamaciones',
 ]
 
+/**
+ * editorKey: identificador estable de la sesión de edición.
+ * Se usa como `key` en los engines (Regla #3) para forzar remount al cambiar
+ * de un documento a otro. NO debe cambiar cuando el documento recién creado
+ * recibe su `id` real tras el primer save; de lo contrario el editor se
+ * remounta y se pierde el form + el modal de descarga/envío que pueda estar
+ * abierto.
+ */
 type EditorState =
-  | { section: 'facturas'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean; numero?: string | null }
-  | { section: 'presupuestos'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
-  | { section: 'albaranes'; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
-  | { section: 'contratos'; id?: string; data?: ContratoServiciosDoc | null; estado?: string | null; autoDownload?: boolean }
-  | { section: 'ndas'; id?: string; data?: NdaDoc | null; estado?: string | null; autoDownload?: boolean }
-  | { section: 'reclamaciones'; id?: string; data?: ReclamacionPagoDoc | null; estado?: string | null; autoDownload?: boolean }
+  | { section: 'facturas'; editorKey: string; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean; numero?: string | null }
+  | { section: 'presupuestos'; editorKey: string; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
+  | { section: 'albaranes'; editorKey: string; id?: string; data?: DocumentoBase | null; viewOnly?: boolean; estado?: string | null; autoDownload?: boolean }
+  | { section: 'contratos'; editorKey: string; id?: string; data?: ContratoServiciosDoc | null; estado?: string | null; autoDownload?: boolean }
+  | { section: 'ndas'; editorKey: string; id?: string; data?: NdaDoc | null; estado?: string | null; autoDownload?: boolean }
+  | { section: 'reclamaciones'; editorKey: string; id?: string; data?: ReclamacionPagoDoc | null; estado?: string | null; autoDownload?: boolean }
   | null
+
+function newEditorKey(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `key-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
 
 const SECTION_TO_TABLE: Record<TipoDocumento, UserDocumentTable> = {
   facturas: 'facturas',
@@ -75,11 +89,27 @@ export function UserPage() {
   const section = (searchParams.get('s') as UserSection) ?? 'dashboard'
   const [refreshKey, setRefreshKey] = useState(0)
   const [editor, setEditor] = useState<EditorState>(null)
+  // Ref siempre actualizado al último editor — necesario para que los callbacks
+  // capturados como closure (onEmailPresupuesto, onEmailAlbaran, etc.) lean el
+  // `editor.id` real tras un auto-save, y no el undefined del primer render.
+  const editorRef = useRef<EditorState>(null)
+  editorRef.current = editor
   const [saving, setSaving] = useState(false)
   const [clientes, setClientes] = useState<RegularClient[]>([])
   const [clientesLoading, setClientesLoading] = useState(true)
   const userId = user?.id
   const [flashMessage, setFlashMessage] = useState<string | null>(null)
+  // Ref del timer del flashMessage para cancelar el anterior cuando una nueva
+  // acción dispara otro mensaje en < 3s (evita que el primero se acorte).
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showFlash = (msg: string, durationMs = 3000) => {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+    setFlashMessage(msg)
+    flashTimerRef.current = setTimeout(() => {
+      setFlashMessage(null)
+      flashTimerRef.current = null
+    }, durationMs)
+  }
   const [alertState, setAlertState] = useState<{ msg: string; variant?: 'danger' | 'warning' | 'info' } | null>(null)
   const [empresa, setEmpresa] = useState<Empresa | null | undefined>(undefined)
   const [calcOrigin, setCalcOrigin] = useState<UserSection | null>(null)
@@ -141,6 +171,14 @@ export function UserPage() {
 
   const closeEditor = () => setEditor(null)
 
+  /** Abre un editor nuevo asignándole un editorKey estable. NO usar setEditor
+   *  directamente con un objeto literal para abrir editor: causaría que falte
+   *  editorKey y el TS error apuntará al sitio correcto. */
+  type OpenEditorPayload = Omit<NonNullable<EditorState>, 'editorKey'>
+  const openEditor = (payload: OpenEditorPayload) => {
+    setEditor({ ...payload, editorKey: newEditorKey() } as EditorState)
+  }
+
   const bumpRefresh = () => setRefreshKey((value) => value + 1)
 
   const handleCreateDocument = (targetSection: TipoDocumento) => {
@@ -163,7 +201,7 @@ export function UserPage() {
       return
     }
     setSearchParams({ s: targetSection })
-    setEditor({ section: targetSection })
+    openEditor({ section: targetSection })
   }
 
   const handleOpenDocument = async (targetSection: TipoDocumento, id: string) => {
@@ -186,23 +224,23 @@ export function UserPage() {
       if (result.data.numero) {
         datosJson.numero = result.data.numero
       }
-      setEditor({
+      openEditor({
         section: targetSection,
         id,
         data: datosJson,
         estado: result.data.estado,
-      } as EditorState)
+      } as OpenEditorPayload)
     } else {
       const datosJson: DocumentoBase = { ...(result.data.datos_json as DocumentoBase) }
       if (result.data.numero) {
         datosJson.numero = result.data.numero
       }
-      setEditor({
+      openEditor({
         section: targetSection,
         id,
         data: datosJson,
         estado: result.data.estado,
-      } as EditorState)
+      } as OpenEditorPayload)
     }
   }
 
@@ -219,21 +257,22 @@ export function UserPage() {
     }
     const numeroGuardado = result.numero
     if (table === 'facturas' && finalizar) {
-      setFlashMessage(`Factura emitida${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+      showFlash(`Factura emitida${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else if (table === 'facturas') {
-      setFlashMessage('Borrador guardado.')
+      showFlash('Borrador guardado.')
     } else if (table === 'presupuestos' && finalizar) {
-      setFlashMessage(`Presupuesto enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+      showFlash(`Presupuesto enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else if (table === 'presupuestos') {
-      setFlashMessage(`Borrador guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+      showFlash(`Borrador guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else if (table === 'albaranes' && finalizar) {
-      setFlashMessage(`Albarán enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+      showFlash(`Albarán enviado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     } else {
-      setFlashMessage(`Albarán guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
+      showFlash(`Albarán guardado${numeroGuardado ? `: ${numeroGuardado}` : ''}.`)
     }
     setTimeout(() => setFlashMessage(null), 3000)
     if (!skipClose) closeEditor()
     bumpRefresh()
+    return result.data?.id ? { id: result.data.id, numero: numeroGuardado ?? null } : null
   }
 
   const handleViewDocument = async (targetSection: TipoDocumento, id: string) => {
@@ -244,20 +283,20 @@ export function UserPage() {
     }
     setSearchParams({ s: targetSection })
     const isViewOnly = targetSection === 'facturas' || (targetSection === 'presupuestos' && result.data.estado === 'convertido')
-    setEditor({
+    openEditor({
       section: targetSection,
       id,
       data: result.data.datos_json as EditorState extends { data: infer T } ? T : never,
       viewOnly: isViewOnly,
       estado: result.data.estado,
-    } as EditorState)
+    } as OpenEditorPayload)
   }
 
   const handleDescargarFactura = async (id: string) => {
     const result = await getStoredUserDocument('facturas', id)
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: 'facturas' })
-    setEditor({
+    openEditor({
       section: 'facturas',
       id,
       data: result.data.datos_json as DocumentoBase,
@@ -273,7 +312,7 @@ export function UserPage() {
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: 'presupuestos' })
     const isConvertido = result.data.estado === 'convertido'
-    setEditor({
+    openEditor({
       section: 'presupuestos',
       id,
       data: result.data.datos_json as DocumentoBase,
@@ -287,7 +326,7 @@ export function UserPage() {
     const result = await getStoredUserDocument('albaranes', id)
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: 'albaranes' })
-    setEditor({
+    openEditor({
       section: 'albaranes',
       id,
       data: result.data.datos_json as DocumentoBase,
@@ -300,7 +339,7 @@ export function UserPage() {
     const result = await getStoredUserDocument('contratos', id)
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: 'contratos' })
-    setEditor({
+    openEditor({
       section: 'contratos',
       id,
       data: result.data.datos_json as ContratoServiciosDoc,
@@ -313,7 +352,7 @@ export function UserPage() {
     const result = await getStoredUserDocument('ndas', id)
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: 'ndas' })
-    setEditor({
+    openEditor({
       section: 'ndas',
       id,
       data: result.data.datos_json as NdaDoc,
@@ -326,7 +365,7 @@ export function UserPage() {
     const result = await getStoredUserDocument('reclamaciones', id)
     if (result.error || !result.data?.datos_json) return
     setSearchParams({ s: 'reclamaciones' })
-    setEditor({
+    openEditor({
       section: 'reclamaciones',
       id,
       data: result.data.datos_json as ReclamacionPagoDoc,
@@ -342,7 +381,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo emitir la factura. Inténtalo de nuevo.', variant: 'danger' })
       return
     }
-    setFlashMessage(`Factura emitida${result.numero ? `: ${result.numero}` : ''}.`)
+    showFlash(`Factura emitida${result.numero ? `: ${result.numero}` : ''}.`)
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -354,7 +393,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo duplicar la factura.', variant: 'danger' })
       return
     }
-    setFlashMessage('Borrador duplicado creado.')
+    showFlash('Borrador duplicado creado.')
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -366,12 +405,12 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo crear la factura rectificativa.', variant: 'danger' })
       return
     }
-    setFlashMessage('Factura rectificativa creada como borrador.')
+    showFlash('Factura rectificativa creada como borrador.')
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
 
-  const saveLegal = async (table: 'contratos' | 'ndas' | 'reclamaciones', document: ContratoServiciosDoc | NdaDoc | ReclamacionPagoDoc, id?: string) => {
+  const saveLegal = async (table: 'contratos' | 'ndas' | 'reclamaciones', document: ContratoServiciosDoc | NdaDoc | ReclamacionPagoDoc, id?: string, keepOpen?: boolean) => {
     if (!userId) throw new Error('No hay sesión activa')
     setSaving(true)
     const result = await saveLegalDocument({
@@ -387,10 +426,11 @@ export function UserPage() {
     if (result.data?.id) {
       setEditor((current) => (current ? { ...current, id: result.data?.id } : current))
     }
-    setFlashMessage(`${table === 'contratos' ? 'Contrato guardado' : table === 'ndas' ? 'NDA guardado' : 'Reclamación guardada'}.`)
+    showFlash(`${table === 'contratos' ? 'Contrato guardado' : table === 'ndas' ? 'NDA guardado' : 'Reclamación guardada'}.`)
     setTimeout(() => setFlashMessage(null), 3000)
-    closeEditor()
+    if (!keepOpen) closeEditor()
     bumpRefresh()
+    return result.data?.id ? { id: result.data.id, numero: result.numero ?? null } : null
   }
 
   const handleMarcarCobrada = async (id: string) => {
@@ -420,7 +460,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo enviar el presupuesto. Inténtalo de nuevo.', variant: 'danger' })
       return
     }
-    setFlashMessage(`Presupuesto enviado${result.numero ? `: ${result.numero}` : ''}.`)
+    showFlash(`Presupuesto enviado${result.numero ? `: ${result.numero}` : ''}.`)
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -431,7 +471,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo marcar como aprobado.', variant: 'danger' })
       return
     }
-    setFlashMessage('Presupuesto aprobado.')
+    showFlash('Presupuesto aprobado.')
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -443,8 +483,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo convertir a factura. Inténtalo de nuevo.', variant: 'danger' })
       return
     }
-    setFlashMessage('Presupuesto convertido. Borrador de factura creado.')
-    setTimeout(() => setFlashMessage(null), 4000)
+    showFlash('Presupuesto convertido. Borrador de factura creado.', 4000)
     setSearchParams({ s: 'facturas' })
     bumpRefresh()
   }
@@ -455,7 +494,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo marcar como entregado.', variant: 'danger' })
       return
     }
-    setFlashMessage('Presupuesto marcado como entregado.')
+    showFlash('Presupuesto marcado como entregado.')
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -466,7 +505,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo enviar el albarán.', variant: 'danger' })
       return
     }
-    setFlashMessage('Albarán marcado como enviado.')
+    showFlash('Albarán marcado como enviado.')
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -478,7 +517,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo enviar el contrato.', variant: 'danger' })
       return
     }
-    setFlashMessage(`Contrato enviado${result.numero ? `: ${result.numero}` : ''}.`)
+    showFlash(`Contrato enviado${result.numero ? `: ${result.numero}` : ''}.`)
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -490,7 +529,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo enviar el NDA.', variant: 'danger' })
       return
     }
-    setFlashMessage(`NDA enviado${result.numero ? `: ${result.numero}` : ''}.`)
+    showFlash(`NDA enviado${result.numero ? `: ${result.numero}` : ''}.`)
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -502,7 +541,7 @@ export function UserPage() {
       setAlertState({ msg: 'No se pudo enviar la reclamación.', variant: 'danger' })
       return
     }
-    setFlashMessage(`Reclamación enviada${result.numero ? `: ${result.numero}` : ''}.`)
+    showFlash(`Reclamación enviada${result.numero ? `: ${result.numero}` : ''}.`)
     setTimeout(() => setFlashMessage(null), 3000)
     bumpRefresh()
   }
@@ -510,6 +549,11 @@ export function UserPage() {
   const handleClienteGuardado = async (payload: RegularClientInput) => {
     if (!userId) throw new Error('No hay sesión activa')
     const result = await createRegularClient(userId, payload)
+    if (result.duplicate) {
+      // Duplicado por NIF: propaga mensaje explícito al modal/form caller para
+      // que muestre la advertencia y permita al usuario decidir.
+      throw new Error(result.error?.message ?? 'Ya existe un cliente con ese NIF')
+    }
     if (result.error || !result.data) {
       throw new Error('No se pudo guardar el cliente')
     }
@@ -582,12 +626,12 @@ export function UserPage() {
       const autoDownload = editor.section === 'facturas' ? (editor.autoDownload ?? false) : false
       return (
         <FacturaPage
-          key={editorId ?? 'new-factura'}
+          key={editor.editorKey}
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
           facturaId={editorId ?? null}
-          onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('facturas', document, totals, editorId, finalizar)}
+          onSave={isViewOnly ? undefined : (document, totals, finalizar, keepOpen) => saveBusiness('facturas', document, totals, editorId, finalizar, keepOpen)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
@@ -614,11 +658,11 @@ export function UserPage() {
       const autoDownload = editor.section === 'presupuestos' ? (editor.autoDownload ?? false) : false
       return (
         <PresupuestoPage
-          key={editorId ?? 'new-presupuesto'}
+          key={editor.editorKey}
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
-          onSave={isViewOnly ? undefined : (document, totals, finalizar) => saveBusiness('presupuestos', document, totals, editorId, finalizar)}
+          onSave={isViewOnly ? undefined : (document, totals, finalizar, keepOpen) => saveBusiness('presupuestos', document, totals, editorId, finalizar, keepOpen)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
@@ -628,14 +672,33 @@ export function UserPage() {
           viewOnlyActions={isViewOnly ? { estadoActual: editorEstado ?? undefined } : undefined}
           estadoPresupuesto={!isViewOnly ? (editorEstado ?? undefined) : undefined}
           onAprobarPresupuesto={!isViewOnly && editorId && editorEstado === 'enviado'
-            ? () => { closeEditor(); void handleAprobarPresupuesto(editorId) }
+            ? () => {
+                // Leer del ref en el momento de la ejecución para evitar closure
+                // stale: si el doc fue auto-guardado entre render y click, el
+                // editorId local podría estar desactualizado.
+                const current = editorRef.current
+                const id = current?.section === 'presupuestos' ? current.id : undefined
+                if (!id) return
+                closeEditor()
+                void handleAprobarPresupuesto(id)
+              }
             : undefined}
           onConvertirAFactura={!isViewOnly && editorId && (editorEstado === 'enviado' || editorEstado === 'aprobado')
-            ? () => { void handleConvertirAFactura(editorId) }
+            ? () => {
+                const current = editorRef.current
+                const id = current?.section === 'presupuestos' ? current.id : undefined
+                if (!id) return
+                void handleConvertirAFactura(id)
+              }
             : undefined}
-          onEmailPresupuesto={isViewOnly ? undefined : (doc, totals) => {
-            const id = editor?.section === 'presupuestos' ? editor.id : undefined
-            const estado = editor?.section === 'presupuestos' ? editor.estado : null
+          onEmailPresupuesto={isViewOnly ? undefined : (doc, totals, saved) => {
+            // Tras un auto-save desde "Enviar", el `saved.id` viene del save
+            // recién hecho (más fiable que `editor?.id`, que aún tiene el valor
+            // del render anterior por closure stale). Fallback al ref/closure
+            // si no hubo save (e.g. doc ya existente que el usuario reenvía).
+            const current = editorRef.current
+            const id = saved?.id ?? (current?.section === 'presupuestos' ? current.id : undefined)
+            const estado = current?.section === 'presupuestos' ? current.estado : null
             setEmailPresupuestoState({
               email: doc.cliente?.email,
               nombre: doc.numero ? `Presupuesto ${doc.numero}` : 'Presupuesto',
@@ -655,11 +718,11 @@ export function UserPage() {
       const autoDownload = editor.section === 'albaranes' ? (editor.autoDownload ?? false) : false
       return (
         <AlbaranPage
-          key={editorId ?? 'new-albaran'}
+          key={editor.editorKey}
           embedded
           onBack={closeEditor}
           initialData={editor.data as DocumentoBase | null | undefined}
-          onSave={isViewOnly ? undefined : (document, totals) => saveBusiness('albaranes', document, totals, editorId)}
+          onSave={isViewOnly ? undefined : (document, totals, _finalizar, keepOpen) => saveBusiness('albaranes', document, totals, editorId, undefined, keepOpen)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
@@ -668,11 +731,15 @@ export function UserPage() {
           estadoAlbaran={editorEstado ?? undefined}
           autoOpenPreview={autoDownload}
           viewOnlyActions={isViewOnly ? { estadoActual: editorEstado ?? undefined } : undefined}
-          onEmailAlbaran={isViewOnly ? undefined : (doc, totals) => {
+          onEmailAlbaran={isViewOnly ? undefined : (doc, totals, saved) => {
+            // Igual que onEmailPresupuesto: tras auto-save, `saved.id` es la
+            // fuente de verdad (el editorId del closure puede estar stale).
+            const current = editorRef.current
+            const fallbackId = current?.section === 'albaranes' ? current.id : undefined
             setEmailAlbaranState({
               email: doc.cliente?.email,
               nombre: doc.numero ? `Albarán ${doc.numero}` : 'Albarán',
-              doc, totals, id: editorId,
+              doc, totals, id: saved?.id ?? fallbackId,
               isReenviar: Boolean(editorEstado && editorEstado !== 'pendiente'),
             })
           }}
@@ -684,22 +751,24 @@ export function UserPage() {
       const estadoContrato = (editor as { estado?: string | null }).estado
       return (
         <ContratoPage
-          key={editor.id ?? 'new-contrato'}
+          key={editor.editorKey}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as ContratoServiciosDoc | undefined) ?? undefined}
-          onSave={(document) => saveLegal('contratos', document, editor.id)}
+          onSave={(document, keepOpen) => saveLegal('contratos', document, editor.id, keepOpen)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
           estadoContrato={estadoContrato ?? undefined}
           autoOpenPreview={'autoDownload' in editor ? editor.autoDownload : undefined}
-          onEmailContrato={(doc) => {
+          onEmailContrato={(doc, saved) => {
+            const current = editorRef.current
+            const fallbackId = current?.section === 'contratos' ? current.id : undefined
             setEmailContratoState({
               email: doc.cliente?.email,
               nombre: doc.metadatos?.referencia ? `Contrato ${doc.metadatos.referencia}` : 'Contrato',
               doc,
-              id: editor.id,
+              id: saved?.id ?? fallbackId,
               isReenviar: Boolean(estadoContrato && estadoContrato !== 'borrador'),
             })
           }}
@@ -711,22 +780,24 @@ export function UserPage() {
       const estadoNda = (editor as { estado?: string | null }).estado
       return (
         <NdaPage
-          key={editor.id ?? 'new-nda'}
+          key={editor.editorKey}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as NdaDoc | undefined) ?? undefined}
-          onSave={(document) => saveLegal('ndas', document, editor.id)}
+          onSave={(document, keepOpen) => saveLegal('ndas', document, editor.id, keepOpen)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
           estadoNda={estadoNda ?? undefined}
           autoOpenPreview={'autoDownload' in editor ? editor.autoDownload : undefined}
-          onEmailNda={(doc) => {
+          onEmailNda={(doc, saved) => {
+            const current = editorRef.current
+            const fallbackId = current?.section === 'ndas' ? current.id : undefined
             setEmailNdaState({
               email: doc.parteB?.email,
               nombre: doc.metadatos?.referencia ? `NDA ${doc.metadatos.referencia}` : 'NDA',
               doc,
-              id: editor.id,
+              id: saved?.id ?? fallbackId,
               isReenviar: Boolean(estadoNda && estadoNda !== 'borrador'),
             })
           }}
@@ -738,23 +809,25 @@ export function UserPage() {
       const estadoReclamacion = (editor as { estado?: string | null }).estado
       return (
         <ReclamacionPage
-          key={editor.id ?? 'new-reclamacion'}
+          key={editor.editorKey}
           embedded
           onBack={closeEditor}
           defaultValues={(editor.data as ReclamacionPagoDoc | undefined) ?? undefined}
-          onSave={(document) => saveLegal('reclamaciones', document, editor.id)}
+          onSave={(document, keepOpen) => saveLegal('reclamaciones', document, editor.id, keepOpen)}
           saving={saving}
           clientes={clientesDisponibles}
           empresa={empresa}
           userId={userId}
           estadoReclamacion={estadoReclamacion ?? undefined}
           autoOpenPreview={'autoDownload' in editor ? editor.autoDownload : undefined}
-          onEmailReclamacion={(doc) => {
+          onEmailReclamacion={(doc, saved) => {
+            const current = editorRef.current
+            const fallbackId = current?.section === 'reclamaciones' ? current.id : undefined
             setEmailReclamacionState({
               email: doc.deudor?.email,
               nombre: doc.metadatos?.referencia ? `Reclamación ${doc.metadatos.referencia}` : 'Reclamación',
               doc,
-              id: editor.id,
+              id: saved?.id ?? fallbackId,
               isReenviar: Boolean(estadoReclamacion && estadoReclamacion !== 'borrador'),
             })
           }}
@@ -885,7 +958,15 @@ export function UserPage() {
           nombreDocumento={emailContratoState.nombre}
           onSent={async () => {
             if (!emailContratoState.id) return
-            await enviarContrato(userId as string, emailContratoState.id)
+            const { error, numero } = await enviarContrato(userId as string, emailContratoState.id)
+            if (error) {
+              setAlertState({ msg: 'No se pudo enviar el contrato. Inténtalo de nuevo.', variant: 'danger' })
+              return
+            }
+            setEditor((current) => (current?.section === 'contratos' ? { ...current, estado: 'enviado' } : current))
+            showFlash(`Contrato enviado${numero ? `: ${numero}` : ''}.`)
+            setTimeout(() => setFlashMessage(null), 3000)
+            if (!emailContratoState.isReenviar) closeEditor()
             bumpRefresh()
           }}
           onClose={() => setEmailContratoState(null)}
@@ -898,7 +979,15 @@ export function UserPage() {
           nombreDocumento={emailNdaState.nombre}
           onSent={async () => {
             if (!emailNdaState.id) return
-            await enviarNda(userId as string, emailNdaState.id)
+            const { error, numero } = await enviarNda(userId as string, emailNdaState.id)
+            if (error) {
+              setAlertState({ msg: 'No se pudo enviar el NDA. Inténtalo de nuevo.', variant: 'danger' })
+              return
+            }
+            setEditor((current) => (current?.section === 'ndas' ? { ...current, estado: 'enviado' } : current))
+            showFlash(`NDA enviado${numero ? `: ${numero}` : ''}.`)
+            setTimeout(() => setFlashMessage(null), 3000)
+            if (!emailNdaState.isReenviar) closeEditor()
             bumpRefresh()
           }}
           onClose={() => setEmailNdaState(null)}
@@ -911,7 +1000,15 @@ export function UserPage() {
           nombreDocumento={emailReclamacionState.nombre}
           onSent={async () => {
             if (!emailReclamacionState.id) return
-            await enviarReclamacion(userId as string, emailReclamacionState.id)
+            const { error, numero } = await enviarReclamacion(userId as string, emailReclamacionState.id)
+            if (error) {
+              setAlertState({ msg: 'No se pudo enviar la reclamación. Inténtalo de nuevo.', variant: 'danger' })
+              return
+            }
+            setEditor((current) => (current?.section === 'reclamaciones' ? { ...current, estado: 'enviada' } : current))
+            showFlash(`Reclamación enviada${numero ? `: ${numero}` : ''}.`)
+            setTimeout(() => setFlashMessage(null), 3000)
+            if (!emailReclamacionState.isReenviar) closeEditor()
             bumpRefresh()
           }}
           onClose={() => setEmailReclamacionState(null)}

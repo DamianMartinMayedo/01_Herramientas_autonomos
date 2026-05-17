@@ -1,0 +1,33 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   FILTER PILLS — scroll horizontal con snap en ≤640px
+   El contenedor .filter-row deja de hacer wrap y empieza a scrollear.
+══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--space-2);
+    margin-inline: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+    scrollbar-width: none;
+  }
+  .filter-row::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-row .filter-pill {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+
+  /* Otras filas horizontales con riesgo de overflow */
+  .calc-shortcuts-row {
+    flex-wrap: wrap;
+  }
+  .calc-shortcuts-row .btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}

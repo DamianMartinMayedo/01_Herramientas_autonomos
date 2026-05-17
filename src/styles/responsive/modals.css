@@ -1,0 +1,81 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   MODALS — comportamiento responsive de admin-modal-box y modal-box
+   ≤480px: modales ocupan casi todo el viewport con margen mínimo y scroll
+   interno. Funciona con cualquier tamaño (sm/md/lg).
+══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .admin-modal-box,
+  .admin-modal-box.admin-modal-sm,
+  .admin-modal-box.admin-modal-md,
+  .admin-modal-box.admin-modal-lg,
+  .modal-box,
+  .modal-box.modal-sm,
+  .modal-box.modal-lg {
+    width: calc(100% - var(--space-4));
+    max-width: none;
+    max-height: calc(100dvh - var(--space-6));
+    overflow-y: auto;
+  }
+
+  /* Header de modal con menos padding */
+  .admin-modal-header,
+  .modal-header {
+    padding: var(--space-3) var(--space-4);
+  }
+  .admin-modal-body,
+  .modal-body-scroll {
+    padding: var(--space-3) var(--space-4);
+  }
+  .admin-modal-footer,
+  .modal-footer {
+    padding: var(--space-3) var(--space-4);
+    flex-wrap: wrap;
+  }
+  .admin-modal-footer .btn,
+  .modal-footer .btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Dropdowns: en mobile, anchura mínima reducida y prohibir clipping a la derecha */
+@media (max-width: 480px) {
+  .dropdown-menu {
+    min-width: min(240px, calc(100vw - var(--space-4)));
+    max-width: calc(100vw - var(--space-4));
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Preview de PDF en modal de exportar
+   El DocumentPreview tiene tamaño A4 (~793px ancho). En desktop usamos zoom
+   0.88. En móvil/tablet hay que reescalar para que quepa en el viewport sin
+   scroll horizontal. Usamos transform: scale + alto compensado para que el
+   contenedor no deje hueco.
+────────────────────────────────────────────────────────────────────────── */
+.preview-zoom-wrap {
+  zoom: var(--preview-zoom, 0.88);
+}
+.preview-modal-body {
+  overflow-x: hidden;
+}
+
+@media (max-width: 1024px) {
+  .preview-zoom-wrap {
+    zoom: 0.65;
+  }
+}
+@media (max-width: 768px) {
+  .preview-zoom-wrap {
+    zoom: 0.48;
+  }
+}
+@media (max-width: 480px) {
+  .preview-zoom-wrap {
+    zoom: 0.38;
+  }
+  .preview-modal-body {
+    padding: var(--space-2) !important;
+  }
+}

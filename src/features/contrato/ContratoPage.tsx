@@ -17,11 +17,11 @@ interface ContratoPageProps {
   embedded?: boolean
   onBack?: () => void
   defaultValues?: ContratoServiciosDoc
-  onSave?: (documento: ContratoServiciosDoc) => Promise<void>
+  onSave?: (documento: ContratoServiciosDoc, keepOpen?: boolean) => Promise<import('../../types/document.types').SaveResult | void>
   saving?: boolean
   clientes?: RegularClient[]
   empresa?: Empresa | null
-  onEmailContrato?: (documento: ContratoServiciosDoc) => void
+  onEmailContrato?: (documento: ContratoServiciosDoc, saved?: import('../../types/document.types').SaveResult | null) => void
   estadoContrato?: string
   autoOpenPreview?: boolean
 }

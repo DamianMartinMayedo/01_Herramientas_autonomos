@@ -110,11 +110,11 @@ interface NdaPageProps {
   embedded?: boolean
   onBack?: () => void
   defaultValues?: NdaDoc
-  onSave?: (documento: NdaDoc) => Promise<void>
+  onSave?: (documento: NdaDoc, keepOpen?: boolean) => Promise<import('../../types/document.types').SaveResult | void>
   saving?: boolean
   clientes?: RegularClient[]
   empresa?: Empresa | null
-  onEmailNda?: (documento: NdaDoc) => void
+  onEmailNda?: (documento: NdaDoc, saved?: import('../../types/document.types').SaveResult | null) => void
   estadoNda?: string
   autoOpenPreview?: boolean
 }

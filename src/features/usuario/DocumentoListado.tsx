@@ -374,6 +374,12 @@ export function DocumentoListado({
     const precio  = cfg.campoPrecio ? row[cfg.campoPrecio] : null
     const fecha   = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES') : ''
 
+    const labelTitulo  = cfg.campoTitulo === 'numero' ? 'Número' : 'Título'
+    const labelCliente = cfg.campoSecundario === 'otra_parte_nombre' ? 'Otra parte'
+      : cfg.campoSecundario === 'deudor_nombre' ? 'Deudor'
+      : 'Cliente'
+    const labelPrecio  = tipo === 'reclamaciones' ? 'Importe' : 'Total'
+
     const isFacturaRegistrada = tipo === 'facturas' && verifactuRegistradas.has(row.id)
 
     const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
@@ -385,17 +391,17 @@ export function DocumentoListado({
 
     return (
       <tr key={row.id} className="data-tr data-tr--clickable" onClick={handleRowClick}>
-        <td className="data-td" style={{ fontWeight: 600 }}>{titulo || 'Sin número'}</td>
-        <td className="data-td" style={{ color: 'var(--color-text-muted)' }}>{cliente}</td>
-        <td className="data-td data-td--meta">{fecha}</td>
+        <td className="data-td" data-label={labelTitulo} style={{ fontWeight: 600 }}>{titulo || 'Sin número'}</td>
+        <td className="data-td" data-label={labelCliente} style={{ color: 'var(--color-text-muted)' }}>{cliente}</td>
+        <td className="data-td data-td--meta" data-label="Fecha" data-hide-mobile>{fecha}</td>
         {cfg.campoPrecio && (
-          <td className="data-td-right data-td-right--strong">
+          <td className="data-td-right data-td-right--strong" data-label={labelPrecio}>
             {precio !== null && precio !== undefined
               ? `${Number(precio).toLocaleString('es-ES', { minimumFractionDigits: 2 })} €`
               : '—'}
           </td>
         )}
-        <td className="data-td">
+        <td className="data-td" data-label="Estado">
           <div className="status-cell">
             {overrideBadge ?? renderStatusBadge(row.estado ?? '')}
             {extraBadge}
@@ -406,7 +412,7 @@ export function DocumentoListado({
             )}
           </div>
         </td>
-        <td className="data-td-right" data-row-actions>
+        <td className="data-td-right" data-row-actions data-actions>
           <div className="flex gap-2" style={{ justifyContent: 'flex-end' }}>
             {actions}
           </div>
@@ -641,8 +647,13 @@ export function DocumentoListado({
             {loading ? 'Cargando…' : `${rows.length} ${rows.length === 1 ? cfg.labelSingular : cfg.label.toLowerCase()}`}
           </p>
         </div>
-        <button onClick={handleCrear} className="btn btn-primary">
-          <Plus size={15} /> Nuevo {cfg.labelSingular}
+        <button
+          onClick={handleCrear}
+          className="btn btn-primary btn-responsive"
+          aria-label={`Nuevo ${cfg.labelSingular}`}
+        >
+          <Plus size={15} />
+          <span className="btn-text">Nuevo {cfg.labelSingular}</span>
         </button>
       </div>
 
@@ -696,7 +707,7 @@ export function DocumentoListado({
                     return (
                       <>
                         <div className="card card-no-pad">
-                          <table className="data-table">
+                          <table className="data-table data-table--responsive">
                             {renderTableHeader()}
                             <tbody>
                               {items.map(row => row.estado === 'borrador' ? renderBorradorRow(row) : renderEmitidaRow(row))}
@@ -757,7 +768,7 @@ export function DocumentoListado({
                     return (
                       <>
                         <div className="card card-no-pad">
-                          <table className="data-table">
+                          <table className="data-table data-table--responsive">
                             {renderTableHeader()}
                             <tbody>{items.map(row => renderPresupuestoRow(row))}</tbody>
                           </table>
@@ -833,7 +844,7 @@ export function DocumentoListado({
                     return (
                       <>
                         <div className="card card-no-pad">
-                          <table className="data-table">
+                          <table className="data-table data-table--responsive">
                             {renderTableHeader()}
                             <tbody>{items.map(row => renderAlbaranRow(row))}</tbody>
                           </table>
@@ -887,7 +898,7 @@ export function DocumentoListado({
                     return (
                       <>
                         <div className="card card-no-pad">
-                          <table className="data-table">
+                          <table className="data-table data-table--responsive">
                             {renderTableHeader()}
                             <tbody>{items.map(row => renderContratoRow(row))}</tbody>
                           </table>
@@ -940,7 +951,7 @@ export function DocumentoListado({
                     return (
                       <>
                         <div className="card card-no-pad">
-                          <table className="data-table">
+                          <table className="data-table data-table--responsive">
                             {renderTableHeader()}
                             <tbody>{items.map(row => renderNdaRow(row))}</tbody>
                           </table>
@@ -993,7 +1004,7 @@ export function DocumentoListado({
                     return (
                       <>
                         <div className="card card-no-pad">
-                          <table className="data-table">
+                          <table className="data-table data-table--responsive">
                             {renderTableHeader()}
                             <tbody>{items.map(row => renderReclamacionRow(row))}</tbody>
                           </table>
@@ -1015,7 +1026,7 @@ export function DocumentoListado({
           {rows.length === 0 && emptyState}
           {rows.length > 0 && (
             <div className="card card-no-pad">
-              <table className="data-table">
+              <table className="data-table data-table--responsive">
                 {renderTableHeader()}
                 <tbody>{rows.map(row => renderGenericRow(row))}</tbody>
               </table>

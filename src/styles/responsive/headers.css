@@ -1,0 +1,80 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   HEADERS — site header público, header de listados, header admin
+══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Header público: marca centrada, nav compacto a la derecha.
+     site-header tiene padding lateral en el shell — aquí reducimos. */
+  .site-header {
+    padding: var(--space-3) var(--space-3);
+  }
+  .site-header-inner {
+    position: relative;
+    gap: var(--space-2);
+    justify-content: flex-end;
+    min-height: 36px;
+  }
+  .site-logo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: auto;
+  }
+  .site-nav {
+    gap: var(--space-2);
+    flex-wrap: nowrap;
+  }
+  /* En móvil: ocultar enlaces Inicio/Blog para evitar overflow con la marca centrada.
+     Quedan accesibles desde el footer y desde el menú de usuario logueado. */
+  .site-nav .site-nav-link {
+    display: none;
+  }
+  /* Compactar botones del header móvil */
+  .site-nav .btn-sm {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+  }
+  .auth-buttons {
+    gap: var(--space-1);
+  }
+
+  /* Header de listados: título a la izquierda + CTA icono-only a la derecha.
+     Mantenemos flex-row (NO apilar) para preservar la jerarquía visual. */
+  .doc-listado-header,
+  .admin-section-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: nowrap;
+  }
+  .doc-listado-header > div:first-child,
+  .admin-section-header > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
+  .doc-listado-header .section-title,
+  .admin-section-header .section-title {
+    text-align: left;
+  }
+
+  /* Topbar admin: contenido alineado y compacto */
+  .admin-topbar {
+    padding-inline: var(--space-3);
+    gap: var(--space-2);
+  }
+}
+
+/* Footer en grid 4 cols sin colapso — añadir 2 y 1 col */
+@media (max-width: 768px) {
+  .site-footer-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .site-footer-grid {
+    grid-template-columns: 1fr;
+  }
+}

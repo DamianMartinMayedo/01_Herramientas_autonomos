@@ -78,7 +78,7 @@ export function PlanesSection() {
       )}
 
       <div className="card card-no-pad">
-        <table className="data-table">
+        <table className="data-table data-table--responsive">
           <thead>
             <tr className="data-thead-row">
               <th className="data-th">Plan</th>

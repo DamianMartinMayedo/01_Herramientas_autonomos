@@ -1,0 +1,57 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   BUTTONS — comportamiento responsive
+   .btn-responsive: en ≤640px oculta el texto envuelto en <span class="btn-text">
+   dejando solo el icono. Requiere aria-label en el botón.
+   Breakpoint a 640px (no 480px) para que el CTA de los listados quepa junto
+   al título sin partir el layout en móviles wide / phones grandes.
+══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .btn-responsive .btn-text {
+    display: none;
+  }
+  .btn-responsive {
+    padding: var(--space-2) var(--space-3);
+    min-width: 40px;
+    flex-shrink: 0;
+  }
+
+  /* Botones de paginación en pantalla pequeña — siempre compactos */
+  .pagination-row .btn {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* Botones a ancho completo en algunos contextos (e.g. footer de modal) */
+  .btn-full-mobile {
+    width: 100%;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   DocActionsBar — barra de acciones del header de documentos
+   Inline en desktop (>1024px); colapsada a un único botón "Opciones" en
+   móvil/tablet (≤1024px) para que las acciones no se salgan del viewport.
+────────────────────────────────────────────────────────────────────────── */
+.doc-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.doc-actions-mobile {
+  display: none;
+}
+.doc-actions-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@media (max-width: 1024px) {
+  .doc-actions-inline {
+    display: none;
+  }
+  .doc-actions-mobile {
+    display: inline-flex;
+  }
+}

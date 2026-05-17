@@ -4,6 +4,7 @@
  */
 import { useState, type ReactNode } from 'react'
 import { useAdminStore } from '../../store/adminStore'
+import { useAnimatedMount } from '../../hooks/useAnimatedMount'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { ConfirmModal } from './components/ConfirmModal'
 import {
@@ -151,6 +152,7 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
   const { isAuthenticated, logout } = useAdminStore()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
+  const drawer = useAnimatedMount(mobileOpen)
 
   if (!isAuthenticated) return <LoginGate />
 
@@ -163,8 +165,11 @@ export function AdminLayout({ section, onNav, children }: AdminLayoutProps) {
       </div>
 
       {/* Mobile drawer */}
-      {mobileOpen && (
-        <div className="mobile-drawer" onClick={() => setMobileOpen(false)}>
+      {drawer.mounted && (
+        <div
+          className={`mobile-drawer${drawer.active ? ' is-open' : ''}`}
+          onClick={() => setMobileOpen(false)}
+        >
           <div className="admin-mobile-drawer-panel" onClick={e => e.stopPropagation()}>
             <AdminSidebar
               section={section}

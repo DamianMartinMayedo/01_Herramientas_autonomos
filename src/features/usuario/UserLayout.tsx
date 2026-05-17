@@ -5,6 +5,7 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../../hooks/useProfile'
+import { useAnimatedMount } from '../../hooks/useAnimatedMount'
 import { ThemeToggle } from '../../components/ui/ThemeToggle'
 import { PlanBadge } from '../../components/shared/PlanBadge'
 import { EstadoBadge } from '../../components/shared/EstadoBadge'
@@ -12,7 +13,7 @@ import { ConfirmModal } from '../admin/components/ConfirmModal'
 import {
   LayoutDashboard, FileText, Receipt, Package,
   FileSignature, ShieldOff, AlertCircle,
-  LogOut, X, ChevronRight, User,
+  LogOut, X, ChevronRight, User, Menu,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 
@@ -89,7 +90,7 @@ function UserSidebar({
       </div>
 
       {/* Nav grupos */}
-      <nav style={{ flex: 1, padding: '0 var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {NAV_GROUPS.map(group => (
           <div key={group.label}>
             <p className="nav-group-label">{group.label}</p>
@@ -128,6 +129,13 @@ function UserSidebar({
         <button onClick={() => setLogoutConfirmOpen(true)} className="sidebar-footer-btn sidebar-footer-btn--danger">
           <LogOut size={16} /> Cerrar sesión
         </button>
+        <div className="sidebar-legal-links">
+          <a href="/terminos" target="_blank" rel="noopener noreferrer">Términos</a>
+          <span aria-hidden="true">·</span>
+          <a href="/privacidad" target="_blank" rel="noopener noreferrer">Privacidad</a>
+          <span aria-hidden="true">·</span>
+          <a href="/cookies" target="_blank" rel="noopener noreferrer">Cookies</a>
+        </div>
       </div>
 
       {logoutConfirmOpen && (
@@ -147,17 +155,23 @@ function UserSidebar({
 
 export function UserLayout({ section, onNav, children, nombreEmpresa }: UserLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const drawer = useAnimatedMount(mobileOpen)
 
   return (
     <div className="layout-root">
 
       {/* Sidebar desktop */}
-      <UserSidebar section={section} onNav={onNav} nombreEmpresa={nombreEmpresa} />
+      <div className="show-lg">
+        <UserSidebar section={section} onNav={onNav} nombreEmpresa={nombreEmpresa} />
+      </div>
 
       {/* Mobile drawer */}
-      {mobileOpen && (
-        <div className="mobile-drawer" onClick={() => setMobileOpen(false)}>
-          <div style={{ width: 260 }} onClick={e => e.stopPropagation()}>
+      {drawer.mounted && (
+        <div
+          className={`mobile-drawer${drawer.active ? ' is-open' : ''}`}
+          onClick={() => setMobileOpen(false)}
+        >
+          <div className="admin-mobile-drawer-panel" onClick={e => e.stopPropagation()}>
             <UserSidebar section={section} onNav={onNav} onClose={() => setMobileOpen(false)} nombreEmpresa={nombreEmpresa} />
           </div>
           <div className="mobile-drawer-backdrop" />
@@ -167,10 +181,18 @@ export function UserLayout({ section, onNav, children, nombreEmpresa }: UserLayo
       {/* Contenido */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <div className="admin-topbar">
-          {/* <button onClick={() => setMobileOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
-            <Menu size={22} />
-          </button> */}
-          <ThemeToggle />
+          <div className="admin-topbar-left">
+            <button
+              className="hide-lg admin-menu-btn"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Abrir menú"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+          <div className="flex items-center justify-end shrink-0">
+            <ThemeToggle />
+          </div>
         </div>
         <main style={{ flex: 1, overflowY: 'auto' }}>
           {children}

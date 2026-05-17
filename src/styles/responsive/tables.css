@@ -1,0 +1,74 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TABLES — patrón data-table → cards apiladas en ≤640px
+   Uso: añadir .data-table--responsive al <table> y data-label="…" a cada <td>.
+   Columnas no esenciales: añadir data-hide-mobile.
+   Celda de acciones (dropdown): añadir data-actions.
+══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .data-table--responsive thead {
+    display: none;
+  }
+
+  .data-table--responsive,
+  .data-table--responsive tbody {
+    display: block;
+  }
+
+  .data-table--responsive tr,
+  .data-table--responsive .data-tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .data-table--responsive td,
+  .data-table--responsive .data-td,
+  .data-table--responsive .data-td-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: var(--space-1) 0;
+    text-align: left;
+    border: none;
+  }
+
+  .data-table--responsive td::before {
+    content: attr(data-label);
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+
+  .data-table--responsive td[data-label=""]::before,
+  .data-table--responsive td:not([data-label])::before {
+    content: none;
+  }
+
+  .data-table--responsive td[data-hide-mobile] {
+    display: none;
+  }
+
+  .data-table--responsive td[data-actions] {
+    grid-row: 1 / -1;
+    grid-column: 2;
+    align-self: start;
+    justify-self: end;
+  }
+  .data-table--responsive td[data-actions]::before {
+    content: none;
+  }
+
+  /* Fallback: si la tabla no se marca como responsive pero está en pantalla
+     pequeña, al menos darle scroll horizontal para no romper el layout. */
+  .data-table:not(.data-table--responsive) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

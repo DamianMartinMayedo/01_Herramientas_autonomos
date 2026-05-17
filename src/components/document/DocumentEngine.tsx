@@ -6,16 +6,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDocumentEngine } from '../../hooks/useDocumentEngine'
-import type { DocumentoBase, MetodoPago, TotalesDocumento } from '../../types/document.types'
+import type { DocumentoBase, MetodoPago, TotalesDocumento, SaveResult } from '../../types/document.types'
 import { TIPOS_IVA, TIPOS_IRPF } from '../../types/document.types'
 import { DocumentPreview } from './DocumentPreview'
 import { PreviewModal } from './PreviewModal'
+import { DocActionsBar, type DocAction } from './DocActionsBar'
 import { FormField, TextAreaField } from '../ui/FormField'
 import { Button } from '../ui/Button'
 import { validarNif } from '../../utils/validarNif'
 import { Trash2, Plus, Save, CheckCircle2, ChevronLeft, AlertTriangle, X, Loader2, Building2, Mail, Copy, PenLine, Download, Lock, Send, Undo2, Info, ShieldCheck, ShieldOff } from 'lucide-react'
 import { useVerifactuStatus } from '../../hooks/useVerifactuStatus'
 import { useVerifactuRegistro } from '../../hooks/useVerifactuRegistro'
+import { emitirRegistroFactura } from '../../lib/verifactu'
 import { EmailModal } from '../shared/EmailModal'
 import { AuthModal } from '../../features/auth/AuthModal'
 import { formatFecha } from '../../utils/formatters'
@@ -44,7 +46,8 @@ interface DocumentEngineProps {
   embedded?: boolean
   onBack?: () => void
   initialData?: DocumentoBase | null
-  onSave?: (documento: DocumentoBase, totales: TotalesDocumento, finalizar?: boolean) => Promise<void>
+  onSave?: (documento: DocumentoBase, totales: TotalesDocumento, finalizar?: boolean, keepOpen?: boolean) => Promise<SaveResult | void>
+
   saving?: boolean
   clientes?: RegularClient[]
   empresa?: Empresa | null
@@ -52,11 +55,11 @@ interface DocumentEngineProps {
   onClienteGuardado?: (payload: RegularClientInput) => Promise<void>
   viewOnlyActions?: ViewOnlyActions
   autoOpenPreview?: boolean
-  onEmailPresupuesto?: (doc: DocumentoBase, totales: TotalesDocumento) => void
+  onEmailPresupuesto?: (doc: DocumentoBase, totales: TotalesDocumento, saved?: SaveResult | null) => void
   estadoPresupuesto?: string
   onAprobarPresupuesto?: () => void
   onConvertirAFactura?: () => void
-  onEmailAlbaran?: (doc: DocumentoBase, totales: TotalesDocumento) => void
+  onEmailAlbaran?: (doc: DocumentoBase, totales: TotalesDocumento, saved?: SaveResult | null) => void
   estadoAlbaran?: string
   defaultNumero?: string
   numero?: string | null
@@ -95,6 +98,27 @@ export function DocumentEngine({
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const verifactu = useVerifactuStatus()
   const facturaRegistro = useVerifactuRegistro(tipo === 'factura' ? facturaId : null)
+  const [registrandoVerifactu, setRegistrandoVerifactu] = useState(false)
+
+  const handleRegistrarVerifactu = async () => {
+    if (!facturaId || registrandoVerifactu) return
+    setRegistrandoVerifactu(true)
+    const res = await emitirRegistroFactura(facturaId)
+    setRegistrandoVerifactu(false)
+    if (res.ok) {
+      facturaRegistro.refetch()
+      setFeedbackMessage({
+        text: res.alreadyRegistered
+          ? 'Esta factura ya estaba registrada en VeriFactu'
+          : 'Factura registrada en VeriFactu correctamente',
+        type: 'success',
+      })
+      setTimeout(() => setFeedbackMessage(null), 3500)
+    } else {
+      setFeedbackMessage({ text: res.error ?? 'No se pudo registrar en VeriFactu', type: 'error' })
+      setTimeout(() => setFeedbackMessage(null), 5000)
+    }
+  }
   useEffect(() => {
     if (autoOpenPreview) setModalAbierto(true)
   }, [autoOpenPreview])
@@ -141,6 +165,45 @@ export function DocumentEngine({
     setTimeout(() => setFeedbackMessage(null), 2500)
   }
 
+  /**
+   * ensureSavedThen — auto-guarda el documento (asignando número si no tiene)
+   * y, al éxito, ejecuta `after(saved)`. Mantiene el editor abierto
+   * (keepOpen=true) para que la acción posterior (preview/email) pueda seguir
+   * con el form montado.
+   *
+   * IMPORTANTE: pasamos `saved` al callback `after` porque tras `setEditor` el
+   * `editor.id` aún no está disponible vía closure (sigue siendo el del render
+   * anterior). El `saved` viene directo del resultado del save y contiene el
+   * id real recién asignado. Acciones posteriores (envío de email, etc.)
+   * deben usar `saved.id` y NO depender del closure del padre.
+   *
+   * Si `onSave` es undefined (modo guest o viewOnly), procede directo con
+   * `saved=null`.
+   */
+  const ensureSavedThen = (verbo: string, after: (saved: SaveResult | null) => void) => form.handleSubmit(
+    async (values) => {
+      if (!onSave) {
+        after(null)
+        return
+      }
+      try {
+        const result = await onSave(values as DocumentoBase, totales, false, true)
+        let saved: SaveResult | null = null
+        if (result && typeof result === 'object' && 'id' in result && 'numero' in result) {
+          saved = result as SaveResult
+          if (saved.numero && saved.numero !== values.numero) {
+            setValue('numero', saved.numero, { shouldDirty: false })
+          }
+        }
+        showFeedback(`Guardado y ${verbo}…`)
+        after(saved)
+      } catch {
+        showFeedback('No se pudo guardar el documento.', 'error')
+      }
+    },
+    () => showFeedback('Revisa los campos obligatorios.', 'error'),
+  )
+
   const handleGuardarBorrador = form.handleSubmit(async (values) => {
     if (!onSave) return
     try {
@@ -165,14 +228,6 @@ export function DocumentEngine({
       setFinalizarModalAbierto(false)
     }
   }
-
-  const handleEnviarPresupuesto = form.handleSubmit((values) => {
-    onEmailPresupuesto?.(values as DocumentoBase, totales)
-  }, () => showFeedback('Revisa los campos obligatorios antes de enviar.', 'error'))
-
-  const handleEnviarAlbaranClick = form.handleSubmit((values) => {
-    onEmailAlbaran?.(values as DocumentoBase, totales)
-  }, () => showFeedback('Revisa los campos obligatorios antes de enviar.', 'error'))
 
   const handleGuardarDocumento = form.handleSubmit(async (values) => {
     if (!onSave) return
@@ -283,18 +338,26 @@ export function DocumentEngine({
 
           {tipo === 'factura' || tipo === 'presupuesto' || tipo === 'albaran' ? (
             <div>
-              <h1 style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'var(--text-lg)',
-                fontWeight: 700,
-                color: 'var(--color-text)',
-              }}>
-                {(initialData?.numero || documento.numero)
-                  ? (initialData?.numero || documento.numero)
-                  : (tipo === 'factura'
-                    ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
-                    : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX')}
-              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                <h1 style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 'var(--text-lg)',
+                  fontWeight: 700,
+                  color: 'var(--color-text)',
+                }}>
+                  {(initialData?.numero || documento.numero)
+                    ? (initialData?.numero || documento.numero)
+                    : (tipo === 'factura'
+                      ? (initialData?.esRectificativa ? 'R-XXX-XXXX' : 'FAC-XXX-XXXX')
+                      : tipo === 'presupuesto' ? 'PRE-XXX-XXXX' : 'ALB-XXX-XXXX')}
+                </h1>
+                {tipo === 'factura' && viewOnlyActions && facturaRegistro.registered && (
+                  <span className="verifactu-pill verifactu-pill--inline" title="Esta factura está registrada en VeriFactu">
+                    <ShieldCheck size={13} />
+                    <span>VeriFactu</span>
+                  </span>
+                )}
+              </div>
               {onSave && !documento.numero && (
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-faint)' }}>
                   {tipo === 'factura' ? 'Se asignará al emitir' : 'Se asignará al guardar'}
@@ -333,120 +396,128 @@ export function DocumentEngine({
               Regístrate gratis
             </button>
           )}
-          {viewOnlyActions && tipo === 'factura' && (
-            <>
-              {!initialData?.esRectificativa && (
-                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onRectificar}>
-                  <PenLine size={14} />
-                  Rectificar
-                </Button>
-              )}
-              {!initialData?.esRectificativa && viewOnlyActions.estadoActual !== 'cobrada' && (
-                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onMarcarCobrada}>
-                  <CheckCircle2 size={14} />
-                  Cobrada
-                </Button>
-              )}
-              {!initialData?.esRectificativa && viewOnlyActions.estadoActual === 'cobrada' && (
-                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onMarcarNoCobrada}>
-                  <Undo2 size={14} />
-                  Desmarcar cobrada
-                </Button>
-              )}
-              <Button variant="secondary" size="sm" type="button" onClick={() => setEmailModalOpen(true)}>
-                <Mail size={14} />
-                Enviar
-              </Button>
-              {!initialData?.esRectificativa && (
-                <Button variant="secondary" size="sm" type="button" onClick={viewOnlyActions.onDuplicar}>
-                  <Copy size={14} />
-                  Duplicar
-                </Button>
-              )}
-              <Button variant="primary" size="sm" type="button" onClick={handleAbrirPrevia}>
-                <Download size={14} />
-                Descargar
-              </Button>
-            </>
-          )}
-          {viewOnlyActions && tipo === 'presupuesto' && (
-            <>
-              <Button variant="secondary" size="sm" type="button" onClick={() => setEmailModalOpen(true)}>
-                <Mail size={14} />
-                Enviar
-              </Button>
-              <Button variant="primary" size="sm" type="button" onClick={handleAbrirPrevia}>
-                <Download size={14} />
-                Descargar
-              </Button>
-            </>
-          )}
-          {!viewOnlyActions && onSave && tipo === 'factura' && (
-            <>
-              <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
-                <Save size={14} />
-                {saving ? 'Guardando...' : 'Guardar como borrador'}
-              </Button>
-              <Button variant="primary" size="sm" onClick={handleAbrirFinalizar} type="button" disabled={saving}>
-                <CheckCircle2 size={14} />
-                Finalizar
-              </Button>
-            </>
-          )}
-          {!viewOnlyActions && (onSave || onEmailPresupuesto) && tipo === 'presupuesto' && (
-            <>
-              {onSave && (
-                <Button variant="secondary" size="sm" onClick={handleGuardarBorrador} type="button" disabled={saving}>
-                  <Save size={14} />
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </Button>
-              )}
-              {onAprobarPresupuesto && estadoPresupuesto === 'enviado' && (
-                <Button variant="secondary" size="sm" type="button" onClick={onAprobarPresupuesto}>
-                  <CheckCircle2 size={14} />
-                  Marcar aprobado
-                </Button>
-              )}
-              {onConvertirAFactura && (estadoPresupuesto === 'enviado' || estadoPresupuesto === 'aprobado') && (
-                <Button variant="secondary" size="sm" type="button" onClick={onConvertirAFactura}>
-                  Convertir a factura
-                </Button>
-              )}
-              <Button variant="secondary" size="sm" onClick={handleAbrirPrevia} type="button">
-                <Download size={14} />
-                Descargar
-              </Button>
-              <Button variant="primary" size="sm" onClick={handleEnviarPresupuesto} type="button" disabled={saving}>
-                <Send size={14} />
-                {estadoPresupuesto && estadoPresupuesto !== 'borrador' ? 'Reenviar' : 'Enviar por correo'}
-              </Button>
-            </>
-          )}
-          {!viewOnlyActions && (onSave || onEmailAlbaran) && tipo === 'albaran' && (
-            <>
-              {onSave && (
-                <Button variant="secondary" size="sm" onClick={handleGuardarDocumento} type="button" disabled={saving}>
-                  <Save size={14} />
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </Button>
-              )}
-              <Button variant="secondary" size="sm" onClick={handleAbrirPrevia} type="button">
-                <Download size={14} />
-                Descargar
-              </Button>
-              {onEmailAlbaran && (
-                <Button variant="primary" size="sm" onClick={handleEnviarAlbaranClick} type="button" disabled={saving}>
-                  <Send size={14} />
-                  {estadoAlbaran && estadoAlbaran !== 'pendiente' ? 'Reenviar' : 'Enviar por correo'}
-                </Button>
-              )}
-            </>
-          )}
-          {!viewOnlyActions && !(onSave && (tipo === 'factura' || tipo === 'presupuesto' || tipo === 'albaran')) && (
-            <Button variant="primary" size="sm" onClick={handleAbrirPrevia} type="button">
-              Exportar
-            </Button>
-          )}
+          <DocActionsBar actions={(() => {
+            const list: (DocAction | false | null | undefined)[] = []
+
+            if (viewOnlyActions && tipo === 'factura') {
+              list.push(
+                !initialData?.esRectificativa && {
+                  id: 'rectificar', label: 'Rectificar', Icon: PenLine,
+                  onClick: viewOnlyActions.onRectificar,
+                },
+                !initialData?.esRectificativa && viewOnlyActions.estadoActual !== 'cobrada' && {
+                  id: 'cobrada', label: 'Cobrada', Icon: CheckCircle2,
+                  onClick: viewOnlyActions.onMarcarCobrada,
+                },
+                !initialData?.esRectificativa && viewOnlyActions.estadoActual === 'cobrada' && {
+                  id: 'desmarcar-cobrada', label: 'Desmarcar cobrada', Icon: Undo2,
+                  onClick: viewOnlyActions.onMarcarNoCobrada,
+                },
+                {
+                  id: 'enviar', label: 'Enviar', Icon: Mail,
+                  onClick: () => setEmailModalOpen(true),
+                },
+                !initialData?.esRectificativa && {
+                  id: 'duplicar', label: 'Duplicar', Icon: Copy,
+                  onClick: viewOnlyActions.onDuplicar,
+                },
+                verifactu.enabled && !facturaRegistro.loading && !facturaRegistro.registered && {
+                  id: 'verifactu', label: 'Registrar en VeriFactu', Icon: ShieldCheck,
+                  variant: 'success',
+                  onClick: () => { void handleRegistrarVerifactu() },
+                  disabled: registrandoVerifactu,
+                  loading: registrandoVerifactu,
+                  loadingLabel: 'Registrando…',
+                },
+                {
+                  id: 'descargar', label: 'Descargar', Icon: Download,
+                  variant: 'primary',
+                  onClick: handleAbrirPrevia,
+                },
+              )
+            }
+
+            if (viewOnlyActions && tipo === 'presupuesto') {
+              list.push(
+                { id: 'enviar', label: 'Enviar', Icon: Mail, onClick: () => setEmailModalOpen(true) },
+                { id: 'descargar', label: 'Descargar', Icon: Download, variant: 'primary', onClick: handleAbrirPrevia },
+              )
+            }
+
+            if (!viewOnlyActions && onSave && tipo === 'factura') {
+              list.push(
+                {
+                  id: 'guardar-borrador', label: saving ? 'Guardando...' : 'Guardar como borrador', Icon: Save,
+                  onClick: handleGuardarBorrador, disabled: saving,
+                },
+                {
+                  id: 'finalizar', label: 'Finalizar', Icon: CheckCircle2,
+                  variant: 'primary', onClick: handleAbrirFinalizar, disabled: saving,
+                },
+              )
+            }
+
+            // Para presupuestos/albaranes registrados: Descargar y Enviar
+            // auto-guardan (asignando número si falta) antes de proceder.
+            // No bloqueamos por falta de número — el guardado es transparente.
+            if (!viewOnlyActions && (onSave || onEmailPresupuesto) && tipo === 'presupuesto') {
+              list.push(
+                onSave && {
+                  id: 'guardar', label: saving ? 'Guardando...' : 'Guardar', Icon: Save,
+                  onClick: handleGuardarBorrador, disabled: saving,
+                },
+                !!onAprobarPresupuesto && estadoPresupuesto === 'enviado' && {
+                  id: 'aprobar', label: 'Marcar aprobado', Icon: CheckCircle2,
+                  onClick: onAprobarPresupuesto!,
+                },
+                !!onConvertirAFactura && (estadoPresupuesto === 'enviado' || estadoPresupuesto === 'aprobado') && {
+                  id: 'convertir', label: 'Convertir a factura',
+                  onClick: onConvertirAFactura!,
+                },
+                {
+                  id: 'descargar', label: 'Descargar', Icon: Download,
+                  onClick: ensureSavedThen('descargando', () => setModalAbierto(true)),
+                  disabled: saving,
+                },
+                {
+                  id: 'enviar', label: estadoPresupuesto && estadoPresupuesto !== 'borrador' ? 'Reenviar' : 'Enviar por correo',
+                  Icon: Send, variant: 'primary',
+                  onClick: ensureSavedThen('enviando', (saved) => {
+                    onEmailPresupuesto?.(form.getValues() as DocumentoBase, totales, saved)
+                  }),
+                  disabled: saving,
+                },
+              )
+            }
+
+            if (!viewOnlyActions && (onSave || onEmailAlbaran) && tipo === 'albaran') {
+              list.push(
+                onSave && {
+                  id: 'guardar', label: saving ? 'Guardando...' : 'Guardar', Icon: Save,
+                  onClick: handleGuardarDocumento, disabled: saving,
+                },
+                {
+                  id: 'descargar', label: 'Descargar', Icon: Download,
+                  onClick: ensureSavedThen('descargando', () => setModalAbierto(true)),
+                  disabled: saving,
+                },
+                !!onEmailAlbaran && {
+                  id: 'enviar', label: estadoAlbaran && estadoAlbaran !== 'pendiente' ? 'Reenviar' : 'Enviar por correo',
+                  Icon: Send, variant: 'primary',
+                  onClick: ensureSavedThen('enviando', (saved) => {
+                    onEmailAlbaran?.(form.getValues() as DocumentoBase, totales, saved)
+                  }),
+                  disabled: saving,
+                },
+              )
+            }
+
+            if (!viewOnlyActions && !(onSave && (tipo === 'factura' || tipo === 'presupuesto' || tipo === 'albaran'))) {
+              list.push({ id: 'exportar', label: 'Exportar', variant: 'primary', onClick: handleAbrirPrevia })
+            }
+
+            return list.filter(Boolean) as DocAction[]
+          })()} />
         </div>
       </div>
 
@@ -519,16 +590,6 @@ export function DocumentEngine({
             </div>
           )}
         </>
-      )}
-
-      {/* Pill compacto cuando la factura emitida tiene un registro REAL en verifactu_registros.
-          No basta con que VeriFactu esté activo ahora: las facturas antiguas (anteriores
-          a la activación) no están registradas y no deben mostrar este indicador. */}
-      {tipo === 'factura' && viewOnlyActions && facturaRegistro.registered && (
-        <div className="verifactu-pill" title="Esta factura está registrada en VeriFactu">
-          <ShieldCheck size={14} />
-          <span>Registrada con VeriFactu</span>
-        </div>
       )}
 
       {viewOnlyActions && (

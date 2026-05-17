@@ -64,8 +64,8 @@ export function PreviewModal({ documento, totales, onClose, isGuest = false }: P
           </div>
 
           {/* Preview escalada y centrada */}
-          <div className="modal-body-scroll">
-            <div style={{ zoom: PREVIEW_ZOOM }}>
+          <div className="modal-body-scroll preview-modal-body">
+            <div className="preview-zoom-wrap" style={{ ['--preview-zoom' as string]: PREVIEW_ZOOM }}>
               <div className="doc-shadow">
                 <DocumentPreview
                   ref={previewRef}

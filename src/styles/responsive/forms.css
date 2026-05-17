@@ -1,0 +1,83 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   FORMS — grids de formularios y calculadoras que colapsan en mobile/tablet
+══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .calc-grid--3 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .form-row-1-2 {
+    grid-template-columns: 1fr;
+  }
+  .clientes-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .calc-grid--2,
+  .calc-grid--3 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Inputs en móvil: font-size 16px obligatorio en TODOS los inputs/select/
+     textarea para evitar el zoom automático que disparan Safari iOS y Chrome
+     iOS (también WebKit) al hacer focus. Cualquier valor <16px deja la página
+     sobredimensionada al salir del foco. Regla aplicada al elemento, no a
+     una clase, para cubrir login PIN, password con icono, search, etc. */
+  input,
+  select,
+  textarea,
+  .input-v3,
+  .select-v3,
+  .textarea-v3 {
+    font-size: 16px !important;
+    min-width: 0;
+  }
+
+  /* Inputs nativos de fecha — iOS Safari/Chrome los renderiza centrados por
+     defecto, con altura forzada y placeholder oculto. Forzamos alineación
+     izquierda, anulamos el appearance nativo "rosca" y dejamos que el padding
+     del input-v3 dicte la altura. */
+  .input-v3[type="date"],
+  .input-v3[type="time"],
+  .input-v3[type="datetime-local"],
+  .input-v3[type="month"] {
+    max-width: 100%;
+    width: 100%;
+    text-align: left;
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 44px;          /* tappable area iOS HIG */
+    line-height: 1.4;
+    -webkit-padding-start: var(--space-4);
+  }
+  /* iOS oculta el botón nativo del calendario si no hay valor; lo forzamos
+     visible alineado a la derecha sin solapar el texto. */
+  .input-v3[type="date"]::-webkit-calendar-picker-indicator,
+  .input-v3[type="time"]::-webkit-calendar-picker-indicator,
+  .input-v3[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    margin-left: auto;
+    padding-left: var(--space-2);
+  }
+  /* Que el placeholder gris del date (cuando está vacío) sea visible */
+  .input-v3[type="date"]:invalid::-webkit-datetime-edit,
+  .input-v3[type="time"]:invalid::-webkit-datetime-edit {
+    color: var(--color-text-faint);
+  }
+
+  /* Fieldset con padding razonable: ni excesivo (var(--space-6)) ni mínimo
+     (var(--space-3) deja la fecha rozando el borde derecho). 16px = buen
+     compromiso. */
+  .fieldset-v3 {
+    padding: var(--space-4);
+  }
+
+  /* form-row y form-row-1-2 ya colapsan; aseguramos que las columnas se encogen */
+  .form-row > *,
+  .form-row-1-2 > *,
+  .input-group {
+    min-width: 0;
+  }
+}

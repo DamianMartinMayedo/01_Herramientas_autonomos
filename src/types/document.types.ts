@@ -1,5 +1,14 @@
 // ─── Tipos base compartidos por todos los documentos ─────────────────────────
 
+/** Resultado de una operación de guardado de documento.
+ *  Lo devuelven los `onSave` de DocumentEngine y LegalDocEngine para que el
+ *  motor pueda propagar el número recién asignado al form (setValue('numero'))
+ *  antes de abrir el preview o el envío por correo. */
+export interface SaveResult {
+  id: string
+  numero: string | null
+}
+
 export interface EmisorInfo {
   nombre: string
   nif: string

@@ -66,8 +66,13 @@ export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUs
           <h1 className="section-title">Usuarios</h1>
           <p className="section-sub">Gestión de usuarios registrados, plan, accesos y documentos.</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={onCreateClick}>
-          <UserPlus size={15} /> Crear usuario
+        <button
+          className="btn btn-primary btn-sm btn-responsive"
+          onClick={onCreateClick}
+          aria-label="Crear usuario"
+        >
+          <UserPlus size={15} />
+          <span className="btn-text">Crear usuario</span>
         </button>
       </div>
 
@@ -95,7 +100,7 @@ export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUs
       </div>
 
       <div className="card card-no-pad">
-        <table className="data-table">
+        <table className="data-table data-table--responsive">
           <thead>
             <tr className="data-thead-row">
               <th className="data-th">Usuario / Email</th>
@@ -122,7 +127,7 @@ export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUs
                     className="data-tr user-tr-clickable"
                     onClick={() => onSelectUser(user)}
                   >
-                    <td className="data-td">
+                    <td className="data-td" data-label="Usuario">
                       <div className="flex items-center gap-3">
                         <div className="user-initial-avatar">{user.email?.[0]?.toUpperCase()}</div>
                         <div>
@@ -135,15 +140,15 @@ export function UsuariosList({ users, loading, onSelectUser, onCreateClick, onUs
                         </div>
                       </div>
                     </td>
-                    <td className="data-td">
+                    <td className="data-td" data-label="Plan">
                       <span className={`badge ${isPremium ? 'badge-gold' : 'badge-muted'}`}>
                         {isPremium ? <><Crown size={9} /> Premium</> : 'Free'}
                       </span>
                     </td>
-                    <td className="data-td-right data-td--bold">{user.documents_count ?? 0}</td>
-                    <td className="data-td data-td--muted">{relative(user.last_sign_in_at)}</td>
-                    <td className="data-td data-td--muted">{new Date(user.created_at).toLocaleDateString('es-ES')}</td>
-                    <td className="data-td-right" onClick={e => e.stopPropagation()}>
+                    <td className="data-td-right data-td--bold" data-label="Documentos">{user.documents_count ?? 0}</td>
+                    <td className="data-td data-td--muted" data-label="Último login" data-hide-mobile>{relative(user.last_sign_in_at)}</td>
+                    <td className="data-td data-td--muted" data-label="Registrado" data-hide-mobile>{new Date(user.created_at).toLocaleDateString('es-ES')}</td>
+                    <td className="data-td-right" data-actions onClick={e => e.stopPropagation()}>
                       <UserActionsMenu
                         user={user}
                         variant="menu"

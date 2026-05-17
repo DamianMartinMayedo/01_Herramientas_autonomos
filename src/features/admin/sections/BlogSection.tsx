@@ -201,8 +201,13 @@ export function BlogSection() {
             {posts.length} artículo{posts.length !== 1 ? 's' : ''} · {posts.filter(p => p.status === 'published').length} publicados
           </p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditing('new')}>
-          <Plus size={14} /> Nuevo artículo
+        <button
+          className="btn btn-primary btn-sm btn-responsive"
+          onClick={() => setEditing('new')}
+          aria-label="Nuevo artículo"
+        >
+          <Plus size={14} />
+          <span className="btn-text">Nuevo artículo</span>
         </button>
       </div>
 
@@ -256,7 +261,7 @@ export function BlogSection() {
         </div>
       ) : (
         <div className="card card-no-pad">
-          <table className="data-table">
+          <table className="data-table data-table--responsive">
             <thead>
               <tr className="data-thead-row">
                 <th className="data-th">Título</th>

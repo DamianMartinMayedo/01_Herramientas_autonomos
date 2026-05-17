@@ -128,7 +128,7 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
             <div className="icon-box" style={{
               width: 40, height: 40,
               borderRadius: 'var(--radius-md)',
-              background: `color-mix(in oklch, ${color} 12%, var(--color-surface-2))`,
+              background: `color-mix(in srgb, ${color} 12%, var(--color-surface-2))`,
             }}>
               <Icon size={18} style={{ color }} />
             </div>
@@ -161,7 +161,7 @@ export function UserDashboard({ onNav, nombreEmpresa }: Props) {
               <div className="icon-box" style={{
                 width: 40, height: 40,
                 borderRadius: 'var(--radius-md)',
-                background: `color-mix(in oklch, ${color} 12%, var(--color-surface-2))`,
+                background: `color-mix(in srgb, ${color} 12%, var(--color-surface-2))`,
               }}>
                 <Icon size={18} style={{ color }} />
               </div>

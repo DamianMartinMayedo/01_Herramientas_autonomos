@@ -208,7 +208,7 @@ function DocTable({ cols, rows }: { cols: string[]; rows: DocRow[] }) {
   }
   return (
     <div className="card card-no-pad">
-      <table className="data-table">
+      <table className="data-table data-table--responsive">
         <thead>
           <tr className="data-thead-row">
             {cols.map(c => <th key={c} className="data-th">{c}</th>)}

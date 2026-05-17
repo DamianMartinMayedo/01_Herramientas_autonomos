@@ -1,0 +1,52 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   LAYOUT — ajustes responsive de layouts y motor de documentos
+   El proyecto YA tiene patrón de drawer con .show-lg/.hide-lg + .mobile-drawer
+   + .admin-menu-btn (definidas en src/index.css). Aquí solo añadimos
+   refuerzos puntuales.
+
+   Motor de documentos (DocumentEngine, LegalDocEngine):
+   - Preview lado a lado solo en ≥1280px (clase .show-xl).
+   - En resoluciones menores, el preview se accede vía PreviewModal (botón).
+   - No hace falta tabs form/preview: el modal cubre el caso responsive.
+══════════════════════════════════════════════════════════════════════════ */
+
+/* Padding más cómodo en ≤480px para el shell público */
+@media (max-width: 480px) {
+  .page-main {
+    padding-inline: var(--space-3);
+  }
+  .tool-page-inner {
+    padding-inline: 0;
+  }
+}
+
+/* Motor de documentos: reducir el padding del grid wrapper en móvil/tablet
+   para que el formulario use casi todo el ancho. El layout actual usa style
+   inline con padding: var(--space-6); aquí lo "rebajamos" con un selector
+   de atributo aplicado al primer hijo del shell del DocumentEngine. */
+@media (max-width: 768px) {
+  /* Layouts grid de DocumentEngine y LegalDocEngine — están inline styled, los
+     pisamos vía un descendant del topbar sticky con padding. */
+  [style*="repeat(auto-fit, minmax(min(100%, 560px)"] {
+    padding: var(--space-3) !important;
+    gap: var(--space-4) !important;
+  }
+
+  /* Topbar interno del motor de documentos: padding más compacto */
+  [style*="position: sticky"][style*="top: 0"][style*="backdrop-filter"] {
+    padding: var(--space-2) var(--space-3) !important;
+  }
+}
+
+/* Admin: reducir padding del main + cards en móvil/tablet */
+@media (max-width: 768px) {
+  .admin-layout-main {
+    padding: var(--space-3) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-layout-main {
+    padding: var(--space-2) !important;
+  }
+}

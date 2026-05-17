@@ -1,0 +1,64 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY — tipografía fluid con clamp()
+   Sustituye tamaños fijos en rem/px por clamp() para que escalen entre
+   móvil y desktop sin media queries.
+══════════════════════════════════════════════════════════════════════════ */
+
+.calc-result-value {
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+/* Precio del modal de upgrade a premium — mantener prominencia en móvil/tablet.
+   Mobile (~360px): ~3rem  ·  Tablet (~768px): ~3.6rem  ·  Desktop: ~4rem
+   Especificidad reforzada con el padre .upgrade-payment para ganar sobre
+   las reglas legacy en src/index.css. */
+.upgrade-payment .upgrade-price-value,
+.upgrade-modal .upgrade-price-value {
+  font-size: clamp(3rem, 9vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+.upgrade-payment .upgrade-price-period,
+.upgrade-modal .upgrade-price-period {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  font-weight: 500;
+}
+
+/* Más respiro entre el selector mensual/anual y el bloque del precio en desktop.
+   En móvil/tablet se mantiene el gap original (más compacto). NO toca min-height. */
+@media (min-width: 768px) {
+  .upgrade-billing-switch + .upgrade-price-block {
+    margin-top: var(--space-3);
+  }
+  .upgrade-price-block {
+    gap: var(--space-2);
+  }
+}
+
+.hero-heading {
+  font-size: clamp(1.75rem, 4vw + 1rem, 3.5rem);
+  line-height: 1.1;
+}
+
+.hero-heading--page {
+  font-size: clamp(1.5rem, 3vw + 1rem, 2.75rem);
+  line-height: 1.15;
+}
+
+.section-title {
+  font-size: clamp(1.5rem, 2vw + 1rem, 2.25rem);
+}
+
+.tool-title {
+  font-size: clamp(1.5rem, 2vw + 1rem, 2.25rem);
+}
+
+@media (max-width: 480px) {
+  .hero-sub, .hero-sub--page {
+    font-size: var(--text-sm);
+  }
+  .stat-value {
+    font-size: clamp(1.5rem, 7vw, 2rem);
+  }
+}
